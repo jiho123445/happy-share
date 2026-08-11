@@ -1,0 +1,6 @@
+{
+  "name": "사단법인 너브내행복나눔재단",
+  "description": "2009년부터 이어온 나눔의 역사, 홍천군민 모두의 행복을 만드는 사단법인 너브내행복나눔재단 공식 홈페이지",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
