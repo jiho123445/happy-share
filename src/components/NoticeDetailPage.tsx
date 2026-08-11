@@ -175,7 +175,7 @@ export const NoticeDetailPage: React.FC = () => {
                   <span>사단법인 너브내행복나눔재단 사업본부</span>
                 </div>
                 <div className="text-sm font-extrabold text-slate-900">
-                  사업 신청 및 후원 문의: 033-436-1926 (FAX: 033-436-1910)
+                  사업 신청 및 후원 문의: 033-433-1925 (FAX: 033-433-1910)
                 </div>
                 <div className="text-xs text-slate-500">
                   강원특별자치도 홍천군 홍천읍 산림조합길 12

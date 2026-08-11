@@ -12,13 +12,12 @@ import { getStorage } from "firebase/storage";
 
 // 환경변수 또는 파이어베이스 프로젝트 설정값
 const firebaseConfig = {
-  apiKey: "AIzaSyAF0bm83erZuKrL3tAwsFef_wW2bIuy7GM",
-  authDomain: "happy-share-288ad.firebaseapp.com",
-  projectId: "happy-share-288ad",
-  storageBucket: "happy-share-288ad.firebasestorage.app",
-  messagingSenderId: "363148942733",
-  appId: "1:363148942733:web:58b40dc86c41a1006871c4",
-  measurementId: "G-ZL6TZGM8NB"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyYOUR_API_KEY_HERE",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "your-app.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "your-app-id",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "your-app.appspot.com",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "123456789",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:123456789:web:abcdef"
 };
 
 // 앱 중복 초기화 방지

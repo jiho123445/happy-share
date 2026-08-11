@@ -8,7 +8,7 @@ export const GallerySection: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('전체');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  const CATEGORIES = [
+  const DEFAULT_CATEGORIES = [
     '전체',
     '장학금 전달',
     '교육지원',
@@ -17,6 +17,9 @@ export const GallerySection: React.FC = () => {
     '주거환경 개선',
     '복지시설 지원'
   ];
+
+  // Dynamically include any new custom categories added by the user
+  const CATEGORIES = Array.from(new Set([...DEFAULT_CATEGORIES, ...gallery.map((g) => g.category)]));
 
   const filteredGallery = gallery.filter((item) => {
     const matchesCategory = selectedCategory === '전체' || item.category === selectedCategory;
@@ -108,6 +111,9 @@ export const GallerySection: React.FC = () => {
                     <img
                       src={item.imageUrl}
                       alt={item.title}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=800&q=80';
+                      }}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">

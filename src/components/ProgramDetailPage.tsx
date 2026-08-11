@@ -151,7 +151,7 @@ export const ProgramDetailPage: React.FC = () => {
             <div className="space-y-1 text-center sm:text-left">
               <h4 className="text-lg font-extrabold text-white">이 사업을 후원하거나 참여하고 싶으신가요?</h4>
               <p className="text-xs text-orange-100">
-                후원자님의 따뜻한 손길로 홍천의 소외 이웃에게 실질적인 희망을 전달합니다. (문의: 033-436-1926)
+                후원자님의 따뜻한 손길로 홍천의 소외 이웃에게 실질적인 희망을 전달합니다. (문의: 033-433-1925)
               </p>
             </div>
 

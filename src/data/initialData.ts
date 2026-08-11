@@ -9,8 +9,8 @@ export const INITIAL_SETTINGS: FoundationSettings = {
   establishedYear: '2009',
   reorganizedYear: '2024',
   address: '강원특별자치도 홍천군 홍천읍 산림조합길 12 (너브내행복나눔재단 / 홍천군가족센터)',
-  phone: '033-436-1926',
-  fax: '033-436-1910',
+  phone: '033-433-1925',
+  fax: '033-433-1910',
   email: 'nerve_nae@naver.com',
   operatingHours: '월~금 09:00 - 18:00 (토, 일, 공휴일 휴무)',
   bankAccounts: [

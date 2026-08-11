@@ -37,44 +37,59 @@ export const FamilyCenterSection: React.FC = () => {
                 “다문화가족 지원을 넘어 홍천군 전체 가족을 보듬는 통합 가족복지 전문기관”
               </h3>
 
-              <p className="text-sm text-slate-600 leading-relaxed">
+              <p className="text-base sm:text-lg md:text-xl font-bold text-slate-900 leading-relaxed bg-emerald-50/70 p-4 sm:p-5 rounded-2xl border border-emerald-200/80 shadow-2xs">
                 홍천군가족센터는 다양한 가족 형태(다문화가족, 1인가구, 한부모가족, 조손가족, 맞벌이가족 등)에 맞춰 
                 가족 교육, 상담, 돌봄, 다문화 이중언어 학습, 공동육아나눔터 등 생애주기별 맞춤 통합복지 서비스를 제공하고 있습니다.
               </p>
 
+              {/* Official Website Link Button */}
+              <div className="pt-1">
+                <a
+                  href="https://hongcheon.familynet.or.kr"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2.5 bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white font-black text-sm sm:text-base px-6 py-3.5 rounded-2xl shadow-md hover:shadow-lg transition-all group"
+                  title="홍천군가족센터 공식 홈페이지 새창으로 열기"
+                >
+                  <Building2 className="w-5 h-5 text-emerald-200" />
+                  <span>홍천군가족센터 공식 홈페이지 바로가기</span>
+                  <ExternalLink className="w-4 h-4 text-emerald-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                </a>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
-                  <div className="text-xs font-bold text-emerald-700 flex items-center gap-1.5">
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
+                  <div className="text-xs sm:text-sm font-extrabold text-emerald-800 flex items-center gap-1.5">
                     <Users className="w-4 h-4 text-emerald-600" /> 다문화가족 정착지원
                   </div>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-xs font-semibold text-slate-700">
                     한국어 교육, 방문교육, 통번역 서비스, 모국 방문 및 정주여건 개선
                   </p>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
-                  <div className="text-xs font-bold text-emerald-700 flex items-center gap-1.5">
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
+                  <div className="text-xs sm:text-sm font-extrabold text-emerald-800 flex items-center gap-1.5">
                     <Heart className="w-4 h-4 text-emerald-600" /> 가족상담 및 소통
                   </div>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-xs font-semibold text-slate-700">
                     부부상담, 부모-자녀 소통교육, 다문화 이중언어 교실 및 가족 캠프
                   </p>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
-                  <div className="text-xs font-bold text-emerald-700 flex items-center gap-1.5">
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
+                  <div className="text-xs sm:text-sm font-extrabold text-emerald-800 flex items-center gap-1.5">
                     <BookOpen className="w-4 h-4 text-emerald-600" /> 공동육아나눔터
                   </div>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-xs font-semibold text-slate-700">
                     이웃과 함께하는 아동 돌봄 공간 및 자녀 돌봄 품앗이 활동
                   </p>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
-                  <div className="text-xs font-bold text-emerald-700 flex items-center gap-1.5">
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
+                  <div className="text-xs sm:text-sm font-extrabold text-emerald-800 flex items-center gap-1.5">
                     <ShieldCheck className="w-4 h-4 text-emerald-600" /> 맞춤형 가족 지원
                   </div>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-xs font-semibold text-slate-700">
                     1인가구 식생활 및 사회적 관계망 형성, 취약가구 긴급 자원 연계
                   </p>
                 </div>
@@ -92,16 +107,29 @@ export const FamilyCenterSection: React.FC = () => {
                 />
               </div>
 
-              <div className="bg-emerald-900 text-white p-5 rounded-2xl space-y-2">
-                <div className="text-xs text-emerald-300 font-bold">홍천군가족센터 이용 문의</div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Phone className="w-4 h-4 text-emerald-400" />
+              <div className="bg-emerald-950 text-white p-5 rounded-2xl space-y-3 shadow-md border border-emerald-800">
+                <div className="text-xs text-emerald-300 font-bold flex items-center justify-between">
+                  <span>홍천군가족센터 이용 문의</span>
+                  <span className="text-[10px] bg-emerald-800 text-emerald-200 px-2 py-0.5 rounded font-bold">홍천군 위탁</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm font-bold">
+                  <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
                   <span>전화: {settings.phone} | FAX: {settings.fax}</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-emerald-100">
+                <div className="flex items-center gap-2 text-xs font-medium text-emerald-100">
                   <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />
                   <span>위치: 강원특별자치도 홍천군 홍천읍 산림조합길 12</span>
                 </div>
+                
+                <a
+                  href="https://hongcheon.familynet.or.kr"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-2 bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-extrabold text-xs sm:text-sm py-2.5 px-4 rounded-xl transition-all shadow-sm mt-1"
+                >
+                  <span>가족센터 공식 홈페이지 방문</span>
+                  <ExternalLink className="w-4 h-4" />
+                </a>
               </div>
             </div>
 

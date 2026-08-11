@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useFoundation } from '../context/FoundationContext';
 import { ActiveTab } from '../types';
+import { Logo } from './Logo';
 import {
   Heart,
   Phone,
@@ -17,7 +18,8 @@ import {
   Building2,
   Sparkles,
   Newspaper,
-  Image as ImageIcon
+  Image as ImageIcon,
+  ExternalLink
 } from 'lucide-react';
 
 export const Header: React.FC = () => {
@@ -53,16 +55,21 @@ export const Header: React.FC = () => {
   return (
     <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-md shadow-sm border-b border-orange-100/60">
       {/* Top Utility Bar */}
-      <div className="bg-slate-900 text-slate-300 text-xs py-1.5 px-4 sm:px-8 border-b border-slate-800">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-4 text-slate-300">
-            <span className="flex items-center gap-1">
+      <div className="bg-slate-900 text-slate-300 text-xs py-1.5 border-b border-slate-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 text-slate-300">
+            <span className="flex items-center gap-1 font-medium">
               <MapPin className="w-3.5 h-3.5 text-emerald-400" />
               <span>강원특별자치도 홍천군</span>
             </span>
-            <span className="hidden sm:inline-flex items-center gap-1 border-l border-slate-700 pl-4">
+            <span className="text-slate-600">|</span>
+            <span className="inline-flex items-center gap-1 font-medium">
               <Phone className="w-3.5 h-3.5 text-orange-400" />
-              <span>문의: {settings.phone} | FAX: {settings.fax}</span>
+              <span>문의: {settings.phone}</span>
+            </span>
+            <span className="text-slate-600 hidden sm:inline">|</span>
+            <span className="hidden sm:inline-flex items-center gap-1 font-medium text-slate-400">
+              <span>FAX: {settings.fax}</span>
             </span>
           </div>
           <div className="flex items-center gap-3">
@@ -81,167 +88,178 @@ export const Header: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Brand Bar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-3 flex items-center justify-between">
-        {/* Foundation Logo & Title */}
-        <button
-          onClick={() => handleNavClick('main')}
-          className="flex items-center gap-3 text-left group"
-        >
-          <div className="relative w-11 h-11 rounded-2xl bg-gradient-to-tr from-orange-500 via-amber-500 to-emerald-500 p-0.5 shadow-md group-hover:scale-105 transition-transform">
-            <div className="w-full h-full bg-white rounded-[14px] flex items-center justify-center relative overflow-hidden">
-              <Waves className="w-6 h-6 text-orange-500" />
-              <div className="absolute inset-0 bg-gradient-to-tr from-orange-500/10 to-emerald-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+      {/* Main Brand & Navigation Bar (Single Row as in image_3) */}
+      <div className="bg-white border-b border-slate-200/80 shadow-2xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-3 flex items-center justify-between gap-3 lg:gap-6">
+          {/* Foundation Text Logo */}
+          <button
+            onClick={() => handleNavClick('main')}
+            className="flex items-center shrink-0 max-w-[70%] sm:max-w-none group text-left transition-transform hover:scale-[1.01]"
+            title="사단법인 너브내행복나눔재단 메인으로 이동"
+          >
+            <Logo variant="dark" />
+          </button>
+
+          {/* Desktop Navigation Links (In the same row as logo) */}
+          <nav className="hidden lg:flex items-center gap-2 xl:gap-4 text-base xl:text-lg font-extrabold text-slate-800 shrink-0">
+            {/* 재단소개 */}
+            <div className="relative group" onMouseEnter={() => setActiveDropdown('about')} onMouseLeave={() => setActiveDropdown(null)}>
+              <button
+                onClick={() => handleNavClick('about')}
+                className={`flex items-center gap-1 px-2.5 xl:px-3 py-2 rounded-xl transition-all ${
+                  activeTab === 'about' ? 'text-orange-700 bg-orange-100/90 font-black' : 'hover:text-orange-700 hover:bg-amber-100/60'
+                }`}
+              >
+                <span>재단소개</span>
+                <ChevronDown className="w-4 xl:w-5 h-4 xl:h-5 text-slate-500 group-hover:rotate-180 transition-transform" />
+              </button>
+              {activeDropdown === 'about' && (
+                <div className="absolute top-full left-0 w-72 bg-white rounded-2xl shadow-2xl border border-slate-200/90 py-2.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <button onClick={() => handleAboutSubTabClick('greeting')} className="w-full text-left px-5 py-3 text-base sm:text-lg font-extrabold text-slate-800 hover:bg-orange-50 hover:text-orange-600 flex items-center gap-2.5 transition-colors">
+                    <Users className="w-5 h-5 text-orange-500 shrink-0" /> 이사장 인사말
+                  </button>
+                  <button onClick={() => handleAboutSubTabClick('purpose')} className="w-full text-left px-5 py-3 text-base sm:text-lg font-extrabold text-slate-800 hover:bg-orange-50 hover:text-orange-600 flex items-center gap-2.5 transition-colors">
+                    <BookOpen className="w-5 h-5 text-orange-500 shrink-0" /> 설립목적 및 정체성
+                  </button>
+                  <button onClick={() => handleAboutSubTabClick('history')} className="w-full text-left px-5 py-3 text-base sm:text-lg font-extrabold text-slate-800 hover:bg-orange-50 hover:text-orange-600 flex items-center gap-2.5 transition-colors">
+                    <Calendar className="w-5 h-5 text-orange-500 shrink-0" /> 재단 연혁 (2009~)
+                  </button>
+                  <button onClick={() => handleAboutSubTabClick('organization')} className="w-full text-left px-5 py-3 text-base sm:text-lg font-extrabold text-slate-800 hover:bg-orange-50 hover:text-orange-600 flex items-center gap-2.5 transition-colors">
+                    <Building2 className="w-5 h-5 text-orange-500 shrink-0" /> 조직도 및 위탁기관
+                  </button>
+                  <button onClick={() => handleNavClick('contact')} className="w-full text-left px-5 py-3 text-base sm:text-lg font-extrabold text-slate-800 hover:bg-orange-50 hover:text-orange-600 flex items-center gap-2.5 border-t border-slate-100 mt-1 pt-3 transition-colors">
+                    <MapPin className="w-5 h-5 text-orange-500 shrink-0" /> 오시는 길 (지도)
+                  </button>
+                </div>
+              )}
             </div>
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight group-hover:text-orange-600 transition-colors">
-                사단법인 너브내행복나눔재단
-              </h1>
+
+            {/* 주요사업 */}
+            <div className="relative group" onMouseEnter={() => setActiveDropdown('programs')} onMouseLeave={() => setActiveDropdown(null)}>
+              <button
+                onClick={() => handleNavClick('programs')}
+                className={`flex items-center gap-1 px-2.5 xl:px-3 py-2 rounded-xl transition-all ${
+                  activeTab === 'programs' ? 'text-orange-700 bg-orange-100/90 font-black' : 'hover:text-orange-700 hover:bg-amber-100/60'
+                }`}
+              >
+                <span>주요사업</span>
+                <ChevronDown className="w-4 xl:w-5 h-4 xl:h-5 text-slate-500 group-hover:rotate-180 transition-transform" />
+              </button>
+              {activeDropdown === 'programs' && (
+                <div className="absolute top-full left-0 w-80 bg-white rounded-2xl shadow-2xl border border-slate-200/90 py-2.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <button onClick={() => handleNavClick('programs', 'prog-01')} className="w-full text-left px-5 py-3 text-base sm:text-lg font-extrabold text-slate-800 hover:bg-orange-50 hover:text-orange-600 transition-colors">
+                    01. 장학·교육지원
+                  </button>
+                  <button onClick={() => handleNavClick('programs', 'prog-02')} className="w-full text-left px-5 py-3 text-base sm:text-lg font-extrabold text-slate-800 hover:bg-orange-50 hover:text-orange-600 transition-colors">
+                    02. 취약계층 긴급지원
+                  </button>
+                  <button onClick={() => handleNavClick('programs', 'prog-03')} className="w-full text-left px-5 py-3 text-base sm:text-lg font-extrabold text-slate-800 hover:bg-orange-50 hover:text-orange-600 transition-colors">
+                    03. 주거환경 개선
+                  </button>
+                  <button onClick={() => handleNavClick('programs', 'prog-04')} className="w-full text-left px-5 py-3 text-base sm:text-lg font-extrabold text-slate-800 hover:bg-orange-50 hover:text-orange-600 transition-colors">
+                    04. 다문화·가족지원
+                  </button>
+                  <button onClick={() => handleNavClick('programs', 'prog-05')} className="w-full text-left px-5 py-3 text-base sm:text-lg font-extrabold text-slate-800 hover:bg-orange-50 hover:text-orange-600 flex items-center justify-between transition-colors">
+                    <span>05. 복지시설 배분사업</span>
+                    <span className="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-black">너브내배분</span>
+                  </button>
+                  <button onClick={() => handleNavClick('programs', 'prog-06')} className="w-full text-left px-5 py-3 text-base sm:text-lg font-extrabold text-slate-800 hover:bg-orange-50 hover:text-orange-600 flex items-center justify-between transition-colors">
+                    <span>06. AI·디지털 복지</span>
+                    <Sparkles className="w-4 h-4 text-amber-500" />
+                  </button>
+                </div>
+              )}
             </div>
-            <p className="text-[11px] sm:text-xs text-slate-500 font-medium">
-              Nerve-Nae Happiness Sharing Foundation · 홍천 복지 플랫폼
-            </p>
-          </div>
-        </button>
 
-        {/* Desktop Navigation Links */}
-        <nav className="hidden lg:flex items-center gap-1 text-sm font-semibold text-slate-700">
-          {/* 재단소개 */}
-          <div className="relative group" onMouseEnter={() => setActiveDropdown('about')} onMouseLeave={() => setActiveDropdown(null)}>
+            {/* 활동소식 */}
+            <div className="relative group" onMouseEnter={() => setActiveDropdown('news')} onMouseLeave={() => setActiveDropdown(null)}>
+              <button
+                onClick={() => handleNavClick('news')}
+                className={`flex items-center gap-1 px-2.5 xl:px-3 py-2 rounded-xl transition-all ${
+                  activeTab === 'news' || activeTab === 'gallery' ? 'text-orange-700 bg-orange-100/90 font-black' : 'hover:text-orange-700 hover:bg-amber-100/60'
+                }`}
+              >
+                <span>활동소식</span>
+                <ChevronDown className="w-4 xl:w-5 h-4 xl:h-5 text-slate-500 group-hover:rotate-180 transition-transform" />
+              </button>
+              {activeDropdown === 'news' && (
+                <div className="absolute top-full left-0 w-64 bg-white rounded-2xl shadow-2xl border border-slate-200/90 py-2.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <button onClick={() => handleNavClick('news')} className="w-full text-left px-5 py-3 text-base sm:text-lg font-extrabold text-slate-800 hover:bg-orange-50 hover:text-orange-600 flex items-center gap-2.5 transition-colors">
+                    <Newspaper className="w-5 h-5 text-orange-500 shrink-0" /> 공지사항 & 뉴스
+                  </button>
+                  <button onClick={() => handleNavClick('gallery')} className="w-full text-left px-5 py-3 text-base sm:text-lg font-extrabold text-slate-800 hover:bg-orange-50 hover:text-orange-600 flex items-center gap-2.5 transition-colors">
+                    <ImageIcon className="w-5 h-5 text-emerald-500 shrink-0" /> 활동 갤러리
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* 후원·참여 */}
             <button
-              onClick={() => handleNavClick('about')}
-              className={`flex items-center gap-1 px-3.5 py-2 rounded-lg transition-all ${
-                activeTab === 'about' ? 'text-orange-600 bg-orange-50 font-bold' : 'hover:text-orange-600 hover:bg-slate-50'
+              onClick={() => handleNavClick('donate')}
+              className={`px-2.5 xl:px-3 py-2 rounded-xl transition-all ${
+                activeTab === 'donate' ? 'text-orange-700 bg-orange-100/90 font-black' : 'hover:text-orange-700 hover:bg-amber-100/60'
               }`}
             >
-              재단소개
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:rotate-180 transition-transform" />
+              후원·참여
             </button>
-            {activeDropdown === 'about' && (
-              <div className="absolute top-full left-0 w-52 bg-white rounded-xl shadow-xl border border-slate-100 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                <button onClick={() => handleAboutSubTabClick('greeting')} className="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-orange-50 hover:text-orange-600 flex items-center gap-2">
-                  <Users className="w-3.5 h-3.5 text-orange-500" /> 이사장 인사말
-                </button>
-                <button onClick={() => handleAboutSubTabClick('purpose')} className="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-orange-50 hover:text-orange-600 flex items-center gap-2">
-                  <BookOpen className="w-3.5 h-3.5 text-orange-500" /> 설립목적 및 정체성
-                </button>
-                <button onClick={() => handleAboutSubTabClick('history')} className="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-orange-50 hover:text-orange-600 flex items-center gap-2">
-                  <Calendar className="w-3.5 h-3.5 text-orange-500" /> 재단 연혁 (2009~)
-                </button>
-                <button onClick={() => handleAboutSubTabClick('organization')} className="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-orange-50 hover:text-orange-600 flex items-center gap-2">
-                  <Building2 className="w-3.5 h-3.5 text-orange-500" /> 조직도 및 위탁기관
-                </button>
-                <button onClick={() => handleNavClick('contact')} className="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-orange-50 hover:text-orange-600 flex items-center gap-2 border-t border-slate-100 mt-1 pt-2">
-                  <MapPin className="w-3.5 h-3.5 text-orange-500" /> 오시는 길 (지도)
-                </button>
-              </div>
-            )}
-          </div>
 
-          {/* 주요사업 */}
-          <div className="relative group" onMouseEnter={() => setActiveDropdown('programs')} onMouseLeave={() => setActiveDropdown(null)}>
+            {/* 홍천군가족센터 */}
+            <div className="relative group" onMouseEnter={() => setActiveDropdown('family')} onMouseLeave={() => setActiveDropdown(null)}>
+              <button
+                onClick={() => handleNavClick('family-center')}
+                className={`px-3 xl:px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 xl:gap-2 shadow-2xs ${
+                  activeTab === 'family-center'
+                    ? 'text-emerald-900 bg-emerald-200/90 font-black border border-emerald-400'
+                    : 'text-emerald-900 bg-emerald-100/80 hover:bg-emerald-200/80 border border-emerald-300/80'
+                }`}
+              >
+                <Building2 className="w-4 xl:w-5 h-4 xl:h-5 text-emerald-700" />
+                <span>홍천군가족센터</span>
+                <ChevronDown className="w-3.5 xl:w-4 h-3.5 xl:h-4 text-emerald-700 group-hover:rotate-180 transition-transform" />
+              </button>
+
+              {activeDropdown === 'family' && (
+                <div className="absolute top-full right-0 w-72 bg-white rounded-2xl shadow-2xl border border-emerald-200/90 py-2.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <button
+                    onClick={() => handleNavClick('family-center')}
+                    className="w-full text-left px-5 py-3 text-base sm:text-lg font-extrabold text-slate-800 hover:bg-emerald-50 hover:text-emerald-700 flex items-center gap-2.5 transition-colors"
+                  >
+                    <Building2 className="w-5 h-5 text-emerald-600 shrink-0" /> 홍천군가족센터 안내
+                  </button>
+                  <a
+                    href="https://hongcheon.familynet.or.kr"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full text-left px-5 py-3 text-base sm:text-lg font-black text-emerald-700 hover:bg-emerald-100/80 flex items-center justify-between border-t border-slate-100 mt-1 pt-3 transition-colors"
+                  >
+                    <span>공식 홈페이지 바로가기</span>
+                    <ExternalLink className="w-5 h-5 text-emerald-600 shrink-0" />
+                  </a>
+                </div>
+              )}
+            </div>
+          </nav>
+
+          {/* Quick Donate CTA Button & Mobile Toggle */}
+          <div className="flex items-center gap-2.5 shrink-0">
             <button
-              onClick={() => handleNavClick('programs')}
-              className={`flex items-center gap-1 px-3.5 py-2 rounded-lg transition-all ${
-                activeTab === 'programs' ? 'text-orange-600 bg-orange-50 font-bold' : 'hover:text-orange-600 hover:bg-slate-50'
-              }`}
+              onClick={() => handleNavClick('donate', 'donate-form')}
+              className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-sm sm:text-base px-4 sm:px-5 py-2.5 rounded-xl shadow-md shadow-orange-500/20 hover:shadow-lg hover:shadow-orange-500/30 transition-all active:scale-95"
             >
-              주요사업
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:rotate-180 transition-transform" />
+              <Heart className="w-4.5 h-4.5 fill-white animate-pulse" />
+              <span>후원하기</span>
             </button>
-            {activeDropdown === 'programs' && (
-              <div className="absolute top-full left-0 w-56 bg-white rounded-xl shadow-xl border border-slate-100 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                <button onClick={() => handleNavClick('programs', 'prog-01')} className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-orange-50 hover:text-orange-600">
-                  01. 장학·교육지원
-                </button>
-                <button onClick={() => handleNavClick('programs', 'prog-02')} className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-orange-50 hover:text-orange-600">
-                  02. 취약계층 긴급지원
-                </button>
-                <button onClick={() => handleNavClick('programs', 'prog-03')} className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-orange-50 hover:text-orange-600">
-                  03. 주거환경 개선
-                </button>
-                <button onClick={() => handleNavClick('programs', 'prog-04')} className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-orange-50 hover:text-orange-600">
-                  04. 다문화·가족지원
-                </button>
-                <button onClick={() => handleNavClick('programs', 'prog-05')} className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-orange-50 hover:text-orange-600 flex items-center justify-between">
-                  <span>05. 복지시설 배분사업</span>
-                  <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded">너브내배분</span>
-                </button>
-                <button onClick={() => handleNavClick('programs', 'prog-06')} className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-orange-50 hover:text-orange-600 flex items-center justify-between">
-                  <span>06. AI·디지털 복지</span>
-                  <Sparkles className="w-3 h-3 text-amber-500" />
-                </button>
-              </div>
-            )}
-          </div>
 
-          {/* 활동소식 */}
-          <div className="relative group" onMouseEnter={() => setActiveDropdown('news')} onMouseLeave={() => setActiveDropdown(null)}>
+            {/* Mobile Menu Toggle Button */}
             <button
-              onClick={() => handleNavClick('news')}
-              className={`flex items-center gap-1 px-3.5 py-2 rounded-lg transition-all ${
-                activeTab === 'news' || activeTab === 'gallery' ? 'text-orange-600 bg-orange-50 font-bold' : 'hover:text-orange-600 hover:bg-slate-50'
-              }`}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 transition-colors"
+              aria-label="메뉴 열기"
             >
-              활동소식
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:rotate-180 transition-transform" />
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
-            {activeDropdown === 'news' && (
-              <div className="absolute top-full left-0 w-48 bg-white rounded-xl shadow-xl border border-slate-100 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                <button onClick={() => handleNavClick('news')} className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-orange-50 hover:text-orange-600 flex items-center gap-2">
-                  <Newspaper className="w-3.5 h-3.5 text-orange-500" /> 공지사항 & 뉴스
-                </button>
-                <button onClick={() => handleNavClick('gallery')} className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-orange-50 hover:text-orange-600 flex items-center gap-2">
-                  <ImageIcon className="w-3.5 h-3.5 text-emerald-500" /> 활동 갤러리
-                </button>
-              </div>
-            )}
           </div>
-
-          {/* 후원·참여 */}
-          <button
-            onClick={() => handleNavClick('donate')}
-            className={`px-3.5 py-2 rounded-lg transition-all ${
-              activeTab === 'donate' ? 'text-orange-600 bg-orange-50 font-bold' : 'hover:text-orange-600 hover:bg-slate-50'
-            }`}
-          >
-            후원·참여
-          </button>
-
-          {/* 홍천군가족센터 */}
-          <button
-            onClick={() => handleNavClick('family-center')}
-            className={`px-3.5 py-2 rounded-lg transition-all flex items-center gap-1.5 ${
-              activeTab === 'family-center'
-                ? 'text-emerald-700 bg-emerald-50 font-bold border border-emerald-200'
-                : 'text-emerald-800 bg-emerald-50/60 hover:bg-emerald-100/80'
-            }`}
-          >
-            <Building2 className="w-4 h-4 text-emerald-600" />
-            <span>홍천군가족센터</span>
-          </button>
-        </nav>
-
-        {/* Quick Donate CTA Button & Mobile Toggle */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => handleNavClick('donate', 'donate-form')}
-            className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-sm px-4 py-2 rounded-xl shadow-md shadow-orange-500/20 hover:shadow-lg hover:shadow-orange-500/30 transition-all active:scale-95"
-          >
-            <Heart className="w-4 h-4 fill-white animate-pulse" />
-            <span>후원하기</span>
-          </button>
-
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 transition-colors"
-            aria-label="메뉴 열기"
-          >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
         </div>
       </div>
 
@@ -251,47 +269,47 @@ export const Header: React.FC = () => {
           <div className="space-y-1">
             <button
               onClick={() => handleNavClick('main')}
-              className={`w-full text-left py-2.5 px-3 rounded-lg text-sm font-bold flex items-center justify-between ${
+              className={`w-full text-left py-2.5 px-3 rounded-lg text-lg font-extrabold flex items-center justify-between ${
                 activeTab === 'main' ? 'bg-orange-50 text-orange-600' : 'text-slate-800 hover:bg-slate-50'
               }`}
             >
               <span>메인 홈</span>
-              <Waves className="w-4 h-4 text-orange-400" />
+              <Waves className="w-5 h-5 text-orange-400" />
             </button>
 
             <div className="space-y-1">
               <button
                 onClick={() => handleNavClick('about')}
-                className={`w-full text-left py-2.5 px-3 rounded-lg text-sm font-bold flex items-center justify-between ${
+                className={`w-full text-left py-2.5 px-3 rounded-lg text-lg font-extrabold flex items-center justify-between ${
                   activeTab === 'about' ? 'bg-orange-50 text-orange-600' : 'text-slate-800 hover:bg-slate-50'
                 }`}
               >
                 <span>재단소개</span>
-                <Users className="w-4 h-4 text-orange-400" />
+                <Users className="w-5 h-5 text-orange-400" />
               </button>
 
-              <div className="pl-4 border-l-2 border-orange-200 space-y-1 my-1">
+              <div className="pl-4 border-l-2 border-orange-200 space-y-1.5 my-1.5">
                 <button
                   onClick={() => handleAboutSubTabClick('greeting')}
-                  className="w-full text-left py-1.5 px-2 rounded text-xs text-slate-700 hover:text-orange-600"
+                  className="w-full text-left py-2 px-2.5 rounded text-base font-bold text-slate-800 hover:text-orange-600"
                 >
                   • 이사장 인사말
                 </button>
                 <button
                   onClick={() => handleAboutSubTabClick('purpose')}
-                  className="w-full text-left py-1.5 px-2 rounded text-xs text-slate-700 hover:text-orange-600"
+                  className="w-full text-left py-2 px-2.5 rounded text-base font-bold text-slate-800 hover:text-orange-600"
                 >
                   • 설립목적 및 정체성
                 </button>
                 <button
                   onClick={() => handleAboutSubTabClick('history')}
-                  className="w-full text-left py-1.5 px-2 rounded text-xs text-slate-700 hover:text-orange-600"
+                  className="w-full text-left py-2 px-2.5 rounded text-base font-bold text-slate-800 hover:text-orange-600"
                 >
                   • 재단 연혁 (2009~)
                 </button>
                 <button
                   onClick={() => handleAboutSubTabClick('organization')}
-                  className="w-full text-left py-1.5 px-2 rounded text-xs text-slate-700 hover:text-orange-600"
+                  className="w-full text-left py-2 px-2.5 rounded text-base font-bold text-slate-800 hover:text-orange-600"
                 >
                   • 조직도 및 위탁기관
                 </button>
@@ -300,53 +318,63 @@ export const Header: React.FC = () => {
 
             <button
               onClick={() => handleNavClick('programs')}
-              className={`w-full text-left py-2.5 px-3 rounded-lg text-sm font-bold flex items-center justify-between ${
+              className={`w-full text-left py-2.5 px-3 rounded-lg text-lg font-extrabold flex items-center justify-between ${
                 activeTab === 'programs' ? 'bg-orange-50 text-orange-600' : 'text-slate-800 hover:bg-slate-50'
               }`}
             >
-              <span>주요사업 (6대 핵심사업)</span>
-              <BookOpen className="w-4 h-4 text-orange-400" />
+              <span>주요사업</span>
+              <BookOpen className="w-5 h-5 text-orange-400" />
             </button>
 
             <button
               onClick={() => handleNavClick('news')}
-              className={`w-full text-left py-2.5 px-3 rounded-lg text-sm font-bold flex items-center justify-between ${
+              className={`w-full text-left py-2.5 px-3 rounded-lg text-lg font-extrabold flex items-center justify-between ${
                 activeTab === 'news' ? 'bg-orange-50 text-orange-600' : 'text-slate-800 hover:bg-slate-50'
               }`}
             >
-              <span>공지사항 & 소식</span>
-              <Newspaper className="w-4 h-4 text-orange-400" />
+              <span>활동소식 (공지&뉴스)</span>
+              <Newspaper className="w-5 h-5 text-orange-400" />
             </button>
 
             <button
               onClick={() => handleNavClick('gallery')}
-              className={`w-full text-left py-2.5 px-3 rounded-lg text-sm font-bold flex items-center justify-between ${
+              className={`w-full text-left py-2.5 px-3 rounded-lg text-lg font-extrabold flex items-center justify-between ${
                 activeTab === 'gallery' ? 'bg-orange-50 text-orange-600' : 'text-slate-800 hover:bg-slate-50'
               }`}
             >
               <span>활동 갤러리</span>
-              <ImageIcon className="w-4 h-4 text-emerald-500" />
+              <ImageIcon className="w-5 h-5 text-emerald-500" />
             </button>
 
             <button
               onClick={() => handleNavClick('donate')}
-              className={`w-full text-left py-2.5 px-3 rounded-lg text-sm font-bold flex items-center justify-between ${
+              className={`w-full text-left py-2.5 px-3 rounded-lg text-lg font-extrabold flex items-center justify-between ${
                 activeTab === 'donate' ? 'bg-orange-50 text-orange-600' : 'text-slate-800 hover:bg-slate-50'
               }`}
             >
-              <span>후원·참여 안내</span>
-              <Heart className="w-4 h-4 text-orange-500" />
+              <span>후원·참여</span>
+              <Heart className="w-5 h-5 text-orange-500" />
             </button>
 
             <button
               onClick={() => handleNavClick('family-center')}
-              className={`w-full text-left py-2.5 px-3 rounded-lg text-sm font-bold flex items-center justify-between ${
+              className={`w-full text-left py-2.5 px-3 rounded-lg text-lg font-extrabold flex items-center justify-between ${
                 activeTab === 'family-center' ? 'bg-emerald-50 text-emerald-700' : 'text-emerald-900 bg-emerald-50/50'
               }`}
             >
-              <span>홍천군가족센터 (위탁 운영)</span>
-              <Building2 className="w-4 h-4 text-emerald-600" />
+              <span>홍천군가족센터 (위탁)</span>
+              <Building2 className="w-5 h-5 text-emerald-600" />
             </button>
+
+            <a
+              href="https://hongcheon.familynet.or.kr"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full text-left py-2.5 px-3 rounded-lg text-base font-extrabold text-emerald-800 bg-emerald-100/80 hover:bg-emerald-100 flex items-center justify-between ml-2"
+            >
+              <span>└ 가족센터 공식 홈페이지 ↗</span>
+              <ExternalLink className="w-4 h-4 text-emerald-700" />
+            </a>
 
             <button
               onClick={() => handleNavClick('contact')}

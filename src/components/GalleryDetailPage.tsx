@@ -83,6 +83,9 @@ export const GalleryDetailPage: React.FC = () => {
             <img
               src={selectedGallery.imageUrl}
               alt={selectedGallery.title}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=800&q=80';
+              }}
               className="w-full h-full max-h-[500px] object-cover"
             />
             <div className="absolute top-4 left-4 bg-emerald-600/90 backdrop-blur-xs text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-emerald-400/40 shadow-md">
@@ -152,7 +155,7 @@ export const GalleryDetailPage: React.FC = () => {
               <div className="space-y-1 text-center sm:text-left">
                 <div className="text-xs font-bold text-orange-400">사단법인 너브내행복나눔재단</div>
                 <div className="text-sm font-bold text-white">다음 봉사 및 나눔 활동에 함께 참여하세요!</div>
-                <div className="text-xs text-slate-400">전화문의: 033-436-1926 | FAX: 033-436-1910</div>
+                <div className="text-xs text-slate-400">전화문의: 033-433-1925 | FAX: 033-433-1910</div>
               </div>
 
               <button

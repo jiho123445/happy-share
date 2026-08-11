@@ -15,7 +15,8 @@ import {
   Calendar,
   Eye,
   ShieldCheck,
-  CheckCircle2
+  CheckCircle2,
+  ExternalLink
 } from 'lucide-react';
 
 export const MainDashboardQuickPortal: React.FC = () => {
@@ -263,9 +264,20 @@ export const MainDashboardQuickPortal: React.FC = () => {
                 }}
                 className="bg-white hover:bg-orange-50 text-slate-900 font-bold text-xs px-5 py-3 rounded-xl shadow-md transition-all flex items-center gap-1.5"
               >
-                <span>가족센터 안내 페이지</span>
+                <span>가족센터 상세 안내</span>
                 <ArrowRight className="w-4 h-4 text-orange-500" />
               </button>
+
+              <a
+                href="https://hongcheon.familynet.or.kr"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-emerald-900/90 hover:bg-emerald-800 border border-emerald-400/50 text-emerald-100 hover:text-white font-extrabold text-xs px-4 py-3 rounded-xl transition-all flex items-center gap-1.5 shadow-sm"
+                title="홍천군가족센터 공식 홈페이지 바로가기"
+              >
+                <span>가족센터 공식 홈페이지</span>
+                <ExternalLink className="w-3.5 h-3.5 text-emerald-300" />
+              </a>
 
               <button
                 onClick={() => {

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useFoundation } from '../context/FoundationContext';
+import { Logo } from './Logo';
 import { Waves, Heart, Shield, Lock, FileText, ArrowUp, MailX, Network, ChevronRight } from 'lucide-react';
 
 export const Footer: React.FC = () => {
@@ -26,13 +27,10 @@ export const Footer: React.FC = () => {
         {/* Top Row: Brand & Slogan */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-8 border-b border-slate-800">
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-white">
-              <div className="w-8 h-8 rounded-xl bg-orange-500 text-white flex items-center justify-center font-bold">
-                <Waves className="w-5 h-5" />
-              </div>
-              <span className="text-lg font-bold tracking-tight">{settings.name}</span>
+            <div className="flex items-center gap-2">
+              <Logo className="h-10 sm:h-12 w-auto" variant="light" />
             </div>
-            <p className="text-orange-400 font-semibold text-xs">
+            <p className="text-orange-400 font-semibold text-xs pt-1">
               "{settings.sloganMain}"
             </p>
           </div>
