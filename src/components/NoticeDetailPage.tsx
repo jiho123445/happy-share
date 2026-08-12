@@ -148,12 +148,9 @@ export const NoticeDetailPage: React.FC = () => {
 
           {/* Attachment Box if any */}
           {(() => {
-            const attachmentsList = [
-              ...(selectedNotice.attachments || []),
-              ...(selectedNotice.attachmentName && (!selectedNotice.attachments || !selectedNotice.attachments.some(a => a.name === selectedNotice.attachmentName))
-                ? [{ name: selectedNotice.attachmentName, size: '첨부서식' }]
-                : [])
-            ];
+            const attachmentsList = selectedNotice.attachments !== undefined
+              ? selectedNotice.attachments
+              : (selectedNotice.attachmentName ? [{ name: selectedNotice.attachmentName, url: selectedNotice.attachmentUrl || '#', size: '첨부서식', type: 'FILE' }] : []);
 
             if (attachmentsList.length === 0) return null;
 

@@ -103,6 +103,7 @@ export const AdminModal: React.FC = () => {
   // New Notice Form State
   const [newNoticeTitle, setNewNoticeTitle] = useState('');
   const [newNoticeCategory, setNewNoticeCategory] = useState<'공지사항' | '재단소식' | '사업소식' | '후원소식' | '모집공고' | '보도자료'>('공지사항');
+  const [newNoticeDate, setNewNoticeDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
   const [newNoticeContent, setNewNoticeContent] = useState('');
   const [newNoticeImportant, setNewNoticeImportant] = useState(false);
   const [newNoticeAttachments, setNewNoticeAttachments] = useState<NoticeAttachment[]>([]);
@@ -245,10 +246,15 @@ export const AdminModal: React.FC = () => {
         };
 
         if (isEdit) {
-          setEditNoticeData(prev => ({
-            ...prev,
-            attachments: [...(prev.attachments || []), attachmentObj]
-          }));
+          setEditNoticeData(prev => {
+            const nextAtts = [...(prev.attachments || []), attachmentObj];
+            return {
+              ...prev,
+              attachments: nextAtts,
+              attachmentName: nextAtts.length > 0 ? nextAtts[0].name : undefined,
+              attachmentUrl: nextAtts.length > 0 ? nextAtts[0].url : undefined
+            };
+          });
         } else {
           setNewNoticeAttachments(prev => [...prev, attachmentObj]);
         }
@@ -263,6 +269,7 @@ export const AdminModal: React.FC = () => {
     addNotice({
       title: newNoticeTitle,
       category: newNoticeCategory,
+      date: newNoticeDate || new Date().toISOString().split('T')[0],
       content: newNoticeContent,
       isImportant: newNoticeImportant,
       author: '관리자',
@@ -273,11 +280,18 @@ export const AdminModal: React.FC = () => {
     setNewNoticeContent('');
     setNewNoticeImportant(false);
     setNewNoticeAttachments([]);
+    setNewNoticeDate(new Date().toISOString().split('T')[0]);
     showToast('새로운 공지사항이 등록되었습니다.');
   };
 
   const handleSaveNoticeEdit = (id: string) => {
-    updateNotice(id, editNoticeData);
+    const finalAtts = editNoticeData.attachments || [];
+    updateNotice(id, {
+      ...editNoticeData,
+      attachments: finalAtts,
+      attachmentName: finalAtts.length > 0 ? finalAtts[0].name : undefined,
+      attachmentUrl: finalAtts.length > 0 ? finalAtts[0].url : undefined
+    });
     setEditingNoticeId(null);
     setEditNoticeData({});
     showToast('공지사항 내용이 수정되었습니다.');
@@ -1203,8 +1217,9 @@ export const AdminModal: React.FC = () => {
                       <span>새 공지사항 등록</span>
                     </h4>
                     
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                       <div className="sm:col-span-2">
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">공지글 제목 *</label>
                         <input
                           type="text"
                           required
@@ -1215,18 +1230,31 @@ export const AdminModal: React.FC = () => {
                         />
                       </div>
 
-                      <select
-                        value={newNoticeCategory}
-                        onChange={(e) => setNewNoticeCategory(e.target.value as any)}
-                        className="p-2.5 bg-slate-50 border rounded-xl text-xs font-bold"
-                      >
-                        <option value="공지사항">공지사항</option>
-                        <option value="재단소식">재단소식</option>
-                        <option value="사업소식">사업소식</option>
-                        <option value="후원소식">후원소식</option>
-                        <option value="모집공고">모집공고</option>
-                        <option value="보도자료">보도자료</option>
-                      </select>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">작성 일자</label>
+                        <input
+                          type="date"
+                          value={newNoticeDate}
+                          onChange={(e) => setNewNoticeDate(e.target.value)}
+                          className="w-full p-2.5 bg-slate-50 border rounded-xl text-xs font-bold text-slate-800"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">카테고리</label>
+                        <select
+                          value={newNoticeCategory}
+                          onChange={(e) => setNewNoticeCategory(e.target.value as any)}
+                          className="w-full p-2.5 bg-slate-50 border rounded-xl text-xs font-bold"
+                        >
+                          <option value="공지사항">공지사항</option>
+                          <option value="재단소식">재단소식</option>
+                          <option value="사업소식">사업소식</option>
+                          <option value="후원소식">후원소식</option>
+                          <option value="모집공고">모집공고</option>
+                          <option value="보도자료">보도자료</option>
+                        </select>
+                      </div>
                     </div>
 
                     <textarea
@@ -1310,12 +1338,26 @@ export const AdminModal: React.FC = () => {
                         {editingNoticeId === n.id ? (
                           <div className="space-y-3 bg-orange-50/50 p-3.5 rounded-xl border border-orange-200">
                             <div className="font-bold text-orange-600">공지사항 수정</div>
-                            <input
-                              type="text"
-                              value={editNoticeData.title ?? n.title}
-                              onChange={(e) => setEditNoticeData({ ...editNoticeData, title: e.target.value })}
-                              className="w-full p-2 bg-white border rounded-lg text-xs font-bold"
-                            />
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                              <div className="sm:col-span-2">
+                                <label className="block text-[10px] font-bold text-slate-700 mb-0.5">제목</label>
+                                <input
+                                  type="text"
+                                  value={editNoticeData.title ?? n.title}
+                                  onChange={(e) => setEditNoticeData({ ...editNoticeData, title: e.target.value })}
+                                  className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-slate-700 mb-0.5">작성 일자</label>
+                                <input
+                                  type="date"
+                                  value={editNoticeData.date ?? n.date}
+                                  onChange={(e) => setEditNoticeData({ ...editNoticeData, date: e.target.value })}
+                                  className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900"
+                                />
+                              </div>
+                            </div>
                             <textarea
                               rows={3}
                               value={editNoticeData.content ?? n.content}
@@ -1338,9 +1380,9 @@ export const AdminModal: React.FC = () => {
                                 </label>
                               </div>
 
-                              {((editNoticeData.attachments || n.attachments || []).length > 0) ? (
+                              {((editNoticeData.attachments || []).length > 0) ? (
                                 <div className="space-y-1.5">
-                                  {(editNoticeData.attachments || n.attachments || []).map((att, idx) => (
+                                  {(editNoticeData.attachments || []).map((att, idx) => (
                                     <div key={idx} className="flex items-center justify-between bg-slate-50 px-2.5 py-1.5 rounded text-xs">
                                       <div className="flex items-center gap-2 truncate">
                                         <FileText className="w-3.5 h-3.5 text-orange-600 shrink-0" />
@@ -1350,10 +1392,13 @@ export const AdminModal: React.FC = () => {
                                       <button
                                         type="button"
                                         onClick={() => {
-                                          const currentAtts = editNoticeData.attachments || n.attachments || [];
+                                          const currentAtts = editNoticeData.attachments || [];
+                                          const updatedAtts = currentAtts.filter((_, i) => i !== idx);
                                           setEditNoticeData({
                                             ...editNoticeData,
-                                            attachments: currentAtts.filter((_, i) => i !== idx)
+                                            attachments: updatedAtts,
+                                            attachmentName: updatedAtts.length > 0 ? updatedAtts[0].name : undefined,
+                                            attachmentUrl: updatedAtts.length > 0 ? updatedAtts[0].url : undefined
                                           });
                                         }}
                                         className="text-slate-400 hover:text-red-600 p-0.5"
@@ -1409,7 +1454,15 @@ export const AdminModal: React.FC = () => {
                               <button
                                 onClick={() => {
                                   setEditingNoticeId(n.id);
-                                  setEditNoticeData(n);
+                                  const initialAtts = n.attachments && n.attachments.length > 0
+                                    ? [...n.attachments]
+                                    : (n.attachmentName ? [{ name: n.attachmentName, url: n.attachmentUrl || '#', size: '첨부서식', type: 'FILE' }] : []);
+                                  setEditNoticeData({
+                                    ...n,
+                                    attachments: initialAtts,
+                                    attachmentName: initialAtts.length > 0 ? initialAtts[0].name : undefined,
+                                    attachmentUrl: initialAtts.length > 0 ? initialAtts[0].url : undefined
+                                  });
                                 }}
                                 className="p-1.5 text-slate-600 hover:text-orange-600 hover:bg-orange-50 rounded"
                                 title="수정"

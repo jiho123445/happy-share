@@ -60,7 +60,7 @@ interface FoundationContextType {
   deleteProgram: (id: string) => void;
 
   // Notices CRUD
-  addNotice: (notice: Omit<NoticeItem, 'id' | 'views' | 'date'>) => void;
+  addNotice: (notice: Omit<NoticeItem, 'id' | 'views' | 'date'> & { date?: string }) => void;
   updateNotice: (id: string, notice: Partial<NoticeItem>) => void;
   deleteNotice: (id: string) => void;
 
@@ -283,11 +283,11 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   // Notice CRUD
-  const addNotice = (item: Omit<NoticeItem, 'id' | 'views' | 'date'>) => {
+  const addNotice = (item: Omit<NoticeItem, 'id' | 'views' | 'date'> & { date?: string }) => {
     const newNotice: NoticeItem = {
       ...item,
       id: `not-${Date.now()}`,
-      date: new Date().toISOString().split('T')[0],
+      date: item.date || new Date().toISOString().split('T')[0],
       views: 1
     };
     setNotices(prev => [newNotice, ...prev]);
