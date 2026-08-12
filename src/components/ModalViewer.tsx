@@ -1,6 +1,7 @@
 import React from 'react';
 import { useFoundation } from '../context/FoundationContext';
-import { X, Calendar, Eye, MapPin, CheckCircle2, Heart, Download, Building2 } from 'lucide-react';
+import { downloadNoticeFile } from '../utils/download';
+import { X, Calendar, Eye, MapPin, CheckCircle2, Heart, Download, Building2, Paperclip } from 'lucide-react';
 
 export const ModalViewer: React.FC = () => {
   const {
@@ -10,8 +11,15 @@ export const ModalViewer: React.FC = () => {
     setSelectedProgram,
     selectedGallery,
     setSelectedGallery,
-    setActiveTab
+    activeTab,
+    setActiveTab,
+    goBackFromDetail
   } = useFoundation();
+
+  // If we are currently on a dedicated detail page, do not render duplicate modal popups
+  if (['notice-detail', 'gallery-detail', 'program-detail'].includes(activeTab)) {
+    return null;
+  }
 
   // Notice Detail Modal
   if (selectedNotice) {
@@ -24,7 +32,7 @@ export const ModalViewer: React.FC = () => {
               {selectedNotice.category}
             </span>
             <button
-              onClick={() => setSelectedNotice(null)}
+              onClick={() => goBackFromDetail('news')}
               className="p-1.5 text-slate-400 hover:text-slate-800 rounded-lg hover:bg-slate-100"
             >
               <X className="w-5 h-5" />
@@ -46,22 +54,50 @@ export const ModalViewer: React.FC = () => {
             {selectedNotice.content}
           </div>
 
-          {selectedNotice.attachmentName && (
-            <div className="p-3.5 bg-orange-50/80 border border-orange-200 rounded-2xl flex items-center justify-between gap-3 text-xs">
-              <span className="font-bold text-orange-900">첨부파일: {selectedNotice.attachmentName}</span>
-              <button
-                onClick={() => alert(`[안내] '${selectedNotice.attachmentName}' 다운로드가 연결되어 있습니다.`)}
-                className="bg-orange-600 hover:bg-orange-700 text-white font-bold px-3 py-1.5 rounded-xl flex items-center gap-1 shadow-2xs"
-              >
-                <Download className="w-3.5 h-3.5" /> 다운로드
-              </button>
-            </div>
-          )}
+          {(() => {
+            const attachmentsList = [
+              ...(selectedNotice.attachments || []),
+              ...(selectedNotice.attachmentName && (!selectedNotice.attachments || !selectedNotice.attachments.some(a => a.name === selectedNotice.attachmentName))
+                ? [{ name: selectedNotice.attachmentName, size: '첨부서식' }]
+                : [])
+            ];
+
+            if (attachmentsList.length === 0) return null;
+
+            return (
+              <div className="space-y-2.5">
+                {attachmentsList.map((file, idx) => (
+                  <div
+                    key={idx}
+                    className="p-4 sm:p-5 bg-[#FFFDF7] border border-orange-200/90 rounded-2xl flex items-center justify-between gap-3 shadow-2xs"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="font-bold text-orange-950 text-xs sm:text-sm truncate">
+                        첨부파일: {file.name}
+                      </span>
+                      {file.size && file.size !== '첨부서식' && (
+                        <span className="text-[11px] font-medium text-slate-400 shrink-0">
+                          ({file.size})
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => downloadNoticeFile(file)}
+                      className="bg-orange-600 hover:bg-orange-700 active:scale-95 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-md transition-all shrink-0 cursor-pointer"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>다운로드</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
 
           <div className="pt-2 text-right">
             <button
-              onClick={() => setSelectedNotice(null)}
-              className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-5 py-2.5 rounded-xl"
+              onClick={() => goBackFromDetail('news')}
+              className="bg-[#101828] hover:bg-slate-800 text-white font-extrabold text-sm px-7 py-3 rounded-xl shadow-md transition-all cursor-pointer"
             >
               닫기
             </button>

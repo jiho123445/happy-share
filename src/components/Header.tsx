@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 
 export const Header: React.FC = () => {
-  const { settings, activeTab, setActiveTab, setAboutSubTab, setAdminOpen } = useFoundation();
+  const { settings, activeTab, setActiveTab, setAboutSubTab, setAdminOpen, hasNewDonation, pendingDonationsCount } = useFoundation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
@@ -78,11 +78,17 @@ export const Header: React.FC = () => {
             </span>
             <button
               onClick={() => setAdminOpen(true)}
-              className="flex items-center gap-1 text-slate-400 hover:text-white transition-colors py-0.5 px-1.5 rounded hover:bg-slate-800"
+              className="flex items-center gap-1 text-slate-400 hover:text-white transition-colors py-0.5 px-1.5 rounded hover:bg-slate-800 relative"
               title="관리자 화면 열기"
             >
               <Settings className="w-3.5 h-3.5 text-orange-400" />
               <span className="hidden md:inline">관리자</span>
+              {hasNewDonation && (
+                <span className="relative flex h-2 w-2 ml-0.5 shrink-0" title={`신규 후원신청 ${pendingDonationsCount}건`}>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                </span>
+              )}
             </button>
           </div>
         </div>
@@ -197,11 +203,17 @@ export const Header: React.FC = () => {
             {/* 후원·참여 */}
             <button
               onClick={() => handleNavClick('donate')}
-              className={`px-2.5 xl:px-3 py-2 rounded-xl transition-all ${
+              className={`px-2.5 xl:px-3 py-2 rounded-xl transition-all relative flex items-center gap-1.5 ${
                 activeTab === 'donate' ? 'text-orange-700 bg-orange-100/90 font-black' : 'hover:text-orange-700 hover:bg-amber-100/60'
               }`}
             >
-              후원·참여
+              <span>후원·참여</span>
+              {hasNewDonation && (
+                <span className="relative flex h-2.5 w-2.5 shrink-0" title={`신규 후원신청 ${pendingDonationsCount}건`}>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span>
+                </span>
+              )}
             </button>
 
             {/* 홍천군가족센터 */}
@@ -352,7 +364,15 @@ export const Header: React.FC = () => {
                 activeTab === 'donate' ? 'bg-orange-50 text-orange-600' : 'text-slate-800 hover:bg-slate-50'
               }`}
             >
-              <span>후원·참여</span>
+              <span className="flex items-center gap-2">
+                <span>후원·참여</span>
+                {hasNewDonation && (
+                  <span className="relative flex h-2.5 w-2.5 shrink-0" title={`신규 후원신청 ${pendingDonationsCount}건`}>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span>
+                  </span>
+                )}
+              </span>
               <Heart className="w-5 h-5 text-orange-500" />
             </button>
 

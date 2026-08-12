@@ -7,6 +7,7 @@ import {
   GalleryItem,
   DonationApplication,
   ContactInquiry,
+  NewsletterSubscriber,
   ActiveTab,
   AboutSubTab
 } from '../types';
@@ -15,7 +16,8 @@ import {
   INITIAL_TIMELINE,
   INITIAL_PROGRAMS,
   INITIAL_NOTICES,
-  INITIAL_GALLERY
+  INITIAL_GALLERY,
+  INITIAL_DONATIONS
 } from '../data/initialData';
 
 interface FoundationContextType {
@@ -26,6 +28,10 @@ interface FoundationContextType {
   gallery: GalleryItem[];
   donations: DonationApplication[];
   inquiries: ContactInquiry[];
+  subscribers: NewsletterSubscriber[];
+  hasNewDonation: boolean;
+  pendingDonationsCount: number;
+  markDonationsAsRead: () => void;
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
   aboutSubTab: AboutSubTab;
@@ -42,6 +48,8 @@ interface FoundationContextType {
   setSelectedGallery: (gallery: GalleryItem | null) => void;
   
   // Navigation View Helpers
+  previousTab: ActiveTab;
+  goBackFromDetail: (fallbackTab?: ActiveTab) => void;
   viewNoticeDetail: (notice: NoticeItem) => void;
   viewGalleryDetail: (gallery: GalleryItem) => void;
   viewProgramDetail: (program: ProgramItem) => void;
@@ -71,6 +79,11 @@ interface FoundationContextType {
   updateInquiryStatus: (id: string, status: '대기중' | '답변완료') => void;
   deleteInquiry: (id: string) => void;
 
+  // Subscribers CRUD
+  addSubscriber: (email: string) => void;
+  updateSubscriberStatus: (id: string, status: '구독중' | '해지') => void;
+  deleteSubscriber: (id: string) => void;
+
   // Other Settings
   updateSettings: (newSettings: Partial<FoundationSettings>) => void;
   resetToDefaults: () => void;
@@ -85,11 +98,30 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
+        let bankAccounts = parsed.bankAccounts;
+        if (
+          !bankAccounts ||
+          !Array.isArray(bankAccounts) ||
+          bankAccounts.length === 0 ||
+          bankAccounts[0]?.accountNumber === '351-0334-3619-11' ||
+          bankAccounts[0]?.accountNumber?.includes('관리지') ||
+          bankAccounts[0]?.accountNumber?.includes('관리가')
+        ) {
+          bankAccounts = [
+            { bank: '농협', accountNumber: '351-1040-2310-53', holder: '(사)너브내행복나눔재단' }
+          ];
+        }
         return {
           ...INITIAL_SETTINGS,
           ...parsed,
-          phone: (parsed.phone === '033-436-1926' || parsed.phone === '033-436-1925') ? '033-433-1925' : (parsed.phone || '033-433-1925'),
-          fax: parsed.fax === '033-436-1910' ? '033-433-1910' : (parsed.fax || '033-433-1910'),
+          heroImageUrl: (!parsed.heroImageUrl || parsed.heroImageUrl.includes('photo-1593113598332') || parsed.heroImageUrl.includes('photo-1542838132') || parsed.heroImageUrl.includes('photo-1488521787991'))
+            ? INITIAL_SETTINGS.heroImageUrl
+            : parsed.heroImageUrl,
+          bankAccounts,
+          phone: (parsed.phone && parsed.phone.includes('033-433')) ? '033-436-1925' : (parsed.phone || '033-436-1925'),
+          fax: (parsed.fax && parsed.fax.includes('033-433')) ? '033-436-1910' : (parsed.fax || '033-436-1910'),
+          familyCenterPhone: parsed.familyCenterPhone || '033-433-1925',
+          familyCenterFax: parsed.familyCenterFax || '033-433-1910',
         };
       } catch {
         return INITIAL_SETTINGS;
@@ -117,21 +149,57 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const [donations, setDonations] = useState<DonationApplication[]>(() => {
     const saved = localStorage.getItem('nerve_nae_donations');
-    return saved ? JSON.parse(saved) : [];
+    return saved ? JSON.parse(saved) : INITIAL_DONATIONS;
   });
+
+  const pendingDonationsCount = donations.filter(d => d.status === '접수완료').length;
+  const hasNewDonation = pendingDonationsCount > 0;
+
+  const markDonationsAsRead = () => {
+    setDonations(prev => prev.map(d => d.status === '접수완료' ? { ...d, status: '확인중' } : d));
+  };
 
   const [inquiries, setInquiries] = useState<ContactInquiry[]>(() => {
     const saved = localStorage.getItem('nerve_nae_inquiries');
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [activeTab, setActiveTab] = useState<ActiveTab>('main');
+  const [subscribers, setSubscribers] = useState<NewsletterSubscriber[]>(() => {
+    const saved = localStorage.getItem('nerve_nae_subscribers');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return [];
+      }
+    }
+    return [
+      { id: 'sub-1', email: 'nerve_nae_fan@naver.com', subscribedAt: '2026-08-01 10:30', status: '구독중' },
+      { id: 'sub-2', email: 'hongcheon_love@gmail.com', subscribedAt: '2026-08-05 14:15', status: '구독중' }
+    ];
+  });
+
+  const [activeTab, setActiveTabState] = useState<ActiveTab>('main');
+  const [previousTab, setPreviousTab] = useState<ActiveTab>('main');
   const [aboutSubTab, setAboutSubTab] = useState<AboutSubTab>('greeting');
   const [adminOpen, setAdminOpen] = useState<boolean>(false);
 
   const [selectedProgram, setSelectedProgram] = useState<ProgramItem | null>(null);
   const [selectedNotice, setSelectedNotice] = useState<NoticeItem | null>(null);
   const [selectedGallery, setSelectedGallery] = useState<GalleryItem | null>(null);
+
+  const setActiveTab = (tab: ActiveTab) => {
+    if (tab !== 'program-detail') {
+      setSelectedProgram(null);
+    }
+    if (tab !== 'notice-detail') {
+      setSelectedNotice(null);
+    }
+    if (tab !== 'gallery-detail') {
+      setSelectedGallery(null);
+    }
+    setActiveTabState(tab);
+  };
 
   // Sync to local storage with safe error handling
   useEffect(() => {
@@ -181,6 +249,14 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       console.warn('Failed to save inquiries to localStorage', e);
     }
   }, [inquiries]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('nerve_nae_subscribers', JSON.stringify(subscribers));
+    } catch (e) {
+      console.warn('Failed to save subscribers to localStorage', e);
+    }
+  }, [subscribers]);
 
   // Program CRUD
   const addProgram = (item: Omit<ProgramItem, 'id' | 'code'>) => {
@@ -276,6 +352,34 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setInquiries(prev => prev.filter(i => i.id !== id));
   };
 
+  // Subscribers CRUD
+  const addSubscriber = (email: string) => {
+    const trimmed = email.trim();
+    if (!trimmed) return;
+    const existing = subscribers.find(s => s.email.toLowerCase() === trimmed.toLowerCase());
+    if (existing) {
+      if (existing.status === '해지') {
+        setSubscribers(prev => prev.map(s => s.id === existing.id ? { ...s, status: '구독중', subscribedAt: new Date().toISOString().replace('T', ' ').substring(0, 16) } : s));
+      }
+      return;
+    }
+    const newSub: NewsletterSubscriber = {
+      id: `sub-${Date.now()}`,
+      email: trimmed,
+      subscribedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      status: '구독중'
+    };
+    setSubscribers(prev => [newSub, ...prev]);
+  };
+
+  const updateSubscriberStatus = (id: string, status: '구독중' | '해지') => {
+    setSubscribers(prev => prev.map(s => s.id === id ? { ...s, status } : s));
+  };
+
+  const deleteSubscriber = (id: string) => {
+    setSubscribers(prev => prev.filter(s => s.id !== id));
+  };
+
   const updateSettings = (newSettings: Partial<FoundationSettings>) => {
     setSettings(prev => ({ ...prev, ...newSettings }));
   };
@@ -287,6 +391,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setGallery(INITIAL_GALLERY);
     setDonations([]);
     setInquiries([]);
+    setSubscribers([]);
     localStorage.clear();
   };
 
@@ -294,7 +399,21 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setNotices(prev => prev.map(n => n.id === id ? { ...n, views: n.views + 1 } : n));
   };
 
+  const goBackFromDetail = (fallbackTab: ActiveTab = 'news') => {
+    setSelectedNotice(null);
+    setSelectedGallery(null);
+    setSelectedProgram(null);
+    const targetTab = (previousTab && !['notice-detail', 'gallery-detail', 'program-detail'].includes(previousTab))
+      ? previousTab
+      : fallbackTab;
+    setActiveTab(targetTab);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const viewNoticeDetail = (notice: NoticeItem) => {
+    if (!['notice-detail', 'gallery-detail', 'program-detail'].includes(activeTab)) {
+      setPreviousTab(activeTab);
+    }
     incrementNoticeViews(notice.id);
     setSelectedNotice(notice);
     setActiveTab('notice-detail');
@@ -302,12 +421,18 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const viewGalleryDetail = (item: GalleryItem) => {
+    if (!['notice-detail', 'gallery-detail', 'program-detail'].includes(activeTab)) {
+      setPreviousTab(activeTab);
+    }
     setSelectedGallery(item);
     setActiveTab('gallery-detail');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const viewProgramDetail = (program: ProgramItem) => {
+    if (!['notice-detail', 'gallery-detail', 'program-detail'].includes(activeTab)) {
+      setPreviousTab(activeTab);
+    }
     setSelectedProgram(program);
     setActiveTab('program-detail');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -323,6 +448,9 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         gallery,
         donations,
         inquiries,
+        hasNewDonation,
+        pendingDonationsCount,
+        markDonationsAsRead,
         activeTab,
         setActiveTab,
         aboutSubTab,
@@ -335,6 +463,8 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         setSelectedNotice,
         selectedGallery,
         setSelectedGallery,
+        previousTab,
+        goBackFromDetail,
         viewNoticeDetail,
         viewGalleryDetail,
         viewProgramDetail,
@@ -363,6 +493,12 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         addInquiry,
         updateInquiryStatus,
         deleteInquiry,
+
+        // Subscribers CRUD
+        subscribers,
+        addSubscriber,
+        updateSubscriberStatus,
+        deleteSubscriber,
 
         updateSettings,
         resetToDefaults,

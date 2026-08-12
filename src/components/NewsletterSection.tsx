@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { Mail, Send, CheckCircle2, HeartHandshake } from 'lucide-react';
+import { Mail, Send, CheckCircle2, HeartHandshake, RefreshCw } from 'lucide-react';
+import { useFoundation } from '../context/FoundationContext';
 
 export const NewsletterSection: React.FC = () => {
+  const { addSubscriber } = useFoundation();
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
 
@@ -11,6 +13,7 @@ export const NewsletterSection: React.FC = () => {
       alert('올바른 이메일 주소를 입력해 주세요.');
       return;
     }
+    addSubscriber(email);
     setSubscribed(true);
     setEmail('');
   };
@@ -36,9 +39,19 @@ export const NewsletterSection: React.FC = () => {
         {/* Right Form */}
         <div className="w-full lg:w-auto shrink-0">
           {subscribed ? (
-            <div className="bg-emerald-950/80 border border-emerald-500/40 text-emerald-200 p-4 rounded-2xl flex items-center gap-3 text-xs sm:text-sm font-bold">
-              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-              <span>소식지 신청이 성공적으로 완료되었습니다. 감사합니다!</span>
+            <div className="bg-emerald-950/80 border border-emerald-500/40 text-emerald-200 p-4 rounded-2xl flex flex-col sm:flex-row items-center gap-3 text-xs sm:text-sm font-bold shadow-lg">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                <span>소식지 신청이 성공적으로 완료되었습니다. 감사합니다!</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSubscribed(false)}
+                className="inline-flex items-center gap-1 text-xs bg-emerald-800/60 hover:bg-emerald-800 text-emerald-100 font-bold px-3 py-1.5 rounded-xl border border-emerald-500/40 transition-colors shrink-0"
+              >
+                <RefreshCw className="w-3 h-3" />
+                <span>추가 신청하기</span>
+              </button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-center gap-2 max-w-md mx-auto">

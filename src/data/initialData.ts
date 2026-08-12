@@ -1,21 +1,46 @@
-import { FoundationSettings, TimelineItem, ProgramItem, AwardItem, NoticeItem, GalleryItem } from '../types';
+import { FoundationSettings, TimelineItem, ProgramItem, AwardItem, NoticeItem, GalleryItem, DonationApplication } from '../types';
 
 export const INITIAL_SETTINGS: FoundationSettings = {
+  adminPassword: '1026',
   name: '사단법인 너브내행복나눔재단',
   englishName: 'Nerve-Nae Happiness Sharing Foundation',
   chairmanName: '윤성일',
+  chairmanImageUrl: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=800&q=80',
+  heroImageUrl: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1200&q=80',
+  chairmanGreeting: `안녕하십니까. 사단법인 너브내 행복나눔재단 이사장 윤성일입니다.
+
+먼저 바쁘신 가운데 저희 재단 홈페이지를 찾아주신 후원자님, 자원봉사자님, 그리고 지역주민 여러분께 진심으로 감사의 인사를 드립니다.
+
+'너브내'라는 이름은 넓고 깊게 흐르는 물줄기를 뜻하는 우리말입니다. 그 이름처럼 이웃을 향한 정과 사랑이 넓고 깊게 흘러, 우리 지역사회 곳곳에 따뜻하게 스며들기를 바라는 마음으로 너브내 행복나눔재단은 첫걸음을 내디뎠습니다.
+
+오늘도 복지의 손길이 미처 닿지 못한 곳에서 외로움과 어려움을 겪고 계신 이웃들이 적지 않습니다. 저희 재단은 작은 나눔이 모여 커다란 희망의 물결을 이룬다는 믿음으로, 그러한 이웃들의 곁을 지키는 든든한 버팀목이 되고자 합니다.
+
+저희 재단은 다음과 같은 마음으로 걸어가고 있습니다.
+
+• 소외된 이웃과의 동행: 어르신, 다문화 가정, 취약계층 아동·청소년 등 복지 사각지대에 놓인 이웃들을 꾸준히 찾아 나서고, 실질적인 도움을 드리기 위해 노력하고 있습니다.
+• 투명하고 성실한 법인 운영: 여러분께서 보내주신 따뜻한 정성이 가장 필요한 곳에 정직하게 전달될 수 있도록, 투명성과 공정성을 최우선 가치로 삼고 있습니다.
+• 지역사회와 함께하는 나눔 문화 확산: 모두가 서로를 돌보고 온기를 나누는 행복한 공동체를 만드는 일에 앞장서고자 합니다.
+
+혼자 가면 빠른 길이 될 수 있지만, 함께 가면 더 멀리, 그리고 더 따뜻하게 갈 수 있습니다. 여러분의 관심과 참여 하나하나가 우리 이웃들에게는 삶을 살아갈 큰 용기와 희망이 됩니다.
+
+너브내 행복나눔재단이 지역사회의 빛과 소금이 되는 그 여정에 앞으로도 늘 함께해 주시기를 부탁드리며, 이 자리를 찾아주신 모든 분들의 가정에 건강과 행복이 가득하시기를 진심으로 기원합니다.
+
+감사합니다.
+
+사단법인 너브내 행복나눔재단 이사장 윤성일 올림`,
   sloganMain: '넓고 깊은 강물처럼, 홍천에 따뜻한 나눔이 흐릅니다.',
   sloganSub: '2009년부터 이어온 나눔, 이제 홍천군민 모두의 행복으로 이어갑니다.',
   establishedYear: '2009',
   reorganizedYear: '2024',
   address: '강원특별자치도 홍천군 홍천읍 산림조합길 12 (너브내행복나눔재단 / 홍천군가족센터)',
-  phone: '033-433-1925',
-  fax: '033-433-1910',
+  phone: '033-436-1925',
+  fax: '033-436-1910',
+  familyCenterPhone: '033-433-1925',
+  familyCenterFax: '033-433-1910',
   email: 'nerve_nae@naver.com',
   operatingHours: '월~금 09:00 - 18:00 (토, 일, 공휴일 휴무)',
   bankAccounts: [
-    { bank: '농협은행', accountNumber: '351-0334-3619-11', holder: '(사)너브내행복나눔재단' },
-    { bank: '신한은행', accountNumber: '100-033-436192', holder: '(사)너브내행복나눔재단' }
+    { bank: '농협', accountNumber: '351-1040-2310-53', holder: '(사)너브내행복나눔재단' }
   ],
   snsLinks: {
     naver: 'https://blog.naver.com',
@@ -267,6 +292,10 @@ export const INITIAL_NOTICES: NoticeItem[] = [
     isImportant: true,
     author: '재단 사무국',
     attachmentName: '2026_상반기_장학금신청서.hwp',
+    attachments: [
+      { name: '2026_상반기_장학생신청서_및_추천서.hwp', size: '142 KB', type: 'HWP' },
+      { name: '2026_장학생_모집요강_및_제출서류안내.pdf', size: '320 KB', type: 'PDF' }
+    ],
     content: `안녕하세요, 사단법인 너브내행복나눔재단 사무국입니다.
 
 재단에서는 2026년도 상반기 홍천 관내 다문화가정 및 취약계층 자녀들의 학업 지속과 미래 성장을 돕기 위해 장학생을 다음과 같이 모집합니다.
@@ -297,6 +326,10 @@ export const INITIAL_NOTICES: NoticeItem[] = [
     views: 528,
     isImportant: false,
     author: '재단 사업팀',
+    attachmentName: '2025_배분사업_선정기관_공문.pdf',
+    attachments: [
+      { name: '2025_너브내배분사업_최종선정기관_목록.pdf', size: '280 KB', type: 'PDF' }
+    ],
     content: `홍천 관내 사회복지 시설과 기관을 대상으로 진행된 '2025년 너브내행복나눔 배분사업' 공모에 참여해주신 많은 기관에 깊은 감사를 드립니다.
 
 심사위원회의 정밀한 심사를 거쳐 최종 선정된 8개 기관을 발표합니다.
@@ -457,3 +490,59 @@ export const INITIAL_GALLERY: GalleryItem[] = [
     location: '홍천군가족센터 강의실'
   }
 ];
+
+export const INITIAL_DONATIONS: DonationApplication[] = [
+  {
+    id: 'don-01',
+    name: '희정',
+    phone: '010-3849-1925',
+    email: 'heejung@naver.com',
+    donationType: '정기후원',
+    targetCategory: '아동·청소년 장학금 지원',
+    amountOrItem: '30,000원 / 월',
+    message: '수고하세요!',
+    privacyAgreed: true,
+    createdAt: '2026-08-03 21:57',
+    status: '접수완료'
+  },
+  {
+    id: 'don-02',
+    name: '황경하',
+    phone: '010-5219-4820',
+    email: 'hwang@daum.net',
+    donationType: '일시후원',
+    targetCategory: '취약계층 난방비 지원',
+    amountOrItem: '100,000원',
+    message: '따뜻한 겨울 보내시길 바랍니다.',
+    privacyAgreed: true,
+    createdAt: '2026-08-03 16:23',
+    status: '확인중'
+  },
+  {
+    id: 'don-03',
+    name: '이상훈',
+    phone: '010-8294-1029',
+    email: 'shlee@gmail.com',
+    donationType: '정기후원',
+    targetCategory: '다문화가정 정착 지원',
+    amountOrItem: '50,000원 / 월',
+    message: '재단의 귀한 사역을 응원합니다.',
+    privacyAgreed: true,
+    createdAt: '2026-08-03 12:16',
+    status: '접수완료'
+  },
+  {
+    id: 'don-04',
+    name: '김지호',
+    phone: '010-9102-3921',
+    email: 'jiho@naver.com',
+    donationType: '물품후원',
+    targetCategory: '복지시설 배분사업',
+    amountOrItem: '백미(쌀) 20kg 5포',
+    message: '필요한 가구에 잘 전달 부탁드립니다.',
+    privacyAgreed: true,
+    createdAt: '2026-08-03 12:07',
+    status: '접수완료'
+  }
+];
+

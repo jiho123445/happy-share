@@ -17,11 +17,13 @@ import {
   ArrowRight,
   Phone,
   MapPin,
-  Siren
+  Siren,
+  Settings,
+  Camera
 } from 'lucide-react';
 
 export const AboutSection: React.FC = () => {
-  const { settings, timeline, aboutSubTab, setAboutSubTab, setActiveTab } = useFoundation();
+  const { settings, timeline, aboutSubTab, setAboutSubTab, setActiveTab, setAdminOpen } = useFoundation();
 
   const handleSubTabChange = (tab: AboutSubTab) => {
     setAboutSubTab(tab);
@@ -121,15 +123,15 @@ export const AboutSection: React.FC = () => {
           {/* SUB-PAGE 1: 이사장 인사말 */}
           {aboutSubTab === 'greeting' && (
             <div className="bg-white rounded-3xl p-6 sm:p-12 shadow-xl border border-slate-200 space-y-10 animate-fade-in">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                 
                 {/* Left Photo & Profile */}
-                <div className="lg:col-span-5 text-center space-y-4">
+                <div className="lg:col-span-4 text-center space-y-4 lg:sticky lg:top-28">
                   <div className="relative inline-block mx-auto">
-                    <div className="w-52 h-52 sm:w-64 sm:h-64 rounded-2xl overflow-hidden shadow-xl border-4 border-orange-100 mx-auto bg-slate-100">
+                    <div className="w-56 h-64 sm:w-64 sm:h-72 rounded-2xl overflow-hidden shadow-xl border-4 border-orange-100 mx-auto bg-slate-100">
                       <img
-                        src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=800&q=80"
-                        alt="윤성일 이사장"
+                        src={settings.chairmanImageUrl || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=800&q=80'}
+                        alt={`${settings.chairmanName} 이사장`}
                         className="w-full h-full object-cover object-top"
                       />
                     </div>
@@ -138,53 +140,104 @@ export const AboutSection: React.FC = () => {
                     </div>
                   </div>
 
-                  <div>
+                  <div className="space-y-1">
                     <div className="text-2xl font-extrabold text-slate-900">
-                      {settings.chairmanName} <span className="text-sm font-semibold text-orange-600">이사장 / 회장</span>
+                      {settings.chairmanName} <span className="text-sm font-semibold text-orange-600">이사장</span>
                     </div>
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-xs text-slate-500 font-medium">
                       사단법인 너브내행복나눔재단 대표
                     </p>
+
+                    <div className="pt-2">
+                      <button
+                        onClick={() => setAdminOpen(true)}
+                        className="inline-flex items-center gap-1.5 text-xs text-slate-600 hover:text-orange-600 bg-slate-100 hover:bg-orange-50 px-3 py-1.5 rounded-lg border border-slate-200 hover:border-orange-200 font-bold transition-all cursor-pointer"
+                        title="관리자 모드에서 이사장 사진 및 인사말 수정"
+                      >
+                        <Settings className="w-3.5 h-3.5 text-orange-500" />
+                        <span>사진/인사말 수정</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
                 {/* Right Message Body */}
-                <div className="lg:col-span-7 space-y-5 text-slate-700 leading-relaxed text-sm sm:text-base">
+                <div className="lg:col-span-8 space-y-6 text-slate-700 leading-relaxed text-sm sm:text-base">
                   <div className="inline-block bg-orange-100 text-orange-800 text-xs font-bold px-3 py-1 rounded-md border border-orange-200">
                     이사장 환영사 & 나눔 철학
                   </div>
 
                   <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-snug">
-                    "한 사람을 보듬는 작고 소박한 마음이 
+                    "넓고 깊게 흐르는 너브내 강물처럼,
                     <br />
-                    홍천 전체를 보듬는 행복의 강물이 되었습니다."
+                    이웃을 향한 온기와 희망이 따뜻하게 스며듭니다."
                   </h2>
                   
-                  <p>
-                    안녕하십니까, 사단법인 너브내행복나눔재단 홈페이지를 찾아주신 군민 여러분과 후원자분들께 깊은 감사의 인사를 드립니다.
-                  </p>
-                  
-                  <p>
-                    저희 재단은 2009년 <strong>'(사)홍천다문화가정후원회'</strong>로 처음 첫걸음을 내디뎠습니다. 
-                    언어와 문화의 차이로 어려움을 겪던 이주민 가정이 지역사회에 건강하게 정착할 수 있도록 장학금 지원, 의료비 보조, 생필품 나눔 및 주거환경 개선 봉사를 끊임없이 실천해 왔습니다.
-                  </p>
+                  <div className="space-y-4 text-slate-700 leading-relaxed">
+                    {settings.chairmanGreeting ? (
+                      <div className="space-y-4 text-slate-700 leading-relaxed whitespace-pre-line text-sm sm:text-base">
+                        {settings.chairmanGreeting}
+                      </div>
+                    ) : (
+                      <>
+                        <p className="font-bold text-slate-900 text-base sm:text-lg">
+                          안녕하십니까. 사단법인 너브내 행복나눔재단 이사장 윤성일입니다.
+                        </p>
 
-                  <p>
-                    15년이 넘는 세월 동안 한결같은 마음으로 따뜻한 손을 내밀어 주신 자원봉사자와 후원자 여러분 덕분에, 2024년 <strong>'사단법인 너브내행복나눔재단'</strong>이라는 보다 폭넓은 포용적 복지재단으로 새롭게 도약하였습니다.
-                  </p>
+                        <p>
+                          먼저 바쁘신 가운데 저희 재단 홈페이지를 찾아주신 후원자님, 자원봉사자님, 그리고 지역주민 여러분께 진심으로 감사의 인사를 드립니다.
+                        </p>
 
-                  <div className="text-slate-900 font-bold bg-amber-50 p-5 rounded-2xl border-l-4 border-orange-500 space-y-2">
-                    <p className="text-sm sm:text-base">
-                      지원 대상과 범위는 더욱 확장되었지만, 한 분 한 분의 이웃을 향한 우리의 정성과 진심은 결코 변하지 않습니다.
-                    </p>
-                    <p className="text-xs text-slate-600 font-normal">
-                      홍천의 아이들이 꿈을 잃지 않고, 어르신과 취약계층 가구가 외롭지 않도록 재단 임직원 모두가 현장에서 발로 뛰겠습니다.
-                    </p>
+                        <p>
+                          <strong>'너브내'</strong>라는 이름은 넓고 깊게 흐르는 물줄기를 뜻하는 우리말입니다. 그 이름처럼 이웃을 향한 정과 사랑이 넓고 깊게 흘러, 우리 지역사회 곳곳에 따뜻하게 스며들기를 바라는 마음으로 너브내 행복나눔재단은 첫걸음을 내디뎠습니다.
+                        </p>
+
+                        <p>
+                          오늘도 복지의 손길이 미처 닿지 못한 곳에서 외로움과 어려움을 겪고 계신 이웃들이 적지 않습니다. 저희 재단은 작은 나눔이 모여 커다란 희망의 물결을 이룬다는 믿음으로, 그러한 이웃들의 곁을 지키는 든든한 버팀목이 되고자 합니다.
+                        </p>
+
+                        {/* 3 Pillars Highlight Box */}
+                        <div className="bg-amber-50/80 p-6 rounded-2xl border-l-4 border-orange-500 space-y-3 my-6">
+                          <p className="font-extrabold text-slate-900 text-sm sm:text-base">
+                            저희 재단은 다음과 같은 마음으로 걸어가고 있습니다.
+                          </p>
+                          
+                          <div className="space-y-2.5 text-xs sm:text-sm">
+                            <div className="flex items-start gap-2">
+                              <span className="font-bold text-orange-600 shrink-0">• 소외된 이웃과의 동행:</span>
+                              <span className="text-slate-800">어르신, 다문화 가정, 취약계층 아동·청소년 등 복지 사각지대에 놓인 이웃들을 꾸준히 찾아 나서고, 실질적인 도움을 드리기 위해 노력하고 있습니다.</span>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <span className="font-bold text-orange-600 shrink-0">• 투명하고 성실한 법인 운영:</span>
+                              <span className="text-slate-800">여러분께서 보내주신 따뜻한 정성이 가장 필요한 곳에 정직하게 전달될 수 있도록, 투명성과 공정성을 최우선 가치로 삼고 있습니다.</span>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <span className="font-bold text-orange-600 shrink-0">• 지역사회와 함께하는 나눔 문화 확산:</span>
+                              <span className="text-slate-800">모두가 서로를 돌보고 온기를 나누는 행복한 공동체를 만드는 일에 앞장서고자 합니다.</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <p>
+                          혼자 가면 빠른 길이 될 수 있지만, 함께 가면 더 멀리, 그리고 더 따뜻하게 갈 수 있습니다. 여러분의 관심과 참여 하나하나가 우리 이웃들에게는 삶을 살아갈 큰 용기와 희망이 됩니다.
+                        </p>
+
+                        <p>
+                          너브내 행복나눔재단이 지역사회의 빛과 소금이 되는 그 여정에 앞으로도 늘 함께해 주시기를 부탁드리며, 이 자리를 찾아주신 모든 분들의 가정에 건강과 행복이 가득하시기를 진심으로 기원합니다.
+                        </p>
+
+                        <p className="font-semibold text-slate-800 pt-2">
+                          감사합니다.
+                        </p>
+                      </>
+                    )}
                   </div>
 
-                  <div className="pt-2 flex items-center justify-between text-xs text-slate-500 border-t border-slate-100">
+                  <div className="pt-4 flex items-center justify-between text-xs sm:text-sm text-slate-500 border-t border-slate-100">
                     <div>사단법인 너브내행복나눔재단 임직원 일동</div>
-                    <div className="font-bold text-slate-900 text-sm">이사장 {settings.chairmanName} 드림</div>
+                    <div className="font-bold text-slate-900 text-base">
+                      사단법인 너브내 행복나눔재단 이사장 <span className="text-orange-600 font-extrabold">{settings.chairmanName}</span> 올림
+                    </div>
                   </div>
                 </div>
 
@@ -370,7 +423,7 @@ export const AboutSection: React.FC = () => {
                   {/* Operational Core: Secretariat */}
                   <div className="bg-slate-900 text-white rounded-2xl p-5 shadow-md max-w-lg mx-auto space-y-1">
                     <div className="text-xs text-orange-400 font-bold">집행 총괄</div>
-                    <div className="text-base font-extrabold">사무국 (사무국장)</div>
+                    <div className="text-base font-extrabold">사무국(상임이사)</div>
                   </div>
 
                   <div className="w-0.5 h-6 bg-orange-300 mx-auto" />

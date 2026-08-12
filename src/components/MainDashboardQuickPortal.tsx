@@ -251,7 +251,7 @@ export const MainDashboardQuickPortal: React.FC = () => {
               </p>
 
               <div className="pt-2 text-xs text-orange-100 space-y-1">
-                <div>• 문의전화: <span className="font-bold text-white">{settings.phone}</span> (FAX: {settings.fax})</div>
+                <div>• 문의전화: <span className="font-bold text-white">{settings.familyCenterPhone || '033-433-1925'}</span> (FAX: {settings.familyCenterFax || '033-433-1910'})</div>
                 <div>• 위치: 강원특별자치도 홍천군 홍천읍 산림조합길 12</div>
               </div>
             </div>
@@ -308,8 +308,15 @@ export const MainDashboardQuickPortal: React.FC = () => {
               </p>
 
               <div className="pt-2 text-xs text-slate-400 space-y-1">
-                <div>• 후원 계좌: <span className="font-bold text-amber-400">농협 351-0334-3619-11</span></div>
-                <div>• 예금주: (사)너브내행복나눔재단</div>
+                {settings.bankAccounts && settings.bankAccounts.length > 0 ? (
+                  settings.bankAccounts.map((acc, idx) => (
+                    <div key={idx}>
+                      • 후원 계좌: <span className="font-bold text-amber-400">{acc.bank} {acc.accountNumber}</span> <span className="text-slate-300">(예금주: {acc.holder})</span>
+                    </div>
+                  ))
+                ) : (
+                  <div>• 후원 계좌: <span className="font-bold text-amber-400">농협 351-1040-2310-53</span> <span className="text-slate-300">(예금주: (사)너브내행복나눔재단)</span></div>
+                )}
               </div>
             </div>
 

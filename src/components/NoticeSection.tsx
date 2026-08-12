@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useFoundation } from '../context/FoundationContext';
 import { NoticeItem } from '../types';
-import { Newspaper, Search, Eye, Calendar, Pin, FileText, ChevronRight } from 'lucide-react';
+import { Newspaper, Search, Eye, Calendar, Pin, FileText, ChevronRight, Paperclip } from 'lucide-react';
 
 export const NoticeSection: React.FC = () => {
   const { notices, viewNoticeDetail } = useFoundation();
@@ -112,15 +112,21 @@ export const NoticeSection: React.FC = () => {
                   </div>
 
                   {/* Title Column */}
-                  <div className="col-span-7 font-bold text-slate-900 text-sm sm:text-base flex items-center justify-between group">
+                  <div className="col-span-7 font-bold text-slate-900 text-sm sm:text-base flex items-center justify-between group gap-2">
                     <span className="group-hover:text-orange-600 transition-colors line-clamp-1">
                       {notice.title}
                     </span>
-                    {notice.attachmentName && (
-                      <span className="text-[10px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded shrink-0 ml-2">
-                        [첨부파일]
+                    {(notice.attachments && notice.attachments.length > 0) ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-orange-700 bg-orange-100/80 border border-orange-200/80 px-2 py-0.5 rounded-full shrink-0">
+                        <Paperclip className="w-3 h-3 text-orange-600" />
+                        <span>첨부 {notice.attachments.length}</span>
                       </span>
-                    )}
+                    ) : notice.attachmentName ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-orange-700 bg-orange-100/80 border border-orange-200/80 px-2 py-0.5 rounded-full shrink-0">
+                        <Paperclip className="w-3 h-3 text-orange-600" />
+                        <span>첨부 1</span>
+                      </span>
+                    ) : null}
                   </div>
 
                   {/* Date Column */}

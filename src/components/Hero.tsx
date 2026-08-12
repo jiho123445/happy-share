@@ -3,7 +3,7 @@ import { useFoundation } from '../context/FoundationContext';
 import { Heart, ArrowRight, Waves, Sparkles, Building2, ShieldCheck, Users } from 'lucide-react';
 
 export const Hero: React.FC = () => {
-  const { setActiveTab } = useFoundation();
+  const { settings, setActiveTab } = useFoundation();
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
@@ -125,9 +125,10 @@ export const Hero: React.FC = () => {
               {/* Main Photo Card */}
               <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white bg-white group">
                 <img
-                  src="https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=1000&q=80"
+                  src={settings.heroImageUrl || "https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1200&q=80"}
                   alt="홍천지역 나눔 및 봉사활동 현장"
                   className="w-full h-80 sm:h-96 object-cover transform group-hover:scale-105 transition-transform duration-700"
+                  referrerPolicy="no-referrer"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900/85 via-slate-900/30 to-transparent" />
                 

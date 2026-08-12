@@ -1,3 +1,10 @@
+export interface NoticeAttachment {
+  name: string;
+  url?: string;
+  size?: string;
+  type?: string;
+}
+
 export interface NoticeItem {
   id: string;
   title: string;
@@ -8,6 +15,7 @@ export interface NoticeItem {
   isImportant?: boolean;
   author: string;
   attachmentName?: string;
+  attachments?: NoticeAttachment[];
 }
 
 export interface GalleryItem {
@@ -75,10 +83,21 @@ export interface ContactInquiry {
   status: '대기중' | '답변완료';
 }
 
+export interface NewsletterSubscriber {
+  id: string;
+  email: string;
+  subscribedAt: string;
+  status: '구독중' | '해지';
+}
+
 export interface FoundationSettings {
+  adminPassword?: string;
   name: string;
   englishName: string;
   chairmanName: string;
+  chairmanImageUrl?: string;
+  heroImageUrl?: string;
+  chairmanGreeting?: string;
   sloganMain: string;
   sloganSub: string;
   establishedYear: string;
@@ -86,6 +105,8 @@ export interface FoundationSettings {
   address: string;
   phone: string;
   fax: string;
+  familyCenterPhone?: string;
+  familyCenterFax?: string;
   email: string;
   operatingHours: string;
   bankAccounts: {

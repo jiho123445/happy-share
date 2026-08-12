@@ -1,221 +1,190 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useFoundation } from '../context/FoundationContext';
 import {
   Calendar,
   MapPin,
   ArrowLeft,
   Share2,
-  Heart,
-  ChevronRight,
+  Eye,
   ImageIcon,
-  Sparkles,
-  CheckCircle2,
-  MessageSquare
+  Settings,
+  Lock
 } from 'lucide-react';
 
 export const GalleryDetailPage: React.FC = () => {
-  const { selectedGallery, gallery, setActiveTab, setSelectedGallery } = useFoundation();
+  const {
+    selectedGallery,
+    gallery,
+    setActiveTab,
+    goBackFromDetail,
+    setAdminOpen
+  } = useFoundation();
+
+  useEffect(() => {
+    if (!selectedGallery) {
+      goBackFromDetail('gallery');
+    }
+  }, [selectedGallery]);
 
   if (!selectedGallery) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-16 text-center space-y-4">
-        <p className="text-slate-500">선택된 갤러리 항목이 없습니다.</p>
-        <button
-          onClick={() => setActiveTab('gallery')}
-          className="bg-emerald-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm"
-        >
-          갤러리 목록으로 이동
-        </button>
-      </div>
-    );
+    return null;
   }
 
   // Related gallery items
   const relatedGallery = gallery.filter((g) => g.id !== selectedGallery.id).slice(0, 3);
 
-  const handleSelectRelated = (item: typeof selectedGallery) => {
-    setSelectedGallery(item);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: selectedGallery.title,
-        text: selectedGallery.description,
-        url: window.location.href,
-      }).catch(() => {});
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-      alert('갤러리 링크가 클립보드에 복사되었습니다.');
-    }
-  };
-
   return (
-    <div className="py-10 md:py-16 bg-[#FFFDF8] min-h-[80vh]">
+    <div className="py-10 bg-slate-50 min-h-screen">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-8">
         
-        {/* Breadcrumb Navigation */}
-        <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
-          <button onClick={() => setActiveTab('main')} className="hover:text-orange-600">홈</button>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
-          <button onClick={() => setActiveTab('gallery')} className="hover:text-orange-600">활동 갤러리</button>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
-          <span className="text-emerald-600 font-bold">{selectedGallery.category}</span>
-        </div>
+        {/* Top Navigation & Action Controls */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+            <button
+              onClick={() => setActiveTab('gallery')}
+              className="hover:text-emerald-600 transition-colors"
+            >
+              활동갤러리
+            </button>
+            <span>&gt;</span>
+            <span className="text-emerald-600 font-bold">{selectedGallery.category}</span>
+          </div>
 
-        {/* Back Button */}
-        <div>
-          <button
-            onClick={() => setActiveTab('gallery')}
-            className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-emerald-600 bg-white border border-slate-200 px-4 py-2 rounded-xl shadow-2xs hover:border-emerald-200 transition-all"
-          >
-            <ArrowLeft className="w-4 h-4 text-emerald-500" />
-            <span>활동 갤러리 목록으로 돌아가기</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setAdminOpen(true)}
+              className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-700 hover:text-emerald-700 bg-white hover:bg-emerald-50 border border-slate-300 hover:border-emerald-300 px-3.5 py-2 rounded-xl shadow-xs transition-all cursor-pointer"
+              title="관리자 모드에서 추가/수정/삭제"
+            >
+              <Settings className="w-3.5 h-3.5 text-emerald-600" />
+              <span>관리자 모드 (추가/수정/삭제)</span>
+            </button>
+            <button
+              onClick={() => goBackFromDetail('gallery')}
+              className="inline-flex items-center gap-2 text-xs sm:text-sm font-extrabold text-slate-700 hover:text-white bg-white hover:bg-slate-900 border border-slate-300 px-4 py-2 rounded-xl shadow-xs transition-all cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4 text-emerald-500 group-hover:text-white" />
+              <span>닫기 (이전으로)</span>
+            </button>
+          </div>
         </div>
 
         {/* Main Photo Card & Article Body */}
         <article className="bg-white rounded-3xl overflow-hidden shadow-xl border border-slate-200">
-          
-          {/* Main Photo Display */}
-          <div className="relative bg-slate-900 max-h-[500px] overflow-hidden flex items-center justify-center">
+          {/* Header Info */}
+          <div className="p-6 sm:p-10 space-y-4 border-b border-slate-100">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="bg-emerald-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                {selectedGallery.category}
+              </span>
+              <span className="text-xs text-slate-400 font-medium">|</span>
+              <span className="text-xs text-slate-500 font-semibold">사단법인 너브내행복나눔재단 나눔기록</span>
+            </div>
+
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-tight">
+              {selectedGallery.title}
+            </h1>
+
+            <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-slate-500 pt-2 border-t border-slate-100">
+              <div className="flex items-center gap-4">
+                <span className="flex items-center gap-1.5 font-medium">
+                  <Calendar className="w-4 h-4 text-emerald-600" />
+                  <span>활동일자: {selectedGallery.date}</span>
+                </span>
+                <span className="flex items-center gap-1.5 font-medium">
+                  <MapPin className="w-4 h-4 text-emerald-600" />
+                  <span>장소: {selectedGallery.location || '홍천군 관내'}</span>
+                </span>
+              </div>
+
+              <button
+                onClick={() => {
+                  navigator.clipboard?.writeText(window.location.href);
+                  alert('페이지 링크가 복사되었습니다!');
+                }}
+                className="inline-flex items-center gap-1 text-slate-600 hover:text-emerald-600 font-bold"
+              >
+                <Share2 className="w-3.5 h-3.5" /> 공유하기
+              </button>
+            </div>
+          </div>
+
+          {/* Photo Display */}
+          <div className="bg-slate-900 p-4 sm:p-8 flex items-center justify-center min-h-[320px]">
             <img
               src={selectedGallery.imageUrl}
               alt={selectedGallery.title}
               onError={(e) => {
                 (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=800&q=80';
               }}
-              className="w-full h-full max-h-[500px] object-cover"
+              className="max-h-[550px] w-auto max-w-full object-contain rounded-xl shadow-2xl"
             />
-            <div className="absolute top-4 left-4 bg-emerald-600/90 backdrop-blur-xs text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-emerald-400/40 shadow-md">
-              {selectedGallery.category}
-            </div>
-            <button
-              onClick={handleShare}
-              className="absolute top-4 right-4 bg-white/90 hover:bg-white text-slate-800 p-2.5 rounded-xl shadow-lg transition-all"
-              title="공유하기"
-            >
-              <Share2 className="w-4 h-4" />
-            </button>
           </div>
 
-          {/* Details Body Container */}
+          {/* Description Content */}
           <div className="p-6 sm:p-10 space-y-6">
-            
-            {/* Title & Metadata */}
-            <div className="border-b border-slate-100 pb-5 space-y-3">
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-snug">
-                {selectedGallery.title}
-              </h1>
-
-              <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 pt-1">
-                <span className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
-                  <Calendar className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>봉사/행사 일자: {selectedGallery.date}</span>
-                </span>
-                {selectedGallery.location && (
-                  <span className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
-                    <MapPin className="w-3.5 h-3.5 text-orange-500" />
-                    <span>진행 장소: {selectedGallery.location}</span>
-                  </span>
-                )}
+            <div className="bg-emerald-50/60 p-5 rounded-2xl border border-emerald-200/80 space-y-2">
+              <div className="font-extrabold text-emerald-900 text-sm flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-emerald-600" />
+                <span>활동 요약 및 현장 스케치</span>
               </div>
-            </div>
-
-            {/* Description Text */}
-            <div className="space-y-4">
-              <div className="text-xs font-bold text-emerald-700 flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-emerald-600" />
-                <span>나눔 활동 개요 및 성과</span>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 text-slate-800 text-sm sm:text-base leading-relaxed whitespace-pre-line">
+              <p className="text-slate-700 text-sm sm:text-base leading-relaxed whitespace-pre-line font-medium">
                 {selectedGallery.description}
-              </div>
+              </p>
             </div>
 
-            {/* Impact Points */}
-            <div className="bg-emerald-50/60 rounded-2xl p-5 border border-emerald-100 space-y-3">
-              <div className="text-xs font-bold text-emerald-900">지역사회 나눔 영향</div>
-              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-700">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>홍천 관내 복지 사각지대 및 취약계층 직접 지원</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>지역 자원봉사자와 후원자 정성 기반 활동</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* Contact Callout */}
-            <div className="bg-slate-900 text-white rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="space-y-1 text-center sm:text-left">
-                <div className="text-xs font-bold text-orange-400">사단법인 너브내행복나눔재단</div>
-                <div className="text-sm font-bold text-white">다음 봉사 및 나눔 활동에 함께 참여하세요!</div>
-                <div className="text-xs text-slate-400">전화문의: 033-433-1925 | FAX: 033-433-1910</div>
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs text-slate-500 leading-relaxed flex items-center justify-between">
+              <div>
+                <p className="font-bold text-slate-700 mb-0.5">※ 이미지 저작권 고지</p>
+                <p>본 활동 사진은 사단법인 너브내행복나눔재단의 나눔활동 자산입니다. 무단 복제 및 전재를 금합니다.</p>
               </div>
-
               <button
-                onClick={() => setActiveTab('donate')}
-                className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs px-5 py-3 rounded-xl shadow-lg transition-all shrink-0 flex items-center gap-1.5"
+                onClick={() => setAdminOpen(true)}
+                className="shrink-0 ml-4 px-3 py-1.5 bg-white border border-slate-300 hover:border-emerald-500 rounded-lg text-slate-700 hover:text-emerald-700 font-bold flex items-center gap-1"
               >
-                <Heart className="w-4 h-4 fill-white" />
-                <span>봉사 및 후원 신청</span>
+                <Lock className="w-3 h-3 text-emerald-600" /> 관리자 수정
               </button>
             </div>
-
           </div>
         </article>
 
-        {/* Related Gallery Items */}
+        {/* Related Photo List */}
         {relatedGallery.length > 0 && (
           <div className="space-y-4 pt-4">
-            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+            <h3 className="font-extrabold text-slate-900 text-lg flex items-center gap-2">
               <ImageIcon className="w-5 h-5 text-emerald-600" />
-              <span>다른 나눔 현장 둘러보기</span>
+              <span>관련된 다른 나눔 활동 기록</span>
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {relatedGallery.map((item) => (
                 <div
                   key={item.id}
-                  onClick={() => handleSelectRelated(item)}
-                  className="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all cursor-pointer group"
+                  onClick={() => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    useFoundation().viewGalleryDetail(item);
+                  }}
+                  className="bg-white rounded-2xl p-3 border border-slate-200 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all cursor-pointer group flex items-center gap-3"
                 >
-                  <div className="h-36 overflow-hidden relative bg-slate-100">
-                    <img
-                      src={item.imageUrl}
-                      alt={item.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <span className="absolute top-2 left-2 text-[10px] bg-slate-900/80 text-white font-bold px-2 py-0.5 rounded">
+                  <img
+                    src={item.imageUrl}
+                    alt={item.title}
+                    className="w-16 h-16 rounded-xl object-cover shrink-0 border border-slate-200"
+                  />
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
                       {item.category}
                     </span>
-                  </div>
-                  <div className="p-3 space-y-1">
-                    <h4 className="font-bold text-slate-900 text-xs line-clamp-1 group-hover:text-emerald-600">
+                    <p className="text-xs font-bold text-slate-800 group-hover:text-emerald-600 truncate">
                       {item.title}
-                    </h4>
-                    <p className="text-[11px] text-slate-500">{item.date}</p>
+                    </p>
+                    <p className="text-[10px] text-slate-400">{item.date}</p>
                   </div>
                 </div>
               ))}
             </div>
           </div>
         )}
-
-        {/* Bottom Back Button */}
-        <div className="text-center pt-2">
-          <button
-            onClick={() => setActiveTab('gallery')}
-            className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm px-6 py-3 rounded-2xl shadow-md transition-colors"
-          >
-            활동 갤러리 전체목록 보기
-          </button>
-        </div>
 
       </div>
     </div>

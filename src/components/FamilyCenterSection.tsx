@@ -11,7 +11,7 @@ export const FamilyCenterSection: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-8 space-y-12">
         
         {/* Header */}
-        <div className="text-center max-w-3xl mx-auto space-y-3">
+        <div className="text-center max-w-4xl mx-auto space-y-3">
           <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200">
             <Building2 className="w-4 h-4 text-emerald-600" />
             <span>위탁운영 기관 공식 안내</span>
@@ -19,7 +19,7 @@ export const FamilyCenterSection: React.FC = () => {
           <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
             홍천군가족센터
           </h2>
-          <p className="text-base text-slate-600">
+          <p className="text-base text-slate-600 break-keep sm:whitespace-nowrap">
             사단법인 너브내행복나눔재단은 홍천군가족센터를 위탁 운영하며 홍천 관내 모든 가족의 건강한 성장을 다각도로 지원합니다.
           </p>
         </div>
@@ -34,7 +34,7 @@ export const FamilyCenterSection: React.FC = () => {
               </div>
 
               <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-snug">
-                “다문화가족 지원을 넘어 홍천군 전체 가족을 보듬는 통합 가족복지 전문기관”
+                <span className="inline-block -ml-[0.42em]">“</span>다문화가족 지원을 넘어 홍천군 전체 가족을 보듬는 통합 가족복지 전문기관”
               </h3>
 
               <p className="text-base sm:text-lg md:text-xl font-bold text-slate-900 leading-relaxed bg-emerald-50/70 p-4 sm:p-5 rounded-2xl border border-emerald-200/80 shadow-2xs">
@@ -114,7 +114,7 @@ export const FamilyCenterSection: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2 text-sm font-bold">
                   <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>전화: {settings.phone} | FAX: {settings.fax}</span>
+                  <span>전화: {settings.familyCenterPhone || '033-433-1925'} | FAX: {settings.familyCenterFax || '033-433-1910'}</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs font-medium text-emerald-100">
                   <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />

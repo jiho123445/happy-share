@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useFoundation } from '../context/FoundationContext';
 import {
   Sparkles,
@@ -26,20 +26,24 @@ const ICON_MAP: Record<string, React.ReactNode> = {
 };
 
 export const ProgramDetailPage: React.FC = () => {
-  const { selectedProgram, programs, gallery, notices, setActiveTab, setSelectedProgram } = useFoundation();
+  const {
+    selectedProgram,
+    programs,
+    gallery,
+    notices,
+    setActiveTab,
+    setSelectedProgram,
+    goBackFromDetail
+  } = useFoundation();
+
+  useEffect(() => {
+    if (!selectedProgram) {
+      goBackFromDetail('programs');
+    }
+  }, [selectedProgram]);
 
   if (!selectedProgram) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-16 text-center space-y-4">
-        <p className="text-slate-500">선택된 공익사업이 없습니다.</p>
-        <button
-          onClick={() => setActiveTab('programs')}
-          className="bg-orange-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm"
-        >
-          사업 목록으로 이동
-        </button>
-      </div>
-    );
+    return null;
   }
 
   // Related programs
@@ -60,23 +64,22 @@ export const ProgramDetailPage: React.FC = () => {
     <div className="py-10 md:py-16 bg-[#FFFDF8] min-h-[80vh]">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-8">
         
-        {/* Breadcrumb Navigation */}
-        <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
-          <button onClick={() => setActiveTab('main')} className="hover:text-orange-600">홈</button>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
-          <button onClick={() => setActiveTab('programs')} className="hover:text-orange-600">주요사업</button>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
-          <span className="text-orange-600 font-bold">사업 0{selectedProgram.code}. {selectedProgram.title}</span>
-        </div>
+        {/* Breadcrumb Navigation & Top Action Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-2 border-b border-slate-200/60">
+          <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 font-medium">
+            <button onClick={() => { setSelectedProgram(null); setActiveTab('main'); }} className="hover:text-orange-600 transition-colors">홈</button>
+            <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
+            <button onClick={() => { setSelectedProgram(null); setActiveTab('programs'); }} className="hover:text-orange-600 transition-colors">주요사업</button>
+            <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
+            <span className="text-orange-600 font-bold">사업 0{selectedProgram.code}. {selectedProgram.title}</span>
+          </div>
 
-        {/* Back Button */}
-        <div>
           <button
-            onClick={() => setActiveTab('programs')}
-            className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-orange-600 bg-white border border-slate-200 px-4 py-2 rounded-xl shadow-2xs hover:border-orange-200 transition-all"
+            onClick={() => goBackFromDetail('programs')}
+            className="inline-flex items-center gap-2 text-xs sm:text-sm font-extrabold text-slate-700 hover:text-white bg-white hover:bg-slate-900 border border-slate-300 px-4 py-2 rounded-xl shadow-xs transition-all"
           >
-            <ArrowLeft className="w-4 h-4 text-orange-500" />
-            <span>전체 사업 목록으로 돌아가기</span>
+            <ArrowLeft className="w-4 h-4 text-orange-500 group-hover:text-white" />
+            <span>닫기 (이전 페이지로 돌아가기)</span>
           </button>
         </div>
 
@@ -151,7 +154,7 @@ export const ProgramDetailPage: React.FC = () => {
             <div className="space-y-1 text-center sm:text-left">
               <h4 className="text-lg font-extrabold text-white">이 사업을 후원하거나 참여하고 싶으신가요?</h4>
               <p className="text-xs text-orange-100">
-                후원자님의 따뜻한 손길로 홍천의 소외 이웃에게 실질적인 희망을 전달합니다. (문의: 033-433-1925)
+                후원자님의 따뜻한 손길로 홍천의 소외 이웃에게 실질적인 희망을 전달합니다. (문의: 033-436-1925)
               </p>
             </div>
 
@@ -183,8 +186,17 @@ export const ProgramDetailPage: React.FC = () => {
         )}
 
         {/* Navigation to Other Programs */}
-        <div className="space-y-3 pt-4 border-t border-slate-200">
-          <h3 className="text-sm font-bold text-slate-700">다른 주요 공익사업 둘러보기</h3>
+        <div className="space-y-4 pt-4 border-t border-slate-200">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h3 className="text-sm font-bold text-slate-700">다른 주요 공익사업 둘러보기</h3>
+            <button
+              onClick={() => goBackFromDetail('programs')}
+              className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-md transition-all"
+            >
+              <ArrowLeft className="w-4 h-4 text-orange-400" />
+              <span>닫기 (이전 페이지로 돌아가기)</span>
+            </button>
+          </div>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
             {otherPrograms.map((p) => (
               <button
