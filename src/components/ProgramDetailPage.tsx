@@ -33,7 +33,8 @@ export const ProgramDetailPage: React.FC = () => {
     notices,
     setActiveTab,
     setSelectedProgram,
-    goBackFromDetail
+    goBackFromDetail,
+    viewGalleryDetail
   } = useFoundation();
 
   useEffect(() => {
@@ -175,9 +176,13 @@ export const ProgramDetailPage: React.FC = () => {
             <h3 className="text-lg font-bold text-slate-900">본 사업 관련 나눔 현장 사진</h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {programGallery.slice(0, 3).map((item) => (
-                <div key={item.id} className="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm p-3 space-y-2">
-                  <img src={item.imageUrl} alt={item.title} className="w-full h-32 object-cover rounded-xl" />
-                  <div className="text-xs font-bold text-slate-900 line-clamp-1">{item.title}</div>
+                <div
+                  key={item.id}
+                  onClick={() => viewGalleryDetail(item)}
+                  className="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md hover:border-orange-300 p-3 space-y-2 cursor-pointer transition-all group"
+                >
+                  <img src={item.imageUrl} alt={item.title} className="w-full h-32 object-cover rounded-xl group-hover:scale-[1.02] transition-transform" />
+                  <div className="text-xs font-bold text-slate-900 group-hover:text-orange-600 line-clamp-1">{item.title}</div>
                   <div className="text-[11px] text-slate-500">{item.date}</div>
                 </div>
               ))}

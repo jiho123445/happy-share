@@ -65,7 +65,7 @@ interface FoundationContextType {
   deleteNotice: (id: string) => void;
 
   // Gallery CRUD
-  addGallery: (item: Omit<GalleryItem, 'id' | 'date'>) => void;
+  addGallery: (item: Omit<GalleryItem, 'id' | 'date'> & { date?: string; author?: string; isProtected?: boolean }) => void;
   updateGallery: (id: string, item: Partial<GalleryItem>) => void;
   deleteGallery: (id: string) => void;
 
@@ -144,7 +144,12 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const [gallery, setGallery] = useState<GalleryItem[]>(() => {
     const saved = localStorage.getItem('nerve_nae_gallery');
-    return saved ? JSON.parse(saved) : INITIAL_GALLERY;
+    const list: GalleryItem[] = saved ? JSON.parse(saved) : INITIAL_GALLERY;
+    return list.map(g => ({
+      ...g,
+      author: g.author || '재단 관리자',
+      isProtected: g.isProtected ?? true
+    }));
   });
 
   const [donations, setDonations] = useState<DonationApplication[]>(() => {
@@ -297,11 +302,13 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   // Gallery CRUD
-  const addGallery = (item: Omit<GalleryItem, 'id' | 'date'>) => {
+  const addGallery = (item: Omit<GalleryItem, 'id' | 'date'> & { date?: string; author?: string; isProtected?: boolean }) => {
     const newGallery: GalleryItem = {
       ...item,
       id: `gal-${Date.now()}`,
-      date: new Date().toISOString().split('T')[0]
+      date: item.date || new Date().toISOString().split('T')[0],
+      author: item.author || '재단 관리자',
+      isProtected: item.isProtected ?? true
     };
     setGallery(prev => [newGallery, ...prev]);
   };

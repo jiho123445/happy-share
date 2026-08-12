@@ -26,6 +26,8 @@ export interface GalleryItem {
   imageUrl: string;
   description: string;
   location?: string;
+  author?: string;
+  isProtected?: boolean; // 관리자 공식 등록 보호 여부 (임의 변경 불가)
 }
 
 export interface TimelineItem {

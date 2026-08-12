@@ -8,7 +8,8 @@ import {
   Eye,
   ImageIcon,
   Settings,
-  Lock
+  Lock,
+  ShieldCheck
 } from 'lucide-react';
 
 export const GalleryDetailPage: React.FC = () => {
@@ -17,7 +18,8 @@ export const GalleryDetailPage: React.FC = () => {
     gallery,
     setActiveTab,
     goBackFromDetail,
-    setAdminOpen
+    setAdminOpen,
+    viewGalleryDetail
   } = useFoundation();
 
   useEffect(() => {
@@ -133,16 +135,20 @@ export const GalleryDetailPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs text-slate-500 leading-relaxed flex items-center justify-between">
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs text-slate-500 leading-relaxed flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div>
-                <p className="font-bold text-slate-700 mb-0.5">※ 이미지 저작권 고지</p>
-                <p>본 활동 사진은 사단법인 너브내행복나눔재단의 나눔활동 자산입니다. 무단 복제 및 전재를 금합니다.</p>
+                <p className="font-bold text-slate-700 mb-0.5 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>관리자 계정 공식 보호 자산 (임의 변경 불가)</span>
+                </p>
+                <p>본 나눔 활동 사진은 너브내행복나눔재단 관리자 계정에 의해 보호되며, 관리자 전용 비밀번호 인증 없이는 임의 변경/삭제가 엄격히 제한됩니다.</p>
               </div>
               <button
                 onClick={() => setAdminOpen(true)}
-                className="shrink-0 ml-4 px-3 py-1.5 bg-white border border-slate-300 hover:border-emerald-500 rounded-lg text-slate-700 hover:text-emerald-700 font-bold flex items-center gap-1"
+                className="shrink-0 px-3 py-1.5 bg-white border border-slate-300 hover:border-emerald-500 rounded-lg text-slate-700 hover:text-emerald-700 font-bold flex items-center gap-1.5 text-xs shadow-2xs cursor-pointer"
+                title="관리자 전용 로그인 인증 모드로 전환"
               >
-                <Lock className="w-3 h-3 text-emerald-600" /> 관리자 수정
+                <Lock className="w-3.5 h-3.5 text-emerald-600" /> 관리자 수정
               </button>
             </div>
           </div>
@@ -161,8 +167,7 @@ export const GalleryDetailPage: React.FC = () => {
                 <div
                   key={item.id}
                   onClick={() => {
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                    useFoundation().viewGalleryDetail(item);
+                    viewGalleryDetail(item);
                   }}
                   className="bg-white rounded-2xl p-3 border border-slate-200 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all cursor-pointer group flex items-center gap-3"
                 >

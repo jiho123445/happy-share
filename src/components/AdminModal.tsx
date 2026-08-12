@@ -34,7 +34,8 @@ import {
   Camera,
   Download,
   FileCheck,
-  Mail
+  Mail,
+  ShieldCheck
 } from 'lucide-react';
 
 export const AdminModal: React.FC = () => {
@@ -109,6 +110,7 @@ export const AdminModal: React.FC = () => {
   // New Gallery Form State
   const [newGalTitle, setNewGalTitle] = useState('');
   const [newGalCategory, setNewGalCategory] = useState('명절 나눔');
+  const [newGalDate, setNewGalDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
   const [newGalUrl, setNewGalUrl] = useState('');
   const [newGalDesc, setNewGalDesc] = useState('');
   const [newGalLocation, setNewGalLocation] = useState('홍천군 관내');
@@ -385,22 +387,30 @@ export const AdminModal: React.FC = () => {
     addGallery({
       title: newGalTitle,
       category: newGalCategory,
+      date: newGalDate || new Date().toISOString().split('T')[0],
       imageUrl: newGalUrl,
       description: newGalDesc || newGalTitle,
-      location: newGalLocation
+      location: newGalLocation,
+      author: '재단 관리자',
+      isProtected: true
     });
     setNewGalTitle('');
     setNewGalDesc('');
     setNewGalUrl('');
     setNewGalFileName('');
-    showToast('새로운 활동 사진이 갤러리에 추가되었습니다.');
+    setNewGalDate(new Date().toISOString().split('T')[0]);
+    showToast('새로운 활동 사진이 관리자 계정 보호 모드로 등록되었습니다.');
   };
 
   const handleSaveGalleryEdit = (id: string) => {
-    updateGallery(id, editGalleryData);
+    updateGallery(id, {
+      ...editGalleryData,
+      author: '재단 관리자',
+      isProtected: true
+    });
     setEditingGalleryId(null);
     setEditGalleryData({});
-    showToast('갤러리 항목이 수정되었습니다.');
+    showToast('관리자 승인을 거쳐 갤러리 사진 정보가 정식 수정되었습니다.');
   };
 
   return (
@@ -1501,7 +1511,7 @@ export const AdminModal: React.FC = () => {
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                       <div className="sm:col-span-2">
                         <label className="block text-[11px] font-bold text-slate-700 mb-1">활동 제목 *</label>
                         <input
@@ -1511,6 +1521,15 @@ export const AdminModal: React.FC = () => {
                           value={newGalTitle}
                           onChange={(e) => setNewGalTitle(e.target.value)}
                           className="w-full p-2.5 bg-slate-50 border rounded-xl text-xs font-bold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">활동 일자</label>
+                        <input
+                          type="date"
+                          value={newGalDate}
+                          onChange={(e) => setNewGalDate(e.target.value)}
+                          className="w-full p-2.5 bg-slate-50 border rounded-xl text-xs font-bold text-slate-800"
                         />
                       </div>
                       <div>
@@ -1672,21 +1691,36 @@ export const AdminModal: React.FC = () => {
                                 placeholder="활동 제목"
                               />
 
-                              <div className="grid grid-cols-2 gap-2">
-                                <input
-                                  type="text"
-                                  value={editGalleryData.category ?? g.category}
-                                  onChange={(e) => setEditGalleryData({ ...editGalleryData, category: e.target.value })}
-                                  className="p-2 bg-white border rounded-lg text-xs"
-                                  placeholder="카테고리"
-                                />
-                                <input
-                                  type="text"
-                                  value={editGalleryData.location ?? (g.location || '홍천군 관내')}
-                                  onChange={(e) => setEditGalleryData({ ...editGalleryData, location: e.target.value })}
-                                  className="p-2 bg-white border rounded-lg text-xs"
-                                  placeholder="장소"
-                                />
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                <div>
+                                  <label className="block text-[10px] font-bold text-slate-700 mb-0.5">활동 일자</label>
+                                  <input
+                                    type="date"
+                                    value={editGalleryData.date ?? g.date}
+                                    onChange={(e) => setEditGalleryData({ ...editGalleryData, date: e.target.value })}
+                                    className="p-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 w-full"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] font-bold text-slate-700 mb-0.5">카테고리</label>
+                                  <input
+                                    type="text"
+                                    value={editGalleryData.category ?? g.category}
+                                    onChange={(e) => setEditGalleryData({ ...editGalleryData, category: e.target.value })}
+                                    className="p-2 bg-white border border-slate-300 rounded-lg text-xs w-full"
+                                    placeholder="카테고리"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] font-bold text-slate-700 mb-0.5">장소</label>
+                                  <input
+                                    type="text"
+                                    value={editGalleryData.location ?? (g.location || '홍천군 관내')}
+                                    onChange={(e) => setEditGalleryData({ ...editGalleryData, location: e.target.value })}
+                                    className="p-2 bg-white border border-slate-300 rounded-lg text-xs w-full"
+                                    placeholder="장소"
+                                  />
+                                </div>
                               </div>
 
                               {/* Image preview & PC upload button in edit mode */}
@@ -1746,12 +1780,20 @@ export const AdminModal: React.FC = () => {
                                 className="w-16 h-16 rounded-xl object-cover shrink-0 border border-slate-200"
                               />
                               <div className="flex-1 min-w-0 text-xs space-y-0.5">
-                                <div className="font-bold text-slate-900 truncate">{g.title}</div>
-                                <div className="text-slate-500 text-[11px]">
-                                  <span className="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded mr-1">
+                                <div className="font-bold text-slate-900 truncate flex items-center gap-1.5">
+                                  <span className="truncate">{g.title}</span>
+                                  {g.isProtected && (
+                                    <span className="shrink-0 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5" title="관리자 보호 모드 등록됨 (임의 변경 불가)">
+                                      <ShieldCheck className="w-3 h-3 text-emerald-600" /> 관리자 보호
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-slate-500 text-[11px] flex items-center gap-1.5 flex-wrap">
+                                  <span className="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded">
                                     {g.category}
                                   </span>
-                                  <span>{g.date}</span>
+                                  <span>📅 {g.date}</span>
+                                  <span className="text-slate-400">({g.author || '재단 관리자'})</span>
                                 </div>
                                 <p className="text-slate-400 text-[11px] truncate">{g.location || '홍천군 관내'}</p>
                               </div>
