@@ -83,6 +83,7 @@ export const AdminModal: React.FC = () => {
   // Editing States
   const [editingProgramId, setEditingProgramId] = useState<string | null>(null);
   const [editProgramData, setEditProgramData] = useState<Partial<ProgramItem>>({});
+  const [editDetailsText, setEditDetailsText] = useState<string>('');
 
   const [editingNoticeId, setEditingNoticeId] = useState<string | null>(null);
   const [editNoticeData, setEditNoticeData] = useState<Partial<NoticeItem>>({});
@@ -207,9 +208,17 @@ export const AdminModal: React.FC = () => {
   };
 
   const handleSaveProgramEdit = (id: string) => {
-    updateProgram(id, editProgramData);
+    const detailsArray = editDetailsText
+      ? editDetailsText.split('\n').map(s => s.trim()).filter(Boolean)
+      : (editProgramData.details || []);
+
+    updateProgram(id, {
+      ...editProgramData,
+      details: detailsArray
+    });
     setEditingProgramId(null);
     setEditProgramData({});
+    setEditDetailsText('');
     showToast('사업 정보가 수정되었습니다.');
   };
 
@@ -981,44 +990,112 @@ export const AdminModal: React.FC = () => {
                     {programs.map((p) => (
                       <div key={p.id} className="bg-white p-4 rounded-2xl border border-slate-200 text-xs space-y-3">
                         {editingProgramId === p.id ? (
-                          <div className="space-y-3 bg-orange-50/50 p-3 rounded-xl border border-orange-200">
-                            <div className="font-bold text-orange-600">사업 내용 수정</div>
-                            <input
-                              type="text"
-                              value={editProgramData.title ?? p.title}
-                              onChange={(e) => setEditProgramData({ ...editProgramData, title: e.target.value })}
-                              className="w-full p-2 bg-white border rounded-lg text-xs font-bold"
-                            />
-                            <input
-                              type="text"
-                              value={editProgramData.subtitle ?? p.subtitle}
-                              onChange={(e) => setEditProgramData({ ...editProgramData, subtitle: e.target.value })}
-                              className="w-full p-2 bg-white border rounded-lg text-xs"
-                            />
-                            <textarea
-                              rows={2}
-                              value={editProgramData.summary ?? p.summary}
-                              onChange={(e) => setEditProgramData({ ...editProgramData, summary: e.target.value })}
-                              className="w-full p-2 bg-white border rounded-lg text-xs"
-                            />
-                            <div className="flex justify-end gap-2">
+                          <div className="space-y-3 bg-orange-50/50 p-4 rounded-2xl border border-orange-200">
+                            <div className="font-bold text-orange-600 flex items-center justify-between text-xs">
+                              <span>사업 정보 및 세부 실행사항 수정</span>
+                              <span className="text-[11px] text-slate-500 font-mono">사업 번호: {p.code}</span>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-[11px] font-bold text-slate-700 mb-1">사업명</label>
+                                <input
+                                  type="text"
+                                  value={editProgramData.title ?? p.title}
+                                  onChange={(e) => setEditProgramData({ ...editProgramData, title: e.target.value })}
+                                  className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-bold text-slate-700 mb-1">뱃지 라벨</label>
+                                <input
+                                  type="text"
+                                  placeholder="예: 핵심공익사업, 지자체협력"
+                                  value={editProgramData.badge ?? p.badge ?? ''}
+                                  onChange={(e) => setEditProgramData({ ...editProgramData, badge: e.target.value })}
+                                  className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs"
+                                />
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-[11px] font-bold text-slate-700 mb-1">부제목 (핵심 슬로건)</label>
+                              <input
+                                type="text"
+                                value={editProgramData.subtitle ?? p.subtitle}
+                                onChange={(e) => setEditProgramData({ ...editProgramData, subtitle: e.target.value })}
+                                className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-[11px] font-bold text-slate-700 mb-1">사업 요약 설명</label>
+                              <textarea
+                                rows={2}
+                                value={editProgramData.summary ?? p.summary}
+                                onChange={(e) => setEditProgramData({ ...editProgramData, summary: e.target.value })}
+                                className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs"
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-[11px] font-bold text-slate-700 mb-1">지원 대상</label>
+                                <input
+                                  type="text"
+                                  value={editProgramData.targetAudience ?? p.targetAudience ?? ''}
+                                  onChange={(e) => setEditProgramData({ ...editProgramData, targetAudience: e.target.value })}
+                                  className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-bold text-slate-700 mb-1">기대 효과 및 비전</label>
+                                <input
+                                  type="text"
+                                  value={editProgramData.impactMessage ?? p.impactMessage ?? ''}
+                                  onChange={(e) => setEditProgramData({ ...editProgramData, impactMessage: e.target.value })}
+                                  className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs"
+                                />
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                                주요 지원 내용 및 실행 세부사항 (줄바꿈/Enter로 개별 항목 구분)
+                              </label>
+                              <textarea
+                                rows={4}
+                                placeholder="줄바꿈으로 구별하여 각 지원 항목을 작성해 주세요"
+                                value={editDetailsText}
+                                onChange={(e) => setEditDetailsText(e.target.value)}
+                                className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs leading-relaxed"
+                              />
+                            </div>
+
+                            <div className="flex justify-end gap-2 pt-1">
                               <button
-                                onClick={() => setEditingProgramId(null)}
-                                className="px-3 py-1.5 bg-slate-200 text-slate-700 font-bold rounded-lg"
+                                type="button"
+                                onClick={() => {
+                                  setEditingProgramId(null);
+                                  setEditProgramData({});
+                                  setEditDetailsText('');
+                                }}
+                                className="px-3.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-lg text-xs transition-colors cursor-pointer"
                               >
                                 취소
                               </button>
                               <button
+                                type="button"
                                 onClick={() => handleSaveProgramEdit(p.id)}
-                                className="px-3 py-1.5 bg-orange-600 text-white font-bold rounded-lg"
+                                className="px-4 py-1.5 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-lg text-xs transition-colors cursor-pointer shadow-xs"
                               >
-                                저장
+                                저장하기
                               </button>
                             </div>
                           </div>
                         ) : (
                           <div className="flex items-start justify-between gap-4">
-                            <div className="space-y-1">
+                            <div className="space-y-1.5">
                               <div className="flex items-center gap-2">
                                 <span className="bg-slate-900 text-white font-mono px-2 py-0.5 rounded text-[10px]">
                                   NO. {p.code}
@@ -1030,8 +1107,27 @@ export const AdminModal: React.FC = () => {
                                   </span>
                                 )}
                               </div>
-                              <p className="text-slate-600 font-medium">{p.subtitle}</p>
-                              <p className="text-slate-500 pt-1 leading-relaxed">{p.summary}</p>
+                              <p className="text-slate-700 font-semibold">{p.subtitle}</p>
+                              <p className="text-slate-500 pt-0.5 leading-relaxed">{p.summary}</p>
+
+                              <div className="pt-2 border-t border-slate-100 space-y-1 text-[11px]">
+                                <div className="text-slate-600">
+                                  🎯 <span className="font-bold">지원 대상:</span> {p.targetAudience}
+                                </div>
+                                <div className="text-slate-600">
+                                  💡 <span className="font-bold">기대 효과:</span> {p.impactMessage}
+                                </div>
+                                {p.details && p.details.length > 0 && (
+                                  <div className="text-slate-600 pt-0.5">
+                                    📋 <span className="font-bold">실행 세부사항 ({p.details.length}건):</span>
+                                    <ul className="list-disc list-inside text-slate-600 pl-1 mt-0.5 space-y-0.5">
+                                      {p.details.map((d, i) => (
+                                        <li key={i} className="truncate">{d}</li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                              </div>
                             </div>
 
                             <div className="flex items-center gap-1 shrink-0">
@@ -1039,8 +1135,9 @@ export const AdminModal: React.FC = () => {
                                 onClick={() => {
                                   setEditingProgramId(p.id);
                                   setEditProgramData(p);
+                                  setEditDetailsText(p.details ? p.details.join('\n') : '');
                                 }}
-                                className="p-2 text-slate-600 hover:text-orange-600 hover:bg-orange-50 rounded-xl"
+                                className="p-2 text-slate-600 hover:text-orange-600 hover:bg-orange-50 rounded-xl cursor-pointer"
                                 title="수정"
                               >
                                 <Edit className="w-4 h-4" />
