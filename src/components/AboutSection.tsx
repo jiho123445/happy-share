@@ -339,7 +339,7 @@ export const AboutSection: React.FC = () => {
               <div className="border-b border-slate-100 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <span className="text-xs font-bold text-orange-600 bg-orange-100 px-2.5 py-1 rounded-md">
-                    2009년 ~ 현재
+                    2026년 ~ 2009년
                   </span>
                   <h2 className="text-2xl font-extrabold text-slate-900 mt-1">
                     너브내행복나눔재단 걸어온 길 (연혁)
@@ -359,7 +359,7 @@ export const AboutSection: React.FC = () => {
                     <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200/80 hover:border-orange-300 transition-all space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-base font-extrabold text-orange-600 bg-orange-100/80 px-3 py-0.5 rounded-lg border border-orange-200">
-                          {item.year}년
+                          {item.year.endsWith('년') ? item.year : `${item.year}년`}
                         </span>
                         {item.isMilestone && (
                           <span className="text-[11px] font-bold bg-amber-500 text-white px-2.5 py-0.5 rounded shadow-2xs">

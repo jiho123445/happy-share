@@ -816,61 +816,91 @@ export const AdminModal: React.FC = () => {
                     </div>
 
                     <div className="border-t border-slate-200 pt-4 space-y-3">
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
                         <label className="block font-extrabold text-slate-800 text-sm">
                           후원금 계좌 설정
                         </label>
-                        <span className="text-xs text-orange-600 font-bold bg-orange-50 px-2 py-0.5 rounded-full">
-                          저장 시 메인페이지 및 후원안내에 실시간 반영
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">은행명</label>
-                          <input
-                            type="text"
-                            value={editSettings.bankAccounts[0]?.bank || ''}
-                            onChange={(e) => {
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
                               const newBanks = [...(editSettings.bankAccounts || [])];
-                              newBanks[0] = { ...newBanks[0], bank: e.target.value };
+                              newBanks.push({ bank: '', accountNumber: '', holder: '(사)너브내행복나눔재단' });
                               setEditSettings({ ...editSettings, bankAccounts: newBanks });
                             }}
-                            placeholder="예: 농협"
-                            className="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">계좌번호</label>
-                          <input
-                            type="text"
-                            value={editSettings.bankAccounts[0]?.accountNumber || ''}
-                            onChange={(e) => {
-                              const newBanks = [...(editSettings.bankAccounts || [])];
-                              newBanks[0] = { ...newBanks[0], accountNumber: e.target.value };
-                              setEditSettings({ ...editSettings, bankAccounts: newBanks });
-                            }}
-                            placeholder="예: 351-1040-2310-53"
-                            className="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs font-mono font-extrabold text-slate-900"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">예금주</label>
-                          <input
-                            type="text"
-                            value={editSettings.bankAccounts[0]?.holder || ''}
-                            onChange={(e) => {
-                              const newBanks = [...(editSettings.bankAccounts || [])];
-                              newBanks[0] = { ...newBanks[0], holder: e.target.value };
-                              setEditSettings({ ...editSettings, bankAccounts: newBanks });
-                            }}
-                            placeholder="예: (사)너브내행복나눔재단"
-                            className="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium"
-                          />
+                            className="text-xs font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 px-2.5 py-1 rounded-lg border border-orange-200 transition-colors"
+                          >
+                            + 계좌 추가
+                          </button>
+                          <span className="text-xs text-orange-600 font-bold bg-orange-50 px-2 py-0.5 rounded-full">
+                            실시간 반영
+                          </span>
                         </div>
                       </div>
+
+                      {(editSettings.bankAccounts || []).map((acc, idx) => (
+                        <div key={idx} className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 bg-slate-50 p-3 rounded-2xl border border-slate-200 items-end">
+                          <div className="sm:col-span-3">
+                            <label className="block text-[11px] font-bold text-slate-700 mb-1">은행명</label>
+                            <input
+                              type="text"
+                              value={acc.bank || ''}
+                              onChange={(e) => {
+                                const newBanks = [...(editSettings.bankAccounts || [])];
+                                newBanks[idx] = { ...newBanks[idx], bank: e.target.value };
+                                setEditSettings({ ...editSettings, bankAccounts: newBanks });
+                              }}
+                              placeholder="예: 농협"
+                              className="w-full p-2 bg-white border border-slate-300 rounded-xl text-xs font-bold"
+                            />
+                          </div>
+
+                          <div className="sm:col-span-5">
+                            <label className="block text-[11px] font-bold text-slate-700 mb-1">계좌번호</label>
+                            <input
+                              type="text"
+                              value={acc.accountNumber || ''}
+                              onChange={(e) => {
+                                const newBanks = [...(editSettings.bankAccounts || [])];
+                                newBanks[idx] = { ...newBanks[idx], accountNumber: e.target.value };
+                                setEditSettings({ ...editSettings, bankAccounts: newBanks });
+                              }}
+                              placeholder="예: 351-1040-2310-53"
+                              className="w-full p-2 bg-white border border-slate-300 rounded-xl text-xs font-mono font-extrabold text-slate-900"
+                            />
+                          </div>
+
+                          <div className="sm:col-span-3">
+                            <label className="block text-[11px] font-bold text-slate-700 mb-1">예금주</label>
+                            <input
+                              type="text"
+                              value={acc.holder || ''}
+                              onChange={(e) => {
+                                const newBanks = [...(editSettings.bankAccounts || [])];
+                                newBanks[idx] = { ...newBanks[idx], holder: e.target.value };
+                                setEditSettings({ ...editSettings, bankAccounts: newBanks });
+                              }}
+                              placeholder="예: (사)너브내행복나눔재단"
+                              className="w-full p-2 bg-white border border-slate-300 rounded-xl text-xs font-medium"
+                            />
+                          </div>
+
+                          <div className="sm:col-span-1 flex justify-end pb-1">
+                            {(editSettings.bankAccounts || []).length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newBanks = (editSettings.bankAccounts || []).filter((_, i) => i !== idx);
+                                  setEditSettings({ ...editSettings, bankAccounts: newBanks });
+                                }}
+                                className="px-2 py-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors text-xs font-bold"
+                              >
+                                삭제
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
 
                     {/* Admin Password Change Section */}

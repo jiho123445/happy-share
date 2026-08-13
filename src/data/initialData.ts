@@ -40,7 +40,8 @@ export const INITIAL_SETTINGS: FoundationSettings = {
   email: 'nerve_nae@naver.com',
   operatingHours: '월~금 09:00 - 18:00 (토, 일, 공휴일 휴무)',
   bankAccounts: [
-    { bank: '농협', accountNumber: '351-1040-2310-53', holder: '(사)너브내행복나눔재단' }
+    { bank: '농협', accountNumber: '351-1040-2310-53', holder: '(사)너브내행복나눔재단' },
+    { bank: '신한은행', accountNumber: '100-026-882834', holder: '(사)너브내행복나눔재단' }
   ],
   snsLinks: {
     naver: 'https://blog.naver.com',
@@ -52,36 +53,18 @@ export const INITIAL_SETTINGS: FoundationSettings = {
 
 export const INITIAL_TIMELINE: TimelineItem[] = [
   {
-    year: '2009',
-    title: '(사)홍천다문화가정후원회 출범',
-    subtitle: '민간 중심 나눔의 첫 걸음',
-    description: '홍천지역 다문화가정과 이주민, 지역 취약계층의 안정적인 자립을 지원하기 위해 윤성일 회장을 중심으로 지역 자원봉사자와 후원인들이 뜻을 모아 출범했습니다.',
-    category: '출범',
-    imageUrl: 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=800&q=80'
+    year: '2026',
+    title: '지역 복지 인프라 강화 & 다문화가족 화합 복지',
+    subtitle: '문화와 온기가 결합한 포용적 복지 모델 구축',
+    description: '관내 장애인·노인·가족 복지시설 대상 맞춤형 배분사업 확충과 함께 홍천 다문화가족 한마음 축제 개최 및 소외계층 포용 복지를 추진합니다.',
+    category: '사업확대'
   },
   {
-    year: '2010~2015',
-    title: '다문화가정 복지 지원망 대폭 확대',
-    subtitle: '교육, 의료, 주거, 긴급생활 지원',
-    description: '장학금 지원, 학원비 및 교재비 보조, 긴급 의료비 및 생활용품 지원, 보온 주거환경 개선사업을 본격화하며 홍천 관내 복지 사각지대 해소에 기여했습니다.',
-    category: '사업확대',
-    imageUrl: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=800&q=80'
-  },
-  {
-    year: '2016',
-    title: '행정자치부장관상 수상',
-    subtitle: '지역사회 봉사 및 나눔 공로 인정',
-    description: '홍천군 다문화가정의 안정적 정착과 소외계층 대상 지속적인 민간 복지 지원활동의 성과를 인정받아 행정자치부장관 표창을 수상하였습니다.',
-    category: '수상',
-    awardBadge: '행정자치부장관상 (2016)'
-  },
-  {
-    year: '2017',
-    title: '여성가족부장관상 수상',
-    subtitle: '다문화가족 지원 및 포용사회 조성',
-    description: '다문화가족의 건강한 성장과 지역사회 융합, 여성 및 아동 복지 증진에 이바지한 공로로 여성가족부장관 표창을 받았습니다.',
-    category: '수상',
-    awardBadge: '여성가족부장관상 (2017)'
+    year: '2024',
+    title: '「사단법인 너브내행복나눔재단」으로 확대 전환',
+    subtitle: '홍천군 전체 복지 사각지대를 보듬는 민간 복지 플랫폼',
+    description: '15년간 축적된 전문성과 후원 네트워크를 바탕으로 지원 대상을 홍천군민 전체의 소외계층으로 확대하고 복지시설 배분사업과 공모사업을 본격 추진합니다.',
+    category: '법인전환'
   },
   {
     year: '2019',
@@ -92,20 +75,34 @@ export const INITIAL_TIMELINE: TimelineItem[] = [
     awardBadge: '강원도 선행도민대상 (2019)'
   },
   {
-    year: '2024',
-    title: '「사단법인 너브내행복나눔재단」으로 확대 전환',
-    subtitle: '홍천군 전체 복지 사각지대를 보듬는 민간 복지 플랫폼',
-    description: '15년간 축적된 전문성과 후원 네트워크를 바탕으로 지원 대상을 홍천군민 전체의 소외계층으로 확대하고 복지시설 배분사업과 공모사업을 본격 추진합니다.',
-    category: '법인전환',
-    imageUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80'
+    year: '2017',
+    title: '여성가족부장관상 수상',
+    subtitle: '다문화가족 지원 및 포용사회 조성',
+    description: '다문화가족의 건강한 성장과 지역사회 융합, 여성 및 아동 복지 증진에 이바지한 공로로 여성가족부장관 표창을 받았습니다.',
+    category: '수상',
+    awardBadge: '여성가족부장관상 (2017)'
   },
   {
-    year: '2025~2026',
-    title: '지역 복지 인프라 강화 & AI 디지털 포용 복지',
-    subtitle: '기술과 온기가 결합한 미래형 복지 모델 구축',
-    description: '관내 장애인·노인·가족 복지시설 대상 맞춤형 배분사업 확충과 함께 이주민 AI 한국어 발음교정 및 취약계층 디지털 포용 교육을 운영합니다.',
-    category: '사업확대',
-    imageUrl: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=800&q=80'
+    year: '2016',
+    title: '행정자치부장관상 수상',
+    subtitle: '지역사회 봉사 및 나눔 공로 인정',
+    description: '홍천군 다문화가정의 안정적 정착과 소외계층 대상 지속적인 민간 복지 지원활동의 성과를 인정받아 행정자치부장관 표창을 수상하였습니다.',
+    category: '수상',
+    awardBadge: '행정자치부장관상 (2016)'
+  },
+  {
+    year: '2010~2015',
+    title: '다문화가정 복지 지원망 대폭 확대',
+    subtitle: '교육, 의료, 주거, 긴급생활 지원',
+    description: '장학금 지원, 학원비 및 교재비 보조, 긴급 의료비 및 생활용품 지원, 보온 주거환경 개선사업을 본격화하며 홍천 관내 복지 사각지대 해소에 기여했습니다.',
+    category: '사업확대'
+  },
+  {
+    year: '2009',
+    title: '(사)홍천다문화가정후원회 출범',
+    subtitle: '민간 중심 나눔의 첫 걸음',
+    description: '홍천지역 다문화가정과 이주민, 지역 취약계층의 안정적인 자립을 지원하기 위해 윤성일 회장을 중심으로 지역 자원봉사자와 후원인들이 뜻을 모아 출범했습니다.',
+    category: '출범'
   }
 ];
 
@@ -225,19 +222,19 @@ export const INITIAL_PROGRAMS: ProgramItem[] = [
   {
     id: 'prog-06',
     code: '06',
-    title: 'AI·디지털 복지',
-    subtitle: '기술을 넘어 사람을 위한 미래형 복지.',
-    summary: 'AI 음성인식과 생성형 디지털 기술을 접목한 다문화·고령층 맞춤 학습',
+    title: '다문화가족 한마음 축제',
+    subtitle: '다문화가족과 지역주민이 함께 어우러지는 화합과 나눔의 대축제.',
+    summary: '세계 문화 체험, 체육대회, 장기자랑 및 모범가족 표창을 통한 홍천군민 소통과 화합의 장',
     details: [
-      'AI 기반 한국어 발음 교정 및 정밀 실시간 음성 피드백 (Master K / Talkpal 연계)',
-      '어르신 및 이주민 대상 스마트폰 생활 AI 활용 교육',
-      '생성형 AI를 활용한 디지털 문해 및 정보격차 해소',
-      '디지털 복지 기기 지원 및 비대면 안부 확인 시스템'
+      '세계 각국 전통 요리 및 다문화 전통의상 체험관 운영',
+      '다문화가족과 지역 주민이 함께하는 명랑운동회 & 체육대회',
+      '다문화가족 장기자랑, 세계 전통 무용 공연 및 축하 무대',
+      '모범 다문화가족 표창, 다문화 장학금 전달 및 화합 네트워크 구축'
     ],
-    iconName: 'Cpu',
-    targetAudience: '결혼이민자, 다문화 자녀, 정보 소외 어르신',
-    impactMessage: '누구나 기술의 혜택에서 소외되지 않는 미래형 복지 홍천을 선도합니다.',
-    badge: '특화 혁신사업'
+    iconName: 'PartyPopper',
+    targetAudience: '홍천 관내 다문화가족, 이주민 및 홍천군민 전체',
+    impactMessage: '다채로운 문화가 어우러져 편견을 허물고 온 군민이 하나 되는 포용 도시 홍천을 만들어 갑니다.',
+    badge: '화합 축제사업'
   }
 ];
 
@@ -281,7 +278,7 @@ export const INITIAL_NOTICES: NoticeItem[] = [
     author: '재단 사무국',
     content: `사단법인 너브내행복나눔재단은 제17차 정기총회를 열어 2025년 사업 결산안을 승인하고 2026년 이웃사랑 나눔복지 사업계획을 의결하였습니다.
 
-올해에는 취약계층 긴급구호, 장학사업 확대, 복지시설 배분사업과 함께 AI 디지털 포용 교육 등 다각적인 포용복지를 실천할 예정입니다.`
+올해에는 취약계층 긴급구호, 장학사업 확대, 복지시설 배분사업과 함께 홍천 다문화가족 한마음 축제 개최 등 다각적인 포용복지를 실천할 예정입니다.`
   },
   {
     id: 'not-01',
@@ -316,7 +313,7 @@ export const INITIAL_NOTICES: NoticeItem[] = [
 - 주민등록등본 및 가구 소득증빙 서류
 - 재학증명서 및 성적증명서
 
-자세한 사항은 재단 사무국([관리자 입력 필요 - 전화번호])으로 문의해 주시기 바랍니다.`
+자세한 사항은 재단 사무국(033-436-1925)으로 문의해 주시기 바랍니다.`
   },
   {
     id: 'not-02',
@@ -357,15 +354,15 @@ export const INITIAL_NOTICES: NoticeItem[] = [
   },
   {
     id: 'not-04',
-    title: '결혼이민자 대상 AI 기반 한국어 발음교정 특화 프로그램 수강생 모집',
-    category: '모집공고',
+    title: '제13회 홍천 다문화가족 한마음 축제 성황리 개최 안내',
+    category: '재단소식',
     date: '2026-01-08',
-    views: 295,
+    views: 385,
     isImportant: true,
-    author: '디지털복지팀',
-    content: `너브내행복나눔재단과 홍천군가족센터가 공동 주관하는 'AI 한국어 발음 교정 및 정착 지원 사업' 수강생을 모집합니다.
+    author: '다문화사업팀',
+    content: `(사)너브내행복나눔재단과 홍천군가족센터가 공동 주최·주관한 '제13회 홍천 다문화가족 한마음 축제'가 600여 명의 다문화가족과 지역 군민들이 참여한 가운데 성황리에 개최되었습니다.
 
-스마트폰 AI 음성인식 기술을 활용해 언제 어디서나 정확한 한국어 발음과 어휘를 연습할 수 있는 무료 학습 기회를 제공합니다.`
+세계 전통요리 및 문화 체험관, 명랑운동회, 다문화가족 장기자랑 및 모범가족 표창 등 화합과 나눔의 풍성한 프로그램이 진행되었습니다.`
   },
   {
     id: 'not-05',
@@ -482,12 +479,12 @@ export const INITIAL_GALLERY: GalleryItem[] = [
   },
   {
     id: 'gal-06',
-    title: 'AI 기반 한국어 발음분석 실습 교실 현장',
-    category: '교육지원',
-    date: '2025-12-01',
-    imageUrl: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=800&q=80',
-    description: '결혼이민자들이 스마트폰 AI 발음분석 앱을 활용해 한국어 음성을 익히는 특화 수업 현장입니다.',
-    location: '홍천군가족센터 강의실'
+    title: '제13회 홍천 다문화가족 한마음 축제 현장',
+    category: '다문화지원',
+    date: '2025-10-26',
+    imageUrl: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=800&q=80',
+    description: '다문화가족과 지역 주민들이 함께 세계 전통 요리를 맛보고 전통 의상을 체험하며 화합하는 한마음 축제 현장입니다.',
+    location: '홍천 도시산림공원 토리숲'
   }
 ];
 

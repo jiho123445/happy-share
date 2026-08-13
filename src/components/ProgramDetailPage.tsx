@@ -13,7 +13,8 @@ import {
   HeartHandshake,
   Home,
   Cpu,
-  Phone
+  Phone,
+  PartyPopper
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, React.ReactNode> = {
@@ -23,6 +24,7 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   Users: <Users className="w-8 h-8 text-emerald-500" />,
   Building2: <Building2 className="w-8 h-8 text-blue-500" />,
   Cpu: <Cpu className="w-8 h-8 text-purple-500" />,
+  PartyPopper: <PartyPopper className="w-8 h-8 text-pink-500" />,
 };
 
 export const ProgramDetailPage: React.FC = () => {
@@ -58,7 +60,8 @@ export const ProgramDetailPage: React.FC = () => {
     (selectedProgram.code === '02' && (g.category.includes('나눔') || g.category.includes('삼계탕'))) ||
     (selectedProgram.code === '03' && g.category.includes('주거')) ||
     (selectedProgram.code === '04' && g.category.includes('가족')) ||
-    (selectedProgram.code === '05' && g.category.includes('복지시설'))
+    (selectedProgram.code === '05' && g.category.includes('복지시설')) ||
+    (selectedProgram.code === '06' && (g.category.includes('축제') || g.category.includes('다문화')))
   );
 
   return (

@@ -103,13 +103,40 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           !bankAccounts ||
           !Array.isArray(bankAccounts) ||
           bankAccounts.length === 0 ||
-          bankAccounts[0]?.accountNumber === '351-0334-3619-11' ||
-          bankAccounts[0]?.accountNumber?.includes('관리지') ||
-          bankAccounts[0]?.accountNumber?.includes('관리가')
+          bankAccounts.some((acc: any) =>
+            !acc.accountNumber ||
+            acc.accountNumber.includes('관리자') ||
+            acc.accountNumber.includes('필요') ||
+            acc.accountNumber.includes('계좌번호') ||
+            acc.accountNumber.includes('[') ||
+            acc.accountNumber.includes('관리지')
+          )
         ) {
           bankAccounts = [
-            { bank: '농협', accountNumber: '351-1040-2310-53', holder: '(사)너브내행복나눔재단' }
+            { bank: '농협', accountNumber: '351-1040-2310-53', holder: '(사)너브내행복나눔재단' },
+            { bank: '신한은행', accountNumber: '100-026-882834', holder: '(사)너브내행복나눔재단' }
           ];
+        } else {
+          bankAccounts = bankAccounts.map((acc: any) => {
+            let cleanNumber = (acc.accountNumber || '')
+              .replace(/\[.*?\]/g, '')
+              .replace(/관리자/g, '')
+              .replace(/입력/g, '')
+              .replace(/필요/g, '')
+              .replace(/계좌번호/g, '')
+              .trim();
+            if (acc.bank?.includes('농협') && cleanNumber.length < 5) {
+              cleanNumber = '351-1040-2310-53';
+            }
+            if (acc.bank?.includes('신한') && cleanNumber.length < 5) {
+              cleanNumber = '100-026-882834';
+            }
+            return {
+              ...acc,
+              accountNumber: cleanNumber || '351-1040-2310-53',
+              holder: acc.holder || '(사)너브내행복나눔재단'
+            };
+          });
         }
         return {
           ...INITIAL_SETTINGS,
@@ -129,26 +156,66 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return INITIAL_SETTINGS;
   });
 
-  const [timeline] = useState<TimelineItem[]>(INITIAL_TIMELINE);
+  const [timeline] = useState<TimelineItem[]>(() => {
+    return [...INITIAL_TIMELINE].sort((a, b) => {
+      const yearA = parseInt(a.year.match(/\d{4}/)?.[0] || '0', 10);
+      const yearB = parseInt(b.year.match(/\d{4}/)?.[0] || '0', 10);
+      return yearB - yearA;
+    });
+  });
 
   const [programs, setPrograms] = useState<ProgramItem[]>(() => {
     const saved = localStorage.getItem('nerve_nae_programs');
-    return saved ? JSON.parse(saved) : INITIAL_PROGRAMS;
+    if (saved) {
+      try {
+        const parsed: ProgramItem[] = JSON.parse(saved);
+        return parsed.map(p => {
+          if (p.code === '06' || p.id === 'prog-06' || p.title.includes('AI') || p.title.includes('디지털')) {
+            const latest06 = INITIAL_PROGRAMS.find(item => item.code === '06');
+            if (latest06) return latest06;
+          }
+          return p;
+        });
+      } catch (e) {
+        console.error('Failed to parse saved programs', e);
+      }
+    }
+    return INITIAL_PROGRAMS;
   });
 
   const [notices, setNotices] = useState<NoticeItem[]>(() => {
     const saved = localStorage.getItem('nerve_nae_notices');
-    return saved ? JSON.parse(saved) : INITIAL_NOTICES;
+    if (saved) {
+      try {
+        const parsed: NoticeItem[] = JSON.parse(saved);
+        return parsed.map(n => {
+          if (n.id === 'not-04') {
+            const latestNot04 = INITIAL_NOTICES.find(item => item.id === 'not-04');
+            if (latestNot04) return latestNot04;
+          }
+          return n;
+        });
+      } catch (e) {
+        console.error('Failed to parse saved notices', e);
+      }
+    }
+    return INITIAL_NOTICES;
   });
 
   const [gallery, setGallery] = useState<GalleryItem[]>(() => {
     const saved = localStorage.getItem('nerve_nae_gallery');
     const list: GalleryItem[] = saved ? JSON.parse(saved) : INITIAL_GALLERY;
-    return list.map(g => ({
-      ...g,
-      author: g.author || '재단 관리자',
-      isProtected: g.isProtected ?? true
-    }));
+    return list.map(g => {
+      if (g.id === 'gal-06') {
+        const latestGal06 = INITIAL_GALLERY.find(item => item.id === 'gal-06');
+        if (latestGal06) return latestGal06;
+      }
+      return {
+        ...g,
+        author: g.author || '재단 관리자',
+        isProtected: g.isProtected ?? true
+      };
+    });
   });
 
   const [donations, setDonations] = useState<DonationApplication[]>(() => {

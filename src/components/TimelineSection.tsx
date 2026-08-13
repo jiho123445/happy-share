@@ -93,7 +93,7 @@ export const TimelineSection: React.FC = () => {
 
               {/* Mobile Year Badge */}
               <div className="sm:hidden inline-block mb-1 font-bold text-xs px-2 py-0.5 rounded bg-orange-100 text-orange-800">
-                {item.year}년
+                {item.year.endsWith('년') ? item.year : `${item.year}년`}
               </div>
 
               {/* Content Card */}
@@ -119,16 +119,6 @@ export const TimelineSection: React.FC = () => {
                 <p className="text-sm text-slate-600 leading-relaxed">
                   {item.description}
                 </p>
-
-                {item.imageUrl && (
-                  <div className="pt-2">
-                    <img
-                      src={item.imageUrl}
-                      alt={item.title}
-                      className="w-full h-48 object-cover rounded-xl border border-slate-100"
-                    />
-                  </div>
-                )}
               </div>
 
             </div>

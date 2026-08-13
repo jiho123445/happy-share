@@ -125,17 +125,12 @@ export const DonateSection: React.FC = () => {
 
             <div className="bg-slate-950/80 p-5 rounded-2xl border border-slate-700 w-full lg:w-auto space-y-3">
               {settings.bankAccounts.map((acc, idx) => (
-                <div key={idx} className="flex flex-wrap items-center justify-between gap-4 text-xs border-b border-slate-800/80 pb-2 last:border-none last:pb-0">
+                <div key={idx} className="flex flex-wrap items-center justify-between gap-4 text-xs border-b border-slate-800/80 pb-2.5 last:border-none last:pb-0">
                   <span className="font-bold text-orange-400">{acc.bank}</span>
-                  <span className="font-mono text-sm font-bold text-white tracking-wider">{acc.accountNumber}</span>
-                  <span className="text-slate-400">예금주: {acc.holder}</span>
+                  <span className="font-mono text-sm font-extrabold text-white tracking-wider">{acc.accountNumber}</span>
+                  <span className="text-slate-300">예금주: {acc.holder}</span>
                 </div>
               ))}
-              
-              <div className="pt-1 flex items-center gap-1.5 text-[11px] text-amber-300">
-                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                <span>실제 금융 계좌번호는 관리자 모드에서 언제든지 수정 가능합니다.</span>
-              </div>
             </div>
 
           </div>

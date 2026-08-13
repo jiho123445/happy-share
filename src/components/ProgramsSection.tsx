@@ -8,6 +8,7 @@ import {
   Users,
   Building2,
   Cpu,
+  PartyPopper,
   ArrowRight,
   Sparkles,
   CheckCircle2
@@ -20,6 +21,7 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   Users: <Users className="w-6 h-6 text-emerald-500" />,
   Building2: <Building2 className="w-6 h-6 text-blue-500" />,
   Cpu: <Cpu className="w-6 h-6 text-purple-500" />,
+  PartyPopper: <PartyPopper className="w-6 h-6 text-pink-500" />,
 };
 
 export const ProgramsSection: React.FC = () => {
