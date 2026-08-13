@@ -92,6 +92,18 @@ export interface NewsletterSubscriber {
   status: '구독중' | '해지';
 }
 
+export interface PopupItem {
+  id: string;
+  title: string;
+  content: string;
+  imageUrl?: string;
+  linkUrl?: string;
+  startDate?: string;
+  endDate?: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
 export interface FoundationSettings {
   adminPassword?: string;
   name: string;

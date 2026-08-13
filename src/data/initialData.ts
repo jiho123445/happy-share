@@ -1,4 +1,4 @@
-import { FoundationSettings, TimelineItem, ProgramItem, AwardItem, NoticeItem, GalleryItem, DonationApplication } from '../types';
+import { FoundationSettings, TimelineItem, ProgramItem, AwardItem, NoticeItem, GalleryItem, DonationApplication, PopupItem } from '../types';
 
 export const INITIAL_SETTINGS: FoundationSettings = {
   adminPassword: '1026',
@@ -540,6 +540,18 @@ export const INITIAL_DONATIONS: DonationApplication[] = [
     privacyAgreed: true,
     createdAt: '2026-08-03 12:07',
     status: '접수완료'
+  }
+];
+
+export const INITIAL_POPUPS: PopupItem[] = [
+  {
+    id: 'popup-01',
+    title: '2026년 너브내 행복나눔 정기 후원자 모집 안내',
+    content: '안녕하십니까, 사단법인 너브내행복나눔재단입니다.\n\n2026년을 맞아 홍천 지역 소외계층 어르신 및 다문화 가정 아동을 위한 정기 후원자를 모집하고 있습니다.\n\n후원자님의 작은 나눔이 복지 사각지대 이웃들에게 커다란 희망의 불씨가 됩니다. 많은 관심과 따뜻한 나눔 참여를 부탁드립니다.',
+    imageUrl: 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=800&q=80',
+    linkUrl: 'news',
+    isActive: true,
+    createdAt: '2026-08-01'
   }
 ];
 

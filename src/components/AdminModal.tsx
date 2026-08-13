@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useFoundation } from '../context/FoundationContext';
 import { Logo } from './Logo';
-import { ProgramItem, NoticeItem, GalleryItem, NoticeAttachment } from '../types';
+import { ProgramItem, NoticeItem, GalleryItem, NoticeAttachment, PopupItem } from '../types';
 import { downloadNoticeFile, exportDonationsToExcel, exportInquiriesToExcel, exportSubscribersToExcel } from '../utils/download';
 import {
   X,
@@ -35,7 +35,8 @@ import {
   Download,
   FileCheck,
   Mail,
-  ShieldCheck
+  ShieldCheck,
+  Bell
 } from 'lucide-react';
 
 export const AdminModal: React.FC = () => {
@@ -66,6 +67,11 @@ export const AdminModal: React.FC = () => {
     subscribers,
     updateSubscriberStatus,
     deleteSubscriber,
+    popups,
+    addPopup,
+    updatePopup,
+    deletePopup,
+    togglePopupActive,
     resetToDefaults,
     adminOpen,
     setAdminOpen
@@ -78,7 +84,7 @@ export const AdminModal: React.FC = () => {
   const [loginError, setLoginError] = useState<string | null>(null);
 
   // Tab State
-  const [activeTab, setActiveTab] = useState<'settings' | 'programs' | 'notices' | 'gallery' | 'donations' | 'inquiries' | 'subscribers'>('settings');
+  const [activeTab, setActiveTab] = useState<'settings' | 'programs' | 'notices' | 'gallery' | 'donations' | 'inquiries' | 'subscribers' | 'popups'>('settings');
   const [subscriberSearch, setSubscriberSearch] = useState<string>('');
 
   // Editing States
@@ -91,6 +97,16 @@ export const AdminModal: React.FC = () => {
 
   const [editingGalleryId, setEditingGalleryId] = useState<string | null>(null);
   const [editGalleryData, setEditGalleryData] = useState<Partial<GalleryItem>>({});
+
+  const [editingPopupId, setEditingPopupId] = useState<string | null>(null);
+  const [editPopupData, setEditPopupData] = useState<Partial<PopupItem>>({});
+
+  // New Popup Form State
+  const [newPopupTitle, setNewPopupTitle] = useState('');
+  const [newPopupContent, setNewPopupContent] = useState('');
+  const [newPopupImageUrl, setNewPopupImageUrl] = useState('');
+  const [newPopupLinkUrl, setNewPopupLinkUrl] = useState('');
+  const [newPopupIsActive, setNewPopupIsActive] = useState(true);
 
   // New Program Form State
   const [newProgTitle, setNewProgTitle] = useState('');
@@ -435,6 +451,47 @@ export const AdminModal: React.FC = () => {
     showToast('관리자 승인을 거쳐 갤러리 사진 정보가 정식 수정되었습니다.');
   };
 
+  // Popup Handlers
+  const handlePopupImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isEdit = false) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    processImageFile(file, (dataUrl) => {
+      if (isEdit) {
+        setEditPopupData(prev => ({ ...prev, imageUrl: dataUrl }));
+      } else {
+        setNewPopupImageUrl(dataUrl);
+      }
+    });
+  };
+
+  const handleCreatePopup = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPopupTitle.trim() || !newPopupContent.trim()) {
+      showToast('팝업 제목과 내용을 입력해 주세요.');
+      return;
+    }
+    addPopup({
+      title: newPopupTitle.trim(),
+      content: newPopupContent.trim(),
+      imageUrl: newPopupImageUrl.trim() || undefined,
+      linkUrl: newPopupLinkUrl.trim() || undefined,
+      isActive: newPopupIsActive
+    });
+    setNewPopupTitle('');
+    setNewPopupContent('');
+    setNewPopupImageUrl('');
+    setNewPopupLinkUrl('');
+    setNewPopupIsActive(true);
+    showToast('새 팝업창이 등록되었습니다.');
+  };
+
+  const handleSavePopupEdit = (id: string) => {
+    updatePopup(id, editPopupData);
+    setEditingPopupId(null);
+    setEditPopupData({});
+    showToast('팝업창 정보가 수정되었습니다.');
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-xs flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl max-w-4xl w-full h-[90vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
@@ -622,6 +679,15 @@ export const AdminModal: React.FC = () => {
                 }`}
               >
                 <Mail className="w-3.5 h-3.5 text-amber-500" /> 소식지 구독자 ({subscribers.length})
+              </button>
+
+              <button
+                onClick={() => setActiveTab('popups')}
+                className={`px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-colors shrink-0 ${
+                  activeTab === 'popups' ? 'bg-white text-orange-600 shadow-2xs font-extrabold' : 'hover:bg-slate-200'
+                }`}
+              >
+                <Bell className="w-3.5 h-3.5 text-orange-500" /> 팝업창 관리 ({popups.length})
               </button>
             </div>
 
@@ -2313,6 +2379,308 @@ export const AdminModal: React.FC = () => {
                       </table>
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* 8. Popups Tab */}
+              {activeTab === 'popups' && (
+                <div className="space-y-6">
+                  {/* Create New Popup Form */}
+                  <form onSubmit={handleCreatePopup} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                      <h4 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                        <Plus className="w-4 h-4 text-orange-500" />
+                        <span>새 메인 팝업창 등록</span>
+                      </h4>
+                      <span className="text-xs text-slate-500 font-medium">
+                        첫 화면 입장 또는 메인 클릭 시 노출될 팝업을 등록합니다.
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                      <div className="space-y-1 sm:col-span-2">
+                        <label className="font-bold text-slate-700">팝업 제목 <span className="text-red-500">*</span></label>
+                        <input
+                          type="text"
+                          value={newPopupTitle}
+                          onChange={(e) => setNewPopupTitle(e.target.value)}
+                          placeholder="예: 2026년 정기 후원자 모집 안내"
+                          className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:border-orange-500 focus:bg-white font-medium"
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-1 sm:col-span-2">
+                        <label className="font-bold text-slate-700">팝업 상세 내용 <span className="text-red-500">*</span></label>
+                        <textarea
+                          rows={4}
+                          value={newPopupContent}
+                          onChange={(e) => setNewPopupContent(e.target.value)}
+                          placeholder="팝업창에 게재할 안내문 내용을 입력하세요."
+                          className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:border-orange-500 focus:bg-white leading-relaxed resize-y font-medium"
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="font-bold text-slate-700">대표 이미지 (선택)</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={newPopupImageUrl}
+                            onChange={(e) => setNewPopupImageUrl(e.target.value)}
+                            placeholder="이미지 URL 또는 파일 업로드"
+                            className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:border-orange-500 focus:bg-white"
+                          />
+                          <label className="bg-slate-800 hover:bg-slate-700 text-white font-bold px-3 py-2.5 rounded-xl cursor-pointer shrink-0 flex items-center gap-1 transition-colors text-xs">
+                            <Upload className="w-3.5 h-3.5" />
+                            <span>파일</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handlePopupImageUpload(e, false)}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="font-bold text-slate-700">이동 연결 링크 (선택)</label>
+                        <input
+                          type="text"
+                          value={newPopupLinkUrl}
+                          onChange={(e) => setNewPopupLinkUrl(e.target.value)}
+                          placeholder="예: donate, news, programs 또는 https://..."
+                          className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:border-orange-500 focus:bg-white"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-2 flex items-center justify-between pt-2">
+                        <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
+                          <input
+                            type="checkbox"
+                            checked={newPopupIsActive}
+                            onChange={(e) => setNewPopupIsActive(e.target.checked)}
+                            className="w-4 h-4 text-orange-500 rounded border-slate-300 focus:ring-orange-400"
+                          />
+                          <span>등록 즉시 메인 팝업 활성화 (게시 중)</span>
+                        </label>
+
+                        <button
+                          type="submit"
+                          className="bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-extrabold px-5 py-2.5 rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>팝업창 등록하기</span>
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+
+                  {/* Registered Popups List */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between px-1">
+                      <h4 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                        <Bell className="w-4 h-4 text-orange-500" />
+                        <span>등록된 팝업 목록 ({popups.length}개)</span>
+                      </h4>
+                    </div>
+
+                    {popups.length === 0 ? (
+                      <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-400 text-xs">
+                        등록된 팝업창이 없습니다. 위 양식에서 새 팝업을 등록해 보세요.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-4">
+                        {popups.map((popup) => {
+                          const isEditing = editingPopupId === popup.id;
+
+                          if (isEditing) {
+                            return (
+                              <div key={popup.id} className="bg-amber-50/50 p-5 rounded-2xl border-2 border-orange-400 shadow-md space-y-4 text-xs">
+                                <div className="font-bold text-orange-800 text-sm">팝업 정보 수정</div>
+                                <div className="space-y-3">
+                                  <div>
+                                    <label className="font-bold text-slate-700 block mb-1">제목</label>
+                                    <input
+                                      type="text"
+                                      value={editPopupData.title ?? popup.title}
+                                      onChange={(e) => setEditPopupData(prev => ({ ...prev, title: e.target.value }))}
+                                      className="w-full p-2.5 bg-white border border-slate-300 rounded-xl"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="font-bold text-slate-700 block mb-1">내용</label>
+                                    <textarea
+                                      rows={4}
+                                      value={editPopupData.content ?? popup.content}
+                                      onChange={(e) => setEditPopupData(prev => ({ ...prev, content: e.target.value }))}
+                                      className="w-full p-2.5 bg-white border border-slate-300 rounded-xl leading-relaxed"
+                                    />
+                                  </div>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                      <label className="font-bold text-slate-700 block mb-1">이미지 URL</label>
+                                      <div className="flex items-center gap-2">
+                                        <input
+                                          type="text"
+                                          value={editPopupData.imageUrl ?? popup.imageUrl ?? ''}
+                                          onChange={(e) => setEditPopupData(prev => ({ ...prev, imageUrl: e.target.value }))}
+                                          className="w-full p-2 bg-white border border-slate-300 rounded-xl"
+                                        />
+                                        <label className="bg-slate-800 text-white font-bold px-2.5 py-2 rounded-xl cursor-pointer text-[11px] shrink-0">
+                                          업로드
+                                          <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(e) => handlePopupImageUpload(e, true)}
+                                            className="hidden"
+                                          />
+                                        </label>
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <label className="font-bold text-slate-700 block mb-1">연결 링크</label>
+                                      <input
+                                        type="text"
+                                        value={editPopupData.linkUrl ?? popup.linkUrl ?? ''}
+                                        onChange={(e) => setEditPopupData(prev => ({ ...prev, linkUrl: e.target.value }))}
+                                        className="w-full p-2 bg-white border border-slate-300 rounded-xl"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center justify-between pt-2 border-t border-amber-200">
+                                  <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-800">
+                                    <input
+                                      type="checkbox"
+                                      checked={editPopupData.isActive ?? popup.isActive}
+                                      onChange={(e) => setEditPopupData(prev => ({ ...prev, isActive: e.target.checked }))}
+                                      className="w-4 h-4 text-orange-500 rounded"
+                                    />
+                                    <span>팝업 게시 활성화</span>
+                                  </label>
+
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSavePopupEdit(popup.id)}
+                                      className="bg-orange-500 hover:bg-orange-600 text-white font-extrabold px-4 py-2 rounded-xl shadow-xs cursor-pointer"
+                                    >
+                                      저장
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setEditingPopupId(null);
+                                        setEditPopupData({});
+                                      }}
+                                      className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-2 rounded-xl cursor-pointer"
+                                    >
+                                      취소
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div key={popup.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="space-y-1 flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        togglePopupActive(popup.id);
+                                        showToast(`팝업 상태가 '${!popup.isActive ? '게시 중' : '중지됨'}'(으)로 변경되었습니다.`);
+                                      }}
+                                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-black cursor-pointer transition-colors ${
+                                        popup.isActive
+                                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200'
+                                          : 'bg-slate-100 text-slate-500 border border-slate-300 hover:bg-slate-200'
+                                      }`}
+                                    >
+                                      {popup.isActive ? '게시 중 (ON)' : '중지됨 (OFF)'}
+                                    </button>
+                                    <span className="text-[11px] text-slate-400 font-mono">{popup.createdAt}</span>
+                                  </div>
+                                  <h5 className="font-extrabold text-slate-900 text-base">{popup.title}</h5>
+                                </div>
+
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingPopupId(popup.id);
+                                      setEditPopupData(popup);
+                                    }}
+                                    className="p-1.5 text-slate-500 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors cursor-pointer"
+                                    title="수정"
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </button>
+
+                                  {deleteConfirmId === popup.id ? (
+                                    <div className="inline-flex items-center gap-1 bg-red-50 border border-red-200 p-1 rounded-xl animate-in fade-in">
+                                      <span className="text-[10px] font-bold text-red-700">삭제?</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          deletePopup(popup.id);
+                                          setDeleteConfirmId(null);
+                                          showToast('팝업이 삭제되었습니다.');
+                                        }}
+                                        className="bg-red-600 text-white font-black text-[10px] px-2 py-0.5 rounded-lg cursor-pointer"
+                                      >
+                                        삭제
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setDeleteConfirmId(null)}
+                                        className="bg-slate-200 text-slate-700 font-bold text-[10px] px-1.5 py-0.5 rounded-lg cursor-pointer"
+                                      >
+                                        취소
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => setDeleteConfirmId(popup.id)}
+                                      className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                                      title="삭제"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+
+                              <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-line bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                                {popup.content}
+                              </p>
+
+                              {popup.imageUrl && (
+                                <div className="w-full h-36 rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
+                                  <img src={popup.imageUrl} alt={popup.title} className="w-full h-full object-cover" />
+                                </div>
+                              )}
+
+                              {popup.linkUrl && (
+                                <div className="text-[11px] text-slate-500 font-mono flex items-center gap-1">
+                                  <LinkIcon className="w-3 h-3 text-orange-500" />
+                                  <span>연결: {popup.linkUrl}</span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 

@@ -21,6 +21,7 @@ import { NewsletterSection } from './components/NewsletterSection';
 import { FloatingQuickMenu } from './components/FloatingQuickMenu';
 import { ModalViewer } from './components/ModalViewer';
 import { AdminModal } from './components/AdminModal';
+import { PopupModal } from './components/PopupModal';
 
 const MainContent: React.FC = () => {
   const { activeTab } = useFoundation();
@@ -105,6 +106,7 @@ export default function App() {
         <FloatingQuickMenu />
         <ModalViewer />
         <AdminModal />
+        <PopupModal />
       </div>
     </FoundationProvider>
   );

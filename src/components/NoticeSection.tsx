@@ -4,8 +4,9 @@ import { NoticeItem } from '../types';
 import { Newspaper, Search, Eye, Calendar, Pin, FileText, ChevronRight, Paperclip } from 'lucide-react';
 
 export const NoticeSection: React.FC = () => {
-  const { notices, viewNoticeDetail } = useFoundation();
-  const [selectedCategory, setSelectedCategory] = useState<string>('전체');
+  const { notices, viewNoticeDetail, noticeCategory, setNoticeCategory } = useFoundation();
+  const selectedCategory = noticeCategory || '전체';
+  const setSelectedCategory = (cat: string) => setNoticeCategory(cat);
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   const CATEGORIES = ['전체', '공지사항', '재단소식', '사업소식', '후원소식', '모집공고', '보도자료'];

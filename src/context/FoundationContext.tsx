@@ -9,7 +9,8 @@ import {
   ContactInquiry,
   NewsletterSubscriber,
   ActiveTab,
-  AboutSubTab
+  AboutSubTab,
+  PopupItem
 } from '../types';
 import {
   INITIAL_SETTINGS,
@@ -17,7 +18,8 @@ import {
   INITIAL_PROGRAMS,
   INITIAL_NOTICES,
   INITIAL_GALLERY,
-  INITIAL_DONATIONS
+  INITIAL_DONATIONS,
+  INITIAL_POPUPS
 } from '../data/initialData';
 
 interface FoundationContextType {
@@ -29,6 +31,7 @@ interface FoundationContextType {
   donations: DonationApplication[];
   inquiries: ContactInquiry[];
   subscribers: NewsletterSubscriber[];
+  popups: PopupItem[];
   hasNewDonation: boolean;
   pendingDonationsCount: number;
   markDonationsAsRead: () => void;
@@ -36,6 +39,9 @@ interface FoundationContextType {
   setActiveTab: (tab: ActiveTab) => void;
   aboutSubTab: AboutSubTab;
   setAboutSubTab: (tab: AboutSubTab) => void;
+  noticeCategory: string;
+  setNoticeCategory: (category: string) => void;
+  navigateToNewsCategory: (category?: string) => void;
   adminOpen: boolean;
   setAdminOpen: (open: boolean) => void;
   
@@ -83,6 +89,14 @@ interface FoundationContextType {
   addSubscriber: (email: string) => void;
   updateSubscriberStatus: (id: string, status: '구독중' | '해지') => void;
   deleteSubscriber: (id: string) => void;
+
+  // Popups CRUD
+  addPopup: (popup: Omit<PopupItem, 'id' | 'createdAt'>) => void;
+  updatePopup: (id: string, popup: Partial<PopupItem>) => void;
+  deletePopup: (id: string) => void;
+  togglePopupActive: (id: string) => void;
+  triggerPopupShow: () => void;
+  showPopupsFlag: number;
 
   // Other Settings
   updateSettings: (newSettings: Partial<FoundationSettings>) => void;
@@ -251,10 +265,41 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     ];
   });
 
+  const [popups, setPopups] = useState<PopupItem[]>(() => {
+    const saved = localStorage.getItem('nerve_nae_popups');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((p: PopupItem) => p.linkUrl === 'donate' ? { ...p, linkUrl: 'news' } : p);
+        }
+      } catch (e) {
+        console.warn('Failed to parse saved popups', e);
+      }
+    }
+    return INITIAL_POPUPS;
+  });
+
+  const [showPopupsFlag, setShowPopupsFlag] = useState<number>(1);
+
+  const triggerPopupShow = () => {
+    setShowPopupsFlag(prev => prev + 1);
+  };
+
   const [activeTab, setActiveTabState] = useState<ActiveTab>('main');
   const [previousTab, setPreviousTab] = useState<ActiveTab>('main');
   const [aboutSubTab, setAboutSubTab] = useState<AboutSubTab>('greeting');
+  const [noticeCategory, setNoticeCategory] = useState<string>('전체');
   const [adminOpen, setAdminOpen] = useState<boolean>(false);
+
+  const navigateToNewsCategory = (category: string = '전체') => {
+    setNoticeCategory(category);
+    setSelectedNotice(null);
+    setSelectedProgram(null);
+    setSelectedGallery(null);
+    setActiveTabState('news');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const [selectedProgram, setSelectedProgram] = useState<ProgramItem | null>(null);
   const [selectedNotice, setSelectedNotice] = useState<NoticeItem | null>(null);
@@ -270,8 +315,20 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     if (tab !== 'gallery-detail') {
       setSelectedGallery(null);
     }
+    if (tab === 'main') {
+      triggerPopupShow();
+    }
     setActiveTabState(tab);
   };
+
+  // Sync popups to local storage
+  useEffect(() => {
+    try {
+      localStorage.setItem('nerve_nae_popups', JSON.stringify(popups));
+    } catch (e) {
+      console.warn('Failed to save popups to localStorage', e);
+    }
+  }, [popups]);
 
   // Sync to local storage with safe error handling
   useEffect(() => {
@@ -454,6 +511,27 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setSubscribers(prev => prev.filter(s => s.id !== id));
   };
 
+  const addPopup = (popupData: Omit<PopupItem, 'id' | 'createdAt'>) => {
+    const newPopup: PopupItem = {
+      ...popupData,
+      id: `popup-${Date.now()}`,
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+    setPopups(prev => [newPopup, ...prev]);
+  };
+
+  const updatePopup = (id: string, updatedData: Partial<PopupItem>) => {
+    setPopups(prev => prev.map(p => p.id === id ? { ...p, ...updatedData } : p));
+  };
+
+  const deletePopup = (id: string) => {
+    setPopups(prev => prev.filter(p => p.id !== id));
+  };
+
+  const togglePopupActive = (id: string) => {
+    setPopups(prev => prev.map(p => p.id === id ? { ...p, isActive: !p.isActive } : p));
+  };
+
   const updateSettings = (newSettings: Partial<FoundationSettings>) => {
     setSettings(prev => ({ ...prev, ...newSettings }));
   };
@@ -463,6 +541,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setPrograms(INITIAL_PROGRAMS);
     setNotices(INITIAL_NOTICES);
     setGallery(INITIAL_GALLERY);
+    setPopups(INITIAL_POPUPS);
     setDonations([]);
     setInquiries([]);
     setSubscribers([]);
@@ -529,6 +608,9 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         setActiveTab,
         aboutSubTab,
         setAboutSubTab,
+        noticeCategory,
+        setNoticeCategory,
+        navigateToNewsCategory,
         adminOpen,
         setAdminOpen,
         selectedProgram,
@@ -573,6 +655,15 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         addSubscriber,
         updateSubscriberStatus,
         deleteSubscriber,
+
+        // Popups CRUD
+        popups,
+        addPopup,
+        updatePopup,
+        deletePopup,
+        togglePopupActive,
+        triggerPopupShow,
+        showPopupsFlag,
 
         updateSettings,
         resetToDefaults,
