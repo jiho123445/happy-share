@@ -230,9 +230,7 @@ export const AdminModal: React.FC = () => {
     if (!files || files.length === 0) return;
 
     Array.from(files).forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const dataUrl = e.target?.result as string;
+      const addAttachment = (dataUrl: string) => {
         const formattedSize = file.size > 1024 * 1024
           ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
           : Math.round(file.size / 1024) + ' KB';
@@ -259,7 +257,17 @@ export const AdminModal: React.FC = () => {
           setNewNoticeAttachments(prev => [...prev, attachmentObj]);
         }
       };
-      reader.readAsDataURL(file);
+
+      if (file.type.startsWith('image/')) {
+        processImageFile(file, (dataUrl) => addAttachment(dataUrl));
+      } else {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const dataUrl = e.target?.result as string;
+          if (dataUrl) addAttachment(dataUrl);
+        };
+        reader.readAsDataURL(file);
+      }
     });
   };
 
@@ -308,13 +316,13 @@ export const AdminModal: React.FC = () => {
       const rawDataUrl = e.target?.result as string;
       if (!rawDataUrl) return;
 
-      // Compress photo using Canvas to max 1200px width/height and 0.82 quality
+      // Compress photo using Canvas to max 1000px width/height and 0.78 quality (~50-80KB)
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
         let width = img.width;
         let height = img.height;
-        const MAX_SIZE = 1200;
+        const MAX_SIZE = 1000;
 
         if (width > MAX_SIZE || height > MAX_SIZE) {
           if (width > height) {
@@ -331,7 +339,7 @@ export const AdminModal: React.FC = () => {
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.drawImage(img, 0, 0, width, height);
-          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.78);
           callback(compressedDataUrl, file.name);
         } else {
           callback(rawDataUrl, file.name);
@@ -676,11 +684,9 @@ export const AdminModal: React.FC = () => {
                               onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
-                                  const reader = new FileReader();
-                                  reader.onloadend = () => {
-                                    setEditSettings((prev) => ({ ...prev, chairmanImageUrl: reader.result as string }));
-                                  };
-                                  reader.readAsDataURL(file);
+                                  processImageFile(file, (dataUrl) => {
+                                    setEditSettings((prev) => ({ ...prev, chairmanImageUrl: dataUrl }));
+                                  });
                                 }
                               }}
                             />
@@ -716,11 +722,9 @@ export const AdminModal: React.FC = () => {
                               onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
-                                  const reader = new FileReader();
-                                  reader.onloadend = () => {
-                                    setEditSettings((prev) => ({ ...prev, heroImageUrl: reader.result as string }));
-                                  };
-                                  reader.readAsDataURL(file);
+                                  processImageFile(file, (dataUrl) => {
+                                    setEditSettings((prev) => ({ ...prev, heroImageUrl: dataUrl }));
+                                  });
                                 }
                               }}
                             />

@@ -114,9 +114,8 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         return {
           ...INITIAL_SETTINGS,
           ...parsed,
-          heroImageUrl: (!parsed.heroImageUrl || parsed.heroImageUrl.includes('photo-1593113598332') || parsed.heroImageUrl.includes('photo-1542838132') || parsed.heroImageUrl.includes('photo-1488521787991'))
-            ? INITIAL_SETTINGS.heroImageUrl
-            : parsed.heroImageUrl,
+          heroImageUrl: parsed.heroImageUrl || INITIAL_SETTINGS.heroImageUrl,
+          chairmanImageUrl: parsed.chairmanImageUrl || INITIAL_SETTINGS.chairmanImageUrl,
           bankAccounts,
           phone: (parsed.phone && parsed.phone.includes('033-433')) ? '033-436-1925' : (parsed.phone || '033-436-1925'),
           fax: (parsed.fax && parsed.fax.includes('033-433')) ? '033-436-1910' : (parsed.fax || '033-436-1910'),
