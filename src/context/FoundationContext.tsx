@@ -44,6 +44,10 @@ interface FoundationContextType {
   navigateToNewsCategory: (category?: string) => void;
   adminOpen: boolean;
   setAdminOpen: (open: boolean) => void;
+  isAdmin: boolean;
+  setIsAdmin: (isAdmin: boolean) => void;
+  refreshData: () => Promise<void>;
+  isSyncing: boolean;
   
   // Modal & Page selections
   selectedProgram: ProgramItem | null;
@@ -388,6 +392,26 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [aboutSubTab, setAboutSubTab] = useState<AboutSubTab>(initialParsed.aboutSubTab || 'greeting');
   const [noticeCategory, setNoticeCategory] = useState<string>(initialParsed.noticeCategory || '전체');
   const [adminOpen, setAdminOpen] = useState<boolean>(false);
+  const [isAdmin, setIsAdminState] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem('nerve_nae_admin_auth') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const setIsAdmin = (val: boolean) => {
+    setIsAdminState(val);
+    try {
+      if (val) {
+        sessionStorage.setItem('nerve_nae_admin_auth', 'true');
+      } else {
+        sessionStorage.removeItem('nerve_nae_admin_auth');
+      }
+    } catch (e) {
+      console.warn('Session storage error', e);
+    }
+  };
 
   const [selectedProgram, setSelectedProgram] = useState<ProgramItem | null>(null);
   const [selectedNotice, setSelectedNotice] = useState<NoticeItem | null>(null);
@@ -539,51 +563,58 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   }, [popups]);
 
   const isServerLoaded = useRef(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const fetchServerData = async () => {
+    setIsSyncing(true);
+    try {
+      const res = await fetch('/api/data?t=' + Date.now());
+      if (res.ok) {
+        const json = await res.json();
+        if (json.data) {
+          const d = json.data;
+          if (d.settings) {
+            const serverChairmanImg = (d.settings.chairmanImageUrl && !d.settings.chairmanImageUrl.includes('photo-1560250097-0b93528c311a'))
+              ? d.settings.chairmanImageUrl
+              : INITIAL_SETTINGS.chairmanImageUrl;
+
+            setSettings(prev => ({
+              ...prev,
+              ...d.settings,
+              heroImageUrl: d.settings.heroImageUrl || prev.heroImageUrl,
+              chairmanImageUrl: serverChairmanImg || prev.chairmanImageUrl || INITIAL_SETTINGS.chairmanImageUrl,
+            }));
+          }
+          if (Array.isArray(d.programs) && d.programs.length > 0) setPrograms(d.programs);
+          if (Array.isArray(d.notices) && d.notices.length > 0) setNotices(d.notices);
+          if (Array.isArray(d.gallery) && d.gallery.length > 0) {
+            setGallery(d.gallery);
+            try {
+              localStorage.setItem('nerve_nae_gallery', JSON.stringify(d.gallery));
+            } catch (e) {
+              console.warn('Failed to cache gallery to localStorage', e);
+            }
+          }
+          if (Array.isArray(d.popups) && d.popups.length > 0) setPopups(d.popups);
+          if (Array.isArray(d.donations)) setDonations(d.donations);
+          if (Array.isArray(d.inquiries)) setInquiries(d.inquiries);
+          if (Array.isArray(d.subscribers)) setSubscribers(d.subscribers);
+        }
+      }
+    } catch (err) {
+      console.warn('Server sync not available or offline', err);
+    } finally {
+      isServerLoaded.current = true;
+      setIsSyncing(false);
+    }
+  };
+
+  const refreshData = async () => {
+    await fetchServerData();
+  };
 
   // Load latest state from server on mount & periodically sync PC changes to Mobile
   useEffect(() => {
-    const fetchServerData = async () => {
-      try {
-        const res = await fetch('/api/data?t=' + Date.now());
-        if (res.ok) {
-          const json = await res.json();
-          if (json.data) {
-            const d = json.data;
-            if (d.settings) {
-              const serverChairmanImg = (d.settings.chairmanImageUrl && !d.settings.chairmanImageUrl.includes('photo-1560250097-0b93528c311a'))
-                ? d.settings.chairmanImageUrl
-                : INITIAL_SETTINGS.chairmanImageUrl;
-
-              setSettings(prev => ({
-                ...prev,
-                ...d.settings,
-                heroImageUrl: d.settings.heroImageUrl || prev.heroImageUrl,
-                chairmanImageUrl: serverChairmanImg || prev.chairmanImageUrl || INITIAL_SETTINGS.chairmanImageUrl,
-              }));
-            }
-            if (Array.isArray(d.programs) && d.programs.length > 0) setPrograms(d.programs);
-            if (Array.isArray(d.notices) && d.notices.length > 0) setNotices(d.notices);
-            if (Array.isArray(d.gallery) && d.gallery.length > 0) {
-              setGallery(d.gallery);
-              try {
-                localStorage.setItem('nerve_nae_gallery', JSON.stringify(d.gallery));
-              } catch (e) {
-                console.warn('Failed to cache gallery to localStorage', e);
-              }
-            }
-            if (Array.isArray(d.popups) && d.popups.length > 0) setPopups(d.popups);
-            if (Array.isArray(d.donations)) setDonations(d.donations);
-            if (Array.isArray(d.inquiries)) setInquiries(d.inquiries);
-            if (Array.isArray(d.subscribers)) setSubscribers(d.subscribers);
-          }
-        }
-      } catch (err) {
-        console.warn('Server sync not available or offline', err);
-      } finally {
-        isServerLoaded.current = true;
-      }
-    };
-
     fetchServerData();
 
     // Auto sync on tab focus or visibility change (e.g. mobile app switch)
@@ -591,8 +622,8 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     window.addEventListener('focus', handleFocus);
     document.addEventListener('visibilitychange', handleFocus);
 
-    // Periodic sync every 4 seconds for instant cross-device updates
-    const interval = setInterval(fetchServerData, 4000);
+    // Periodic sync every 2.5 seconds for instant cross-device updates
+    const interval = setInterval(fetchServerData, 2500);
 
     return () => {
       window.removeEventListener('focus', handleFocus);
@@ -956,6 +987,10 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         navigateToNewsCategory,
         adminOpen,
         setAdminOpen,
+        isAdmin,
+        setIsAdmin,
+        refreshData,
+        isSyncing,
         selectedProgram,
         setSelectedProgram,
         selectedNotice,

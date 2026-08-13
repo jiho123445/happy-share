@@ -75,11 +75,13 @@ export const AdminModal: React.FC = () => {
     togglePopupActive,
     resetToDefaults,
     adminOpen,
-    setAdminOpen
+    setAdminOpen,
+    isAdmin,
+    setIsAdmin
   } = useFoundation();
 
   // Authentication State
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => isAdmin);
   const [passwordInput, setPasswordInput] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -169,6 +171,7 @@ export const AdminModal: React.FC = () => {
     const currentPassword = settings.adminPassword || '1026';
     if (passwordInput === currentPassword) {
       setIsAuthenticated(true);
+      setIsAdmin(true);
       setLoginError(null);
       setPasswordInput('');
     } else {
@@ -322,8 +325,8 @@ export const AdminModal: React.FC = () => {
     showToast('공지사항 내용이 수정되었습니다.');
   };
 
-  // Gallery File Upload Handlers (with HTML5 Canvas compression)
-  const processImageFile = (file: File, callback: (dataUrl: string, fileName: string) => void) => {
+  // Gallery File Upload Handlers (with HTML5 Canvas compression + server static upload)
+  const processImageFile = (file: File, callback: (finalUrl: string, fileName: string) => void) => {
     if (!file.type.startsWith('image/')) {
       alert('이미지 파일(JPG, PNG, WEBP, GIF 등)만 업로드 가능합니다.');
       return;
@@ -333,13 +336,13 @@ export const AdminModal: React.FC = () => {
       const rawDataUrl = e.target?.result as string;
       if (!rawDataUrl) return;
 
-      // Compress photo using Canvas to max 1000px width/height and 0.78 quality (~50-80KB)
+      // Compress photo using Canvas to max 1200px width/height and 0.82 quality (~60-90KB)
       const img = new Image();
-      img.onload = () => {
+      img.onload = async () => {
         const canvas = document.createElement('canvas');
         let width = img.width;
         let height = img.height;
-        const MAX_SIZE = 1000;
+        const MAX_SIZE = 1200;
 
         if (width > MAX_SIZE || height > MAX_SIZE) {
           if (width > height) {
@@ -354,13 +357,31 @@ export const AdminModal: React.FC = () => {
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
+        let processedUrl = rawDataUrl;
         if (ctx) {
           ctx.drawImage(img, 0, 0, width, height);
-          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.78);
-          callback(compressedDataUrl, file.name);
-        } else {
-          callback(rawDataUrl, file.name);
+          processedUrl = canvas.toDataURL('image/jpeg', 0.82);
         }
+
+        // Try direct server static upload for instant multi-device sync
+        try {
+          const res = await fetch('/api/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: processedUrl, prefix: 'upload' })
+          });
+          if (res.ok) {
+            const json = await res.json();
+            if (json.url) {
+              callback(json.url, file.name);
+              return;
+            }
+          }
+        } catch (uploadErr) {
+          console.warn('Server upload fallback to dataUrl', uploadErr);
+        }
+
+        callback(processedUrl, file.name);
       };
       img.onerror = () => {
         callback(rawDataUrl, file.name);
@@ -521,7 +542,10 @@ export const AdminModal: React.FC = () => {
           <div className="flex items-center gap-2">
             {isAuthenticated && (
               <button
-                onClick={() => setIsAuthenticated(false)}
+                onClick={() => {
+                  setIsAuthenticated(false);
+                  setIsAdmin(false);
+                }}
                 className="hidden sm:flex items-center gap-1 text-xs text-slate-400 hover:text-orange-400 px-3 py-1.5 rounded-xl hover:bg-slate-800 transition-colors"
                 title="로그아웃"
               >

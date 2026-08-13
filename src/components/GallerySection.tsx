@@ -9,13 +9,21 @@ import {
   Eye,
   Settings,
   Lock,
-  ShieldCheck
+  ShieldCheck,
+  RefreshCw
 } from 'lucide-react';
 
 export const GallerySection: React.FC = () => {
-  const { gallery, viewGalleryDetail, setAdminOpen } = useFoundation();
+  const { gallery, viewGalleryDetail, setAdminOpen, refreshData, isSyncing } = useFoundation();
   const [selectedCategory, setSelectedCategory] = useState<string>('전체');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [manualRefreshing, setManualRefreshing] = useState(false);
+
+  const handleManualRefresh = async () => {
+    setManualRefreshing(true);
+    await refreshData();
+    setTimeout(() => setManualRefreshing(false), 500);
+  };
 
   const DEFAULT_CATEGORIES = [
     '전체',
@@ -42,12 +50,17 @@ export const GallerySection: React.FC = () => {
     <section id="gallery-section" className="py-16 md:py-24 bg-slate-50 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-8 space-y-8">
         
-        {/* Header with Admin Management Trigger */}
+        {/* Header with Admin Management Trigger & Live Sync */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-200">
           <div className="space-y-2 text-center md:text-left">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200">
-              <ImageIcon className="w-3.5 h-3.5 text-emerald-600" />
-              <span>생생한 나눔 현장</span>
+            <div className="inline-flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200">
+                <ImageIcon className="w-3.5 h-3.5 text-emerald-600" />
+                <span>생생한 나눔 현장</span>
+              </span>
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-[11px] font-bold">
+                총 {gallery.length}개의 나눔 기록
+              </span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               너브내행복나눔 활동 갤러리
@@ -57,13 +70,25 @@ export const GallerySection: React.FC = () => {
             </p>
           </div>
 
-          <button
-            onClick={() => setAdminOpen(true)}
-            className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-xs sm:text-sm px-5 py-3 rounded-2xl flex items-center gap-2 shadow-md hover:shadow-lg transition-all shrink-0 cursor-pointer"
-          >
-            <Settings className="w-4 h-4" />
-            <span>관리자 모드 (사진 추가/삭제/수정)</span>
-          </button>
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              onClick={handleManualRefresh}
+              disabled={manualRefreshing || isSyncing}
+              className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm px-4 py-3 rounded-2xl flex items-center gap-2 transition-all cursor-pointer border border-slate-200 active:scale-95 disabled:opacity-60"
+              title="최신 활동사진 동기화"
+            >
+              <RefreshCw className={`w-4 h-4 text-emerald-600 ${manualRefreshing || isSyncing ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">사진 새로고침</span>
+            </button>
+
+            <button
+              onClick={() => setAdminOpen(true)}
+              className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-xs sm:text-sm px-5 py-3 rounded-2xl flex items-center gap-2 shadow-md hover:shadow-lg transition-all shrink-0 cursor-pointer"
+            >
+              <Settings className="w-4 h-4" />
+              <span>사진 등록/관리</span>
+            </button>
+          </div>
         </div>
 
         {/* Filter Bar & Search */}

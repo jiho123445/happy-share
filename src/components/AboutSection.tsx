@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 
 export const AboutSection: React.FC = () => {
-  const { settings, timeline, aboutSubTab, setAboutSubTab, setActiveTab, setAdminOpen } = useFoundation();
+  const { settings, timeline, aboutSubTab, setAboutSubTab, setActiveTab, setAdminOpen, isAdmin } = useFoundation();
 
   const handleSubTabChange = (tab: AboutSubTab) => {
     setAboutSubTab(tab);
@@ -155,16 +155,18 @@ export const AboutSection: React.FC = () => {
                       사단법인 너브내행복나눔재단 대표
                     </p>
 
-                    <div className="pt-2">
-                      <button
-                        onClick={() => setAdminOpen(true)}
-                        className="inline-flex items-center gap-1.5 text-xs text-slate-600 hover:text-orange-600 bg-slate-100 hover:bg-orange-50 px-3 py-1.5 rounded-lg border border-slate-200 hover:border-orange-200 font-bold transition-all cursor-pointer"
-                        title="관리자 모드에서 이사장 사진 및 인사말 수정"
-                      >
-                        <Settings className="w-3.5 h-3.5 text-orange-500" />
-                        <span>사진/인사말 수정</span>
-                      </button>
-                    </div>
+                    {isAdmin && (
+                      <div className="pt-2">
+                        <button
+                          onClick={() => setAdminOpen(true)}
+                          className="inline-flex items-center gap-1.5 text-xs text-slate-600 hover:text-orange-600 bg-slate-100 hover:bg-orange-50 px-3 py-1.5 rounded-lg border border-slate-200 hover:border-orange-200 font-bold transition-all cursor-pointer"
+                          title="관리자 모드에서 이사장 사진 및 인사말 수정"
+                        >
+                          <Settings className="w-3.5 h-3.5 text-orange-500" />
+                          <span>사진/인사말 수정</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
 
