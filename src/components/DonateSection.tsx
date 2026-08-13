@@ -119,12 +119,18 @@ export const DonateSection: React.FC = () => {
                 후원금 전용 계좌 안내
               </h3>
               <p className="text-xs sm:text-sm text-slate-300">
-                기부금 영수증 발급 가능 (국세청 연말정산 간소화 서비스 자동 연동)
+                기부금 영수증 발급 가능 (국세청 연말정산 간소화 서비스 연동)
               </p>
             </div>
 
             <div className="bg-slate-950/80 p-5 rounded-2xl border border-slate-700 w-full lg:w-auto space-y-3">
-              {settings.bankAccounts.map((acc, idx) => (
+              {((settings.bankAccounts && settings.bankAccounts.length >= 2)
+                ? settings.bankAccounts
+                : [
+                    { bank: '농협', accountNumber: '351-1040-2310-53', holder: '(사)너브내행복나눔재단' },
+                    { bank: '신한은행', accountNumber: '100-026-882834', holder: '(사)너브내행복나눔재단' }
+                  ]
+              ).map((acc, idx) => (
                 <div key={idx} className="flex flex-wrap items-center justify-between gap-4 text-xs border-b border-slate-800/80 pb-2.5 last:border-none last:pb-0">
                   <span className="font-bold text-orange-400">{acc.bank}</span>
                   <span className="font-mono text-sm font-extrabold text-white tracking-wider">{acc.accountNumber}</span>

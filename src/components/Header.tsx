@@ -73,7 +73,7 @@ export const Header: React.FC = () => {
               <span>FAX: {settings.fax}</span>
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <span className="text-[11px] bg-slate-800 text-orange-300 px-2 py-0.5 rounded font-medium">
               2009년부터 시작된 홍천의 나눔
             </span>

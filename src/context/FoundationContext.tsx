@@ -102,7 +102,8 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         if (
           !bankAccounts ||
           !Array.isArray(bankAccounts) ||
-          bankAccounts.length === 0 ||
+          bankAccounts.length < 2 ||
+          !bankAccounts.some((acc: any) => (acc.bank || acc.bankName || '').includes('신한')) ||
           bankAccounts.some((acc: any) =>
             !acc.accountNumber ||
             acc.accountNumber.includes('관리자') ||

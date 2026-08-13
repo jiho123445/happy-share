@@ -308,15 +308,17 @@ export const MainDashboardQuickPortal: React.FC = () => {
               </p>
 
               <div className="pt-2 text-xs text-slate-400 space-y-1">
-                {settings.bankAccounts && settings.bankAccounts.length > 0 ? (
-                  settings.bankAccounts.map((acc, idx) => (
-                    <div key={idx}>
-                      • 후원 계좌: <span className="font-bold text-amber-400">{acc.bank} {acc.accountNumber}</span> <span className="text-slate-300">(예금주: {acc.holder})</span>
-                    </div>
-                  ))
-                ) : (
-                  <div>• 후원 계좌: <span className="font-bold text-amber-400">농협 351-1040-2310-53</span> <span className="text-slate-300">(예금주: (사)너브내행복나눔재단)</span></div>
-                )}
+                {((settings.bankAccounts && settings.bankAccounts.length >= 2)
+                  ? settings.bankAccounts
+                  : [
+                      { bank: '농협', accountNumber: '351-1040-2310-53', holder: '(사)너브내행복나눔재단' },
+                      { bank: '신한은행', accountNumber: '100-026-882834', holder: '(사)너브내행복나눔재단' }
+                    ]
+                ).map((acc, idx) => (
+                  <div key={idx}>
+                    • 후원 계좌: <span className="font-bold text-amber-400">{acc.bank} {acc.accountNumber}</span> <span className="text-slate-300">(예금주: {acc.holder})</span>
+                  </div>
+                ))}
               </div>
             </div>
 
