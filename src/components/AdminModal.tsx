@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useFoundation } from '../context/FoundationContext';
+import { INITIAL_SETTINGS } from '../data/initialData';
 import { Logo } from './Logo';
 import { ProgramItem, NoticeItem, GalleryItem, NoticeAttachment, PopupItem } from '../types';
 import { downloadNoticeFile, exportDonationsToExcel, exportInquiriesToExcel, exportSubscribersToExcel } from '../utils/download';
@@ -741,7 +742,7 @@ export const AdminModal: React.FC = () => {
                       </div>
                       <div className="flex items-center gap-3">
                         <img
-                          src={editSettings.chairmanImageUrl || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=800&q=80'}
+                          src={editSettings.chairmanImageUrl || INITIAL_SETTINGS.chairmanImageUrl}
                           alt="이사장 사진 미리보기"
                           className="w-16 h-16 rounded-xl object-cover border border-slate-300 shrink-0"
                         />

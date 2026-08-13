@@ -239,13 +239,17 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           ? 'hcdmh1026@naver.com'
           : (parsed.email || 'hcdmh1026@naver.com');
 
+        const loadedChairmanImage = (parsed.chairmanImageUrl && !parsed.chairmanImageUrl.includes('photo-1560250097-0b93528c311a'))
+          ? parsed.chairmanImageUrl
+          : INITIAL_SETTINGS.chairmanImageUrl;
+
         return {
           ...INITIAL_SETTINGS,
           ...parsed,
           address: loadedAddress,
           email: loadedEmail,
           heroImageUrl: parsed.heroImageUrl || INITIAL_SETTINGS.heroImageUrl,
-          chairmanImageUrl: parsed.chairmanImageUrl || INITIAL_SETTINGS.chairmanImageUrl,
+          chairmanImageUrl: loadedChairmanImage,
           bankAccounts,
           phone: loadedPhone,
           fax: (parsed.fax && parsed.fax.includes('033-433')) ? '033-436-1910' : (parsed.fax || '033-436-1910'),
@@ -306,19 +310,22 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   });
 
   const [gallery, setGallery] = useState<GalleryItem[]>(() => {
-    const saved = localStorage.getItem('nerve_nae_gallery');
-    const list: GalleryItem[] = saved ? JSON.parse(saved) : INITIAL_GALLERY;
-    return list.map(g => {
-      if (g.id === 'gal-06') {
-        const latestGal06 = INITIAL_GALLERY.find(item => item.id === 'gal-06');
-        if (latestGal06) return latestGal06;
+    try {
+      const saved = localStorage.getItem('nerve_nae_gallery');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((g: GalleryItem) => ({
+            ...g,
+            author: g.author || '재단 관리자',
+            isProtected: g.isProtected ?? true
+          }));
+        }
       }
-      return {
-        ...g,
-        author: g.author || '재단 관리자',
-        isProtected: g.isProtected ?? true
-      };
-    });
+    } catch (e) {
+      console.warn('Failed to parse cached gallery', e);
+    }
+    return INITIAL_GALLERY;
   });
 
   const [donations, setDonations] = useState<DonationApplication[]>(() => {
@@ -531,26 +538,39 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   }, [popups]);
 
-  // Load latest state from server on mount (syncs PC changes to Mobile and other devices)
+  const isServerLoaded = useRef(false);
+
+  // Load latest state from server on mount & periodically sync PC changes to Mobile
   useEffect(() => {
     const fetchServerData = async () => {
       try {
-        const res = await fetch('/api/data');
+        const res = await fetch('/api/data?t=' + Date.now());
         if (res.ok) {
           const json = await res.json();
           if (json.data) {
             const d = json.data;
             if (d.settings) {
+              const serverChairmanImg = (d.settings.chairmanImageUrl && !d.settings.chairmanImageUrl.includes('photo-1560250097-0b93528c311a'))
+                ? d.settings.chairmanImageUrl
+                : INITIAL_SETTINGS.chairmanImageUrl;
+
               setSettings(prev => ({
                 ...prev,
                 ...d.settings,
                 heroImageUrl: d.settings.heroImageUrl || prev.heroImageUrl,
-                chairmanImageUrl: d.settings.chairmanImageUrl || prev.chairmanImageUrl,
+                chairmanImageUrl: serverChairmanImg || prev.chairmanImageUrl || INITIAL_SETTINGS.chairmanImageUrl,
               }));
             }
             if (Array.isArray(d.programs) && d.programs.length > 0) setPrograms(d.programs);
             if (Array.isArray(d.notices) && d.notices.length > 0) setNotices(d.notices);
-            if (Array.isArray(d.gallery) && d.gallery.length > 0) setGallery(d.gallery);
+            if (Array.isArray(d.gallery) && d.gallery.length > 0) {
+              setGallery(d.gallery);
+              try {
+                localStorage.setItem('nerve_nae_gallery', JSON.stringify(d.gallery));
+              } catch (e) {
+                console.warn('Failed to cache gallery to localStorage', e);
+              }
+            }
             if (Array.isArray(d.popups) && d.popups.length > 0) setPopups(d.popups);
             if (Array.isArray(d.donations)) setDonations(d.donations);
             if (Array.isArray(d.inquiries)) setInquiries(d.inquiries);
@@ -559,9 +579,26 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         }
       } catch (err) {
         console.warn('Server sync not available or offline', err);
+      } finally {
+        isServerLoaded.current = true;
       }
     };
+
     fetchServerData();
+
+    // Auto sync on tab focus or visibility change (e.g. mobile app switch)
+    const handleFocus = () => fetchServerData();
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+
+    // Periodic sync every 4 seconds for instant cross-device updates
+    const interval = setInterval(fetchServerData, 4000);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+      clearInterval(interval);
+    };
   }, []);
 
   // Sync to local storage with safe error handling & server persistence
@@ -571,12 +608,14 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     } catch (e) {
       console.warn('Failed to save settings to localStorage', e);
     }
-    // Also push settings to server
-    fetch('/api/settings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(settings)
-    }).catch(() => {});
+    // Only push to server if data has already been initialized from server
+    if (isServerLoaded.current) {
+      fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings)
+      }).catch(() => {});
+    }
   }, [settings]);
 
   useEffect(() => {
@@ -585,11 +624,13 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     } catch (e) {
       console.warn('Failed to save programs to localStorage', e);
     }
-    fetch('/api/sync', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ programs })
-    }).catch(() => {});
+    if (isServerLoaded.current) {
+      fetch('/api/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ programs })
+      }).catch(() => {});
+    }
   }, [programs]);
 
   useEffect(() => {
@@ -598,11 +639,13 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     } catch (e) {
       console.warn('Failed to save notices to localStorage', e);
     }
-    fetch('/api/sync', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ notices })
-    }).catch(() => {});
+    if (isServerLoaded.current) {
+      fetch('/api/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notices })
+      }).catch(() => {});
+    }
   }, [notices]);
 
   useEffect(() => {
@@ -611,11 +654,13 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     } catch (e) {
       console.warn('Failed to save gallery to localStorage', e);
     }
-    fetch('/api/sync', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ gallery })
-    }).catch(() => {});
+    if (isServerLoaded.current) {
+      fetch('/api/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gallery })
+      }).catch(() => {});
+    }
   }, [gallery]);
 
   useEffect(() => {
@@ -624,11 +669,13 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     } catch (e) {
       console.warn('Failed to save popups to localStorage', e);
     }
-    fetch('/api/sync', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ popups })
-    }).catch(() => {});
+    if (isServerLoaded.current) {
+      fetch('/api/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ popups })
+      }).catch(() => {});
+    }
   }, [popups]);
 
   useEffect(() => {
@@ -702,15 +749,39 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       author: item.author || '재단 관리자',
       isProtected: item.isProtected ?? true
     };
-    setGallery(prev => [newGallery, ...prev]);
+    setGallery(prev => {
+      const next = [newGallery, ...prev];
+      fetch('/api/gallery', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gallery: next })
+      }).catch(() => {});
+      return next;
+    });
   };
 
   const updateGallery = (id: string, updated: Partial<GalleryItem>) => {
-    setGallery(prev => prev.map(g => g.id === id ? { ...g, ...updated } : g));
+    setGallery(prev => {
+      const next = prev.map(g => g.id === id ? { ...g, ...updated } : g);
+      fetch('/api/gallery', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gallery: next })
+      }).catch(() => {});
+      return next;
+    });
   };
 
   const deleteGallery = (id: string) => {
-    setGallery(prev => prev.filter(g => g.id !== id));
+    setGallery(prev => {
+      const next = prev.filter(g => g.id !== id);
+      fetch('/api/gallery', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gallery: next })
+      }).catch(() => {});
+      return next;
+    });
   };
 
   // Donations CRUD

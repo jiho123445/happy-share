@@ -49,11 +49,23 @@ async function startServer() {
 
   app.post("/api/settings", (req, res) => {
     const current = readStore() || {};
+    const bodySettings = req.body || {};
+    
+    // Preserve custom chairman image if incoming image is the old unsplash stock image
+    if (
+      bodySettings.chairmanImageUrl &&
+      bodySettings.chairmanImageUrl.includes("photo-1560250097-0b93528c311a") &&
+      current.settings?.chairmanImageUrl &&
+      !current.settings.chairmanImageUrl.includes("photo-1560250097-0b93528c311a")
+    ) {
+      bodySettings.chairmanImageUrl = current.settings.chairmanImageUrl;
+    }
+
     const updated = {
       ...current,
       settings: {
         ...(current.settings || {}),
-        ...req.body,
+        ...bodySettings,
       },
     };
     writeStore(updated);
@@ -63,13 +75,40 @@ async function startServer() {
   app.post("/api/sync", (req, res) => {
     const payload = req.body || {};
     const current = readStore() || {};
+    const payloadSettings = payload.settings || {};
+
+    if (
+      payloadSettings.chairmanImageUrl &&
+      payloadSettings.chairmanImageUrl.includes("photo-1560250097-0b93528c311a") &&
+      current.settings?.chairmanImageUrl &&
+      !current.settings.chairmanImageUrl.includes("photo-1560250097-0b93528c311a")
+    ) {
+      payloadSettings.chairmanImageUrl = current.settings.chairmanImageUrl;
+    }
+
     const merged = {
       ...current,
       ...payload,
-      settings: payload.settings ? { ...(current.settings || {}), ...payload.settings } : current.settings,
+      settings: payload.settings ? { ...(current.settings || {}), ...payloadSettings } : current.settings,
     };
     writeStore(merged);
     res.json({ success: true, data: merged });
+  });
+
+  app.get("/api/gallery", (req, res) => {
+    const data = readStore() || {};
+    res.json({ success: true, gallery: data.gallery || [] });
+  });
+
+  app.post("/api/gallery", (req, res) => {
+    const current = readStore() || {};
+    const gallery = req.body?.gallery || req.body || [];
+    const updated = {
+      ...current,
+      gallery: Array.isArray(gallery) ? gallery : current.gallery || []
+    };
+    writeStore(updated);
+    res.json({ success: true, gallery: updated.gallery });
   });
 
   // Vite middleware for development vs static serve for production

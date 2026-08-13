@@ -1,5 +1,6 @@
 import React from 'react';
 import { useFoundation } from '../context/FoundationContext';
+import { INITIAL_SETTINGS } from '../data/initialData';
 import { AboutSubTab } from '../types';
 import {
   Heart,
@@ -130,13 +131,13 @@ export const AboutSection: React.FC = () => {
                   <div className="relative inline-block mx-auto">
                     <div className="w-56 h-64 sm:w-64 sm:h-72 rounded-2xl overflow-hidden shadow-xl border-4 border-orange-100 mx-auto bg-slate-100">
                       <img
-                        src={settings.chairmanImageUrl || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=800&q=80'}
+                        src={settings.chairmanImageUrl || INITIAL_SETTINGS.chairmanImageUrl}
                         alt={`${settings.chairmanName} 이사장`}
                         className="w-full h-full object-cover object-top"
                         onError={(e) => {
                           const target = e.currentTarget;
-                          if (!target.src.includes('unsplash')) {
-                            target.src = 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=800&q=80';
+                          if (target.src !== INITIAL_SETTINGS.chairmanImageUrl && INITIAL_SETTINGS.chairmanImageUrl) {
+                            target.src = INITIAL_SETTINGS.chairmanImageUrl;
                           }
                         }}
                       />
