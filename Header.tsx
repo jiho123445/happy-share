@@ -128,7 +128,7 @@ export const Header: React.FC = () => {
                     <BookOpen className="w-5 h-5 text-orange-500 shrink-0" /> 설립목적 및 정체성
                   </button>
                   <button onClick={() => handleAboutSubTabClick('history')} className="w-full text-left px-5 py-3 text-base sm:text-lg font-extrabold text-slate-800 hover:bg-orange-50 hover:text-orange-600 flex items-center gap-2.5 transition-colors">
-                    <Calendar className="w-5 h-5 text-orange-500 shrink-0" /> 재단 연혁 (2009~)
+                    <Calendar className="w-5 h-5 text-orange-500 shrink-0" /> 재단 연혁 (2026~2009)
                   </button>
                   <button onClick={() => handleAboutSubTabClick('organization')} className="w-full text-left px-5 py-3 text-base sm:text-lg font-extrabold text-slate-800 hover:bg-orange-50 hover:text-orange-600 flex items-center gap-2.5 transition-colors">
                     <Building2 className="w-5 h-5 text-orange-500 shrink-0" /> 조직도 및 위탁기관
@@ -317,7 +317,7 @@ export const Header: React.FC = () => {
                   onClick={() => handleAboutSubTabClick('history')}
                   className="w-full text-left py-2 px-2.5 rounded text-base font-bold text-slate-800 hover:text-orange-600"
                 >
-                  • 재단 연혁 (2009~)
+                  • 재단 연혁 (2026~2009)
                 </button>
                 <button
                   onClick={() => handleAboutSubTabClick('organization')}

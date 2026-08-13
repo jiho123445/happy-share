@@ -129,7 +129,13 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return INITIAL_SETTINGS;
   });
 
-  const [timeline] = useState<TimelineItem[]>(INITIAL_TIMELINE);
+  const [timeline] = useState<TimelineItem[]>(() => {
+    return [...INITIAL_TIMELINE].sort((a, b) => {
+      const yearA = parseInt(a.year.match(/\d{4}/)?.[0] || '0', 10);
+      const yearB = parseInt(b.year.match(/\d{4}/)?.[0] || '0', 10);
+      return yearB - yearA;
+    });
+  });
 
   const [programs, setPrograms] = useState<ProgramItem[]>(() => {
     const saved = localStorage.getItem('nerve_nae_programs');
