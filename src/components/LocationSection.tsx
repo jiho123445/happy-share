@@ -63,9 +63,6 @@ export const LocationSection: React.FC = () => {
                 <h3 className="text-2xl font-bold text-slate-900 mt-1">
                   사단법인 너브내행복나눔재단
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  (홍천군가족센터 동일 건물 연계)
-                </p>
               </div>
 
               <div className="space-y-4 text-xs sm:text-sm text-slate-700">
@@ -143,7 +140,7 @@ export const LocationSection: React.FC = () => {
                 <span>강원특별자치도 홍천군 위치 지도</span>
               </span>
               <span className="text-[11px] text-slate-300">
-                홍천읍 산림조합길 12
+                홍천읍 송학로3길 26, 2층
               </span>
             </div>
 
@@ -160,7 +157,7 @@ export const LocationSection: React.FC = () => {
                     사단법인 너브내행복나눔재단
                   </div>
                   <div className="text-xs text-slate-600 mt-0.5">
-                    홍천군가족센터 동일 건물 (산림조합길 12)
+                    강원특별자치도 홍천군 홍천읍 송학로3길 26, 2층
                   </div>
                 </div>
                 <div className="inline-block bg-white text-slate-700 text-xs font-bold px-3 py-1 rounded-full border border-slate-200 shadow-2xs">

@@ -133,6 +133,12 @@ export const AboutSection: React.FC = () => {
                         src={settings.chairmanImageUrl || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=800&q=80'}
                         alt={`${settings.chairmanName} 이사장`}
                         className="w-full h-full object-cover object-top"
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          if (!target.src.includes('unsplash')) {
+                            target.src = 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=800&q=80';
+                          }
+                        }}
                       />
                     </div>
                     <div className="absolute -bottom-3 -right-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white p-3 rounded-xl shadow-lg">

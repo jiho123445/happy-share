@@ -36,7 +36,8 @@ export const ProgramDetailPage: React.FC = () => {
     setActiveTab,
     setSelectedProgram,
     goBackFromDetail,
-    viewGalleryDetail
+    viewGalleryDetail,
+    viewProgramDetail
   } = useFoundation();
 
   useEffect(() => {
@@ -210,8 +211,7 @@ export const ProgramDetailPage: React.FC = () => {
               <button
                 key={p.id}
                 onClick={() => {
-                  setSelectedProgram(p);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  viewProgramDetail(p);
                 }}
                 className="p-3 bg-white hover:bg-orange-50 border border-slate-200 hover:border-orange-200 rounded-xl font-bold text-slate-700 hover:text-orange-600 transition-colors text-left"
               >

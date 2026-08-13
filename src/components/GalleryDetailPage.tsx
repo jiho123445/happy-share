@@ -191,6 +191,16 @@ export const GalleryDetailPage: React.FC = () => {
           </div>
         )}
 
+        {/* Bottom List Button */}
+        <div className="flex items-center justify-center gap-3 pt-6">
+          <button
+            onClick={() => goBackFromDetail('gallery')}
+            className="bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-sm sm:text-base px-8 py-3.5 rounded-2xl shadow-lg transition-all flex items-center gap-2 cursor-pointer"
+          >
+            <ArrowLeft className="w-5 h-5 text-emerald-400" />
+            <span>닫기 (이전 페이지로 돌아가기)</span>
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -29,10 +29,10 @@ export const downloadNoticeFile = (file: NoticeAttachment) => {
 사단법인 너브내행복나눔재단 공지사항 첨부 서식입니다.
 서식을 작성하신 후 구비서류와 함께 재단 사무국으로 제출해주시기 바랍니다.
 
-- 재단 주소: 강원특별자치도 홍천군 홍천읍 산림조합길 12
+- 재단 주소: 강원특별자치도 홍천군 홍천읍 송학로3길 26, 2층
 - 문의전화: 033-436-1925
 - 팩스: 033-436-1910
-- 대표 이메일: nerve_nae@naver.com
+- 대표 이메일: hcdmh1026@naver.com
 ================================================`;
 
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });

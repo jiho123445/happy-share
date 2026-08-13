@@ -27,7 +27,8 @@ export const NoticeDetailPage: React.FC = () => {
     setSelectedNotice,
     incrementNoticeViews,
     goBackFromDetail,
-    previousTab
+    previousTab,
+    viewNoticeDetail
   } = useFoundation();
 
   useEffect(() => {
@@ -46,9 +47,8 @@ export const NoticeDetailPage: React.FC = () => {
   const nextNotice = currentIndex < notices.length - 1 ? notices[currentIndex + 1] : null;
 
   const handleSelectRelatedNotice = (notice: typeof selectedNotice) => {
-    incrementNoticeViews(notice.id);
-    setSelectedNotice(notice);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (!notice) return;
+    viewNoticeDetail(notice);
   };
 
   const handleShare = () => {
@@ -217,7 +217,7 @@ export const NoticeDetailPage: React.FC = () => {
                   사업 신청 및 후원 문의: 033-436-1925 (FAX: 033-436-1910)
                 </div>
                 <div className="text-xs text-slate-500">
-                  강원특별자치도 홍천군 홍천읍 산림조합길 12
+                  강원특별자치도 홍천군 홍천읍 송학로3길 26, 2층
                 </div>
               </div>
 
@@ -285,7 +285,7 @@ export const NoticeDetailPage: React.FC = () => {
             <span>닫기 (이전 페이지로 돌아가기)</span>
           </button>
           <button
-            onClick={() => { setSelectedNotice(null); setActiveTab('news'); }}
+            onClick={() => goBackFromDetail('news')}
             className="bg-white hover:bg-orange-50 text-slate-800 hover:text-orange-600 border border-slate-300 font-extrabold text-sm sm:text-base px-6 py-3.5 rounded-2xl shadow-xs transition-all"
           >
             공지사항 전체목록 보기

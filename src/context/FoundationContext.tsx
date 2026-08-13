@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import {
   FoundationSettings,
   TimelineItem,
@@ -106,6 +106,82 @@ interface FoundationContextType {
 
 const FoundationContext = createContext<FoundationContextType | undefined>(undefined);
 
+// Helper to build URL hash from state
+const buildHash = (state: {
+  tab: ActiveTab;
+  aboutSubTab?: AboutSubTab;
+  noticeCategory?: string;
+  noticeId?: string;
+  programId?: string;
+  galleryId?: string;
+}): string => {
+  const { tab, aboutSubTab, noticeCategory, noticeId, programId, galleryId } = state;
+  if (tab === 'notice-detail' && noticeId) {
+    return `#notice-detail?id=${encodeURIComponent(noticeId)}`;
+  }
+  if (tab === 'program-detail' && programId) {
+    return `#program-detail?id=${encodeURIComponent(programId)}`;
+  }
+  if (tab === 'gallery-detail' && galleryId) {
+    return `#gallery-detail?id=${encodeURIComponent(galleryId)}`;
+  }
+  if (tab === 'about') {
+    return aboutSubTab && aboutSubTab !== 'greeting'
+      ? `#about?sub=${encodeURIComponent(aboutSubTab)}`
+      : '#about';
+  }
+  if (tab === 'news') {
+    return noticeCategory && noticeCategory !== '전체'
+      ? `#news?cat=${encodeURIComponent(noticeCategory)}`
+      : '#news';
+  }
+  if (tab === 'main') {
+    return '#main';
+  }
+  return `#${tab}`;
+};
+
+// Helper to parse URL hash to state
+const parseHash = (hashStr: string) => {
+  const clean = (hashStr || '').replace(/^#/, '').trim();
+  if (!clean || clean === 'main') {
+    return { tab: 'main' as ActiveTab };
+  }
+  const [tabPart, queryPart] = clean.split('?');
+  const validTabs: ActiveTab[] = [
+    'main',
+    'about',
+    'programs',
+    'news',
+    'gallery',
+    'family-center',
+    'donate',
+    'contact',
+    'notice-detail',
+    'gallery-detail',
+    'program-detail'
+  ];
+  const tab = validTabs.includes(tabPart as ActiveTab) ? (tabPart as ActiveTab) : ('main' as ActiveTab);
+  const params = new URLSearchParams(queryPart || '');
+
+  const res: {
+    tab: ActiveTab;
+    aboutSubTab?: AboutSubTab;
+    noticeCategory?: string;
+    noticeId?: string;
+    programId?: string;
+    galleryId?: string;
+  } = { tab };
+
+  if (tab === 'notice-detail' && params.get('id')) res.noticeId = params.get('id')!;
+  if (tab === 'program-detail' && params.get('id')) res.programId = params.get('id')!;
+  if (tab === 'gallery-detail' && params.get('id')) res.galleryId = params.get('id')!;
+  if (params.get('sub')) res.aboutSubTab = params.get('sub') as AboutSubTab;
+  if (params.get('cat')) res.noticeCategory = params.get('cat')!;
+
+  return res;
+};
+
 export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<FoundationSettings>(() => {
     const saved = localStorage.getItem('nerve_nae_settings');
@@ -153,13 +229,25 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             };
           });
         }
+        const loadedAddress = (parsed.address && parsed.address.includes('산림조합길'))
+          ? '강원특별자치도 홍천군 홍천읍 송학로3길 26, 2층 (너브내행복나눔재단)'
+          : (parsed.address || INITIAL_SETTINGS.address);
+        const loadedPhone = (parsed.phone && (parsed.phone.includes('033-433') || parsed.phone.includes('1915')))
+          ? '033-436-1925'
+          : (parsed.phone || '033-436-1925');
+        const loadedEmail = (parsed.email && (parsed.email.includes('example.or.kr') || parsed.email.includes('nerve_nae')))
+          ? 'hcdmh1026@naver.com'
+          : (parsed.email || 'hcdmh1026@naver.com');
+
         return {
           ...INITIAL_SETTINGS,
           ...parsed,
+          address: loadedAddress,
+          email: loadedEmail,
           heroImageUrl: parsed.heroImageUrl || INITIAL_SETTINGS.heroImageUrl,
           chairmanImageUrl: parsed.chairmanImageUrl || INITIAL_SETTINGS.chairmanImageUrl,
           bankAccounts,
-          phone: (parsed.phone && parsed.phone.includes('033-433')) ? '033-436-1925' : (parsed.phone || '033-436-1925'),
+          phone: loadedPhone,
           fax: (parsed.fax && parsed.fax.includes('033-433')) ? '033-436-1910' : (parsed.fax || '033-436-1910'),
           familyCenterPhone: parsed.familyCenterPhone || '033-433-1925',
           familyCenterFax: parsed.familyCenterFax || '033-433-1910',
@@ -286,11 +374,19 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setShowPopupsFlag(prev => prev + 1);
   };
 
-  const [activeTab, setActiveTabState] = useState<ActiveTab>('main');
+  const initialParsed = parseHash(typeof window !== 'undefined' ? window.location.hash : '');
+
+  const [activeTab, setActiveTabState] = useState<ActiveTab>(initialParsed.tab || 'main');
   const [previousTab, setPreviousTab] = useState<ActiveTab>('main');
-  const [aboutSubTab, setAboutSubTab] = useState<AboutSubTab>('greeting');
-  const [noticeCategory, setNoticeCategory] = useState<string>('전체');
+  const [aboutSubTab, setAboutSubTab] = useState<AboutSubTab>(initialParsed.aboutSubTab || 'greeting');
+  const [noticeCategory, setNoticeCategory] = useState<string>(initialParsed.noticeCategory || '전체');
   const [adminOpen, setAdminOpen] = useState<boolean>(false);
+
+  const [selectedProgram, setSelectedProgram] = useState<ProgramItem | null>(null);
+  const [selectedNotice, setSelectedNotice] = useState<NoticeItem | null>(null);
+  const [selectedGallery, setSelectedGallery] = useState<GalleryItem | null>(null);
+
+  const isPopStateRef = useRef<boolean>(false);
 
   const navigateToNewsCategory = (category: string = '전체') => {
     setNoticeCategory(category);
@@ -300,10 +396,6 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setActiveTabState('news');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
-  const [selectedProgram, setSelectedProgram] = useState<ProgramItem | null>(null);
-  const [selectedNotice, setSelectedNotice] = useState<NoticeItem | null>(null);
-  const [selectedGallery, setSelectedGallery] = useState<GalleryItem | null>(null);
 
   const setActiveTab = (tab: ActiveTab) => {
     if (tab !== 'program-detail') {
@@ -321,6 +413,115 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setActiveTabState(tab);
   };
 
+  // Synchronize initial deep-link items once data is loaded
+  useEffect(() => {
+    if (initialParsed.tab === 'notice-detail' && initialParsed.noticeId && !selectedNotice) {
+      const found = notices.find(n => n.id === initialParsed.noticeId) || INITIAL_NOTICES.find(n => n.id === initialParsed.noticeId);
+      if (found) setSelectedNotice(found);
+    }
+    if (initialParsed.tab === 'program-detail' && initialParsed.programId && !selectedProgram) {
+      const found = programs.find(p => p.id === initialParsed.programId) || INITIAL_PROGRAMS.find(p => p.id === initialParsed.programId);
+      if (found) setSelectedProgram(found);
+    }
+    if (initialParsed.tab === 'gallery-detail' && initialParsed.galleryId && !selectedGallery) {
+      const found = gallery.find(g => g.id === initialParsed.galleryId) || INITIAL_GALLERY.find(g => g.id === initialParsed.galleryId);
+      if (found) setSelectedGallery(found);
+    }
+  }, [notices, programs, gallery]);
+
+  // Handle browser Back / Forward navigation (PopState)
+  useEffect(() => {
+    // Set initial history state if not present
+    const curHash = window.location.hash || '#main';
+    const initObj = {
+      tab: activeTab,
+      aboutSubTab,
+      noticeCategory,
+      noticeId: selectedNotice?.id,
+      programId: selectedProgram?.id,
+      galleryId: selectedGallery?.id
+    };
+    if (!window.history.state) {
+      window.history.replaceState(initObj, '', curHash);
+    }
+
+    const handlePopState = (e: PopStateEvent) => {
+      isPopStateRef.current = true;
+      const state = e.state || parseHash(window.location.hash);
+      const targetTab: ActiveTab = state.tab || 'main';
+
+      if (targetTab === 'notice-detail') {
+        const found = notices.find(n => n.id === state.noticeId) || INITIAL_NOTICES.find(n => n.id === state.noticeId);
+        if (found) {
+          setSelectedNotice(found);
+          setActiveTabState('notice-detail');
+        } else {
+          setSelectedNotice(null);
+          setActiveTabState('news');
+        }
+      } else if (targetTab === 'program-detail') {
+        const found = programs.find(p => p.id === state.programId) || INITIAL_PROGRAMS.find(p => p.id === state.programId);
+        if (found) {
+          setSelectedProgram(found);
+          setActiveTabState('program-detail');
+        } else {
+          setSelectedProgram(null);
+          setActiveTabState('programs');
+        }
+      } else if (targetTab === 'gallery-detail') {
+        const found = gallery.find(g => g.id === state.galleryId) || INITIAL_GALLERY.find(g => g.id === state.galleryId);
+        if (found) {
+          setSelectedGallery(found);
+          setActiveTabState('gallery-detail');
+        } else {
+          setSelectedGallery(null);
+          setActiveTabState('gallery');
+        }
+      } else {
+        setSelectedNotice(null);
+        setSelectedProgram(null);
+        setSelectedGallery(null);
+        setActiveTabState(targetTab);
+        if (targetTab === 'main') {
+          triggerPopupShow();
+        }
+      }
+
+      if (state.aboutSubTab) {
+        setAboutSubTab(state.aboutSubTab);
+      }
+      if (state.noticeCategory) {
+        setNoticeCategory(state.noticeCategory);
+      }
+
+      setTimeout(() => {
+        isPopStateRef.current = false;
+      }, 50);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [notices, programs, gallery]);
+
+  // Push history state whenever tab / subTab / category / detail item changes from user action
+  useEffect(() => {
+    if (isPopStateRef.current) return;
+
+    const stateObj = {
+      tab: activeTab,
+      aboutSubTab,
+      noticeCategory,
+      noticeId: selectedNotice?.id,
+      programId: selectedProgram?.id,
+      galleryId: selectedGallery?.id
+    };
+    const targetHash = buildHash(stateObj);
+
+    if (window.location.hash !== targetHash) {
+      window.history.pushState(stateObj, '', targetHash);
+    }
+  }, [activeTab, aboutSubTab, noticeCategory, selectedNotice?.id, selectedProgram?.id, selectedGallery?.id]);
+
   // Sync popups to local storage
   useEffect(() => {
     try {
@@ -330,13 +531,52 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   }, [popups]);
 
-  // Sync to local storage with safe error handling
+  // Load latest state from server on mount (syncs PC changes to Mobile and other devices)
+  useEffect(() => {
+    const fetchServerData = async () => {
+      try {
+        const res = await fetch('/api/data');
+        if (res.ok) {
+          const json = await res.json();
+          if (json.data) {
+            const d = json.data;
+            if (d.settings) {
+              setSettings(prev => ({
+                ...prev,
+                ...d.settings,
+                heroImageUrl: d.settings.heroImageUrl || prev.heroImageUrl,
+                chairmanImageUrl: d.settings.chairmanImageUrl || prev.chairmanImageUrl,
+              }));
+            }
+            if (Array.isArray(d.programs) && d.programs.length > 0) setPrograms(d.programs);
+            if (Array.isArray(d.notices) && d.notices.length > 0) setNotices(d.notices);
+            if (Array.isArray(d.gallery) && d.gallery.length > 0) setGallery(d.gallery);
+            if (Array.isArray(d.popups) && d.popups.length > 0) setPopups(d.popups);
+            if (Array.isArray(d.donations)) setDonations(d.donations);
+            if (Array.isArray(d.inquiries)) setInquiries(d.inquiries);
+            if (Array.isArray(d.subscribers)) setSubscribers(d.subscribers);
+          }
+        }
+      } catch (err) {
+        console.warn('Server sync not available or offline', err);
+      }
+    };
+    fetchServerData();
+  }, []);
+
+  // Sync to local storage with safe error handling & server persistence
   useEffect(() => {
     try {
       localStorage.setItem('nerve_nae_settings', JSON.stringify(settings));
     } catch (e) {
       console.warn('Failed to save settings to localStorage', e);
     }
+    // Also push settings to server
+    fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(settings)
+    }).catch(() => {});
   }, [settings]);
 
   useEffect(() => {
@@ -345,6 +585,11 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     } catch (e) {
       console.warn('Failed to save programs to localStorage', e);
     }
+    fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ programs })
+    }).catch(() => {});
   }, [programs]);
 
   useEffect(() => {
@@ -353,6 +598,11 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     } catch (e) {
       console.warn('Failed to save notices to localStorage', e);
     }
+    fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notices })
+    }).catch(() => {});
   }, [notices]);
 
   useEffect(() => {
@@ -361,7 +611,25 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     } catch (e) {
       console.warn('Failed to save gallery to localStorage', e);
     }
+    fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gallery })
+    }).catch(() => {});
   }, [gallery]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('nerve_nae_popups', JSON.stringify(popups));
+    } catch (e) {
+      console.warn('Failed to save popups to localStorage', e);
+    }
+    fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ popups })
+    }).catch(() => {});
+  }, [popups]);
 
   useEffect(() => {
     try {
@@ -553,14 +821,18 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const goBackFromDetail = (fallbackTab: ActiveTab = 'news') => {
-    setSelectedNotice(null);
-    setSelectedGallery(null);
-    setSelectedProgram(null);
-    const targetTab = (previousTab && !['notice-detail', 'gallery-detail', 'program-detail'].includes(previousTab))
-      ? previousTab
-      : fallbackTab;
-    setActiveTab(targetTab);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (typeof window !== 'undefined' && window.history.state && window.history.length > 1) {
+      window.history.back();
+    } else {
+      setSelectedNotice(null);
+      setSelectedGallery(null);
+      setSelectedProgram(null);
+      const targetTab = (previousTab && !['notice-detail', 'gallery-detail', 'program-detail'].includes(previousTab))
+        ? previousTab
+        : fallbackTab;
+      setActiveTab(targetTab);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const viewNoticeDetail = (notice: NoticeItem) => {

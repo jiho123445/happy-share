@@ -732,7 +732,13 @@ export const AdminModal: React.FC = () => {
 
                     {/* Chairman Photo Upload */}
                     <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                      <label className="block font-bold text-slate-800">이사장 프로필 사진 (PC 파일 업로드)</label>
+                      <div className="flex items-center justify-between">
+                        <label className="block font-bold text-slate-800">이사장 프로필 사진 (PC/모바일 공통 적용)</label>
+                        <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" />
+                          모바일/PC 실시간 동기화
+                        </span>
+                      </div>
                       <div className="flex items-center gap-3">
                         <img
                           src={editSettings.chairmanImageUrl || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=800&q=80'}
@@ -856,6 +862,27 @@ export const AdminModal: React.FC = () => {
                           type="text"
                           value={editSettings.familyCenterFax || '033-433-1910'}
                           onChange={(e) => setEditSettings({ ...editSettings, familyCenterFax: e.target.value })}
+                          className="w-full p-2.5 bg-slate-50 border rounded-xl"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">재단 대표 이메일</label>
+                        <input
+                          type="email"
+                          value={editSettings.email || 'hcdmh1026@naver.com'}
+                          onChange={(e) => setEditSettings({ ...editSettings, email: e.target.value })}
+                          className="w-full p-2.5 bg-slate-50 border rounded-xl"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">운영시간 안내</label>
+                        <input
+                          type="text"
+                          value={editSettings.operatingHours || '월~금 09:00 - 18:00 (토, 일, 공휴일 휴무)'}
+                          onChange={(e) => setEditSettings({ ...editSettings, operatingHours: e.target.value })}
                           className="w-full p-2.5 bg-slate-50 border rounded-xl"
                         />
                       </div>
