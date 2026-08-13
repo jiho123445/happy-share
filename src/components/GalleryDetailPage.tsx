@@ -19,7 +19,8 @@ export const GalleryDetailPage: React.FC = () => {
     setActiveTab,
     goBackFromDetail,
     setAdminOpen,
-    viewGalleryDetail
+    viewGalleryDetail,
+    getImageUrl
   } = useFoundation();
 
   useEffect(() => {
@@ -114,7 +115,7 @@ export const GalleryDetailPage: React.FC = () => {
           {/* Photo Display */}
           <div className="bg-slate-900 p-4 sm:p-8 flex items-center justify-center min-h-[320px]">
             <img
-              src={selectedGallery.imageUrl}
+              src={getImageUrl(selectedGallery.imageUrl)}
               alt={selectedGallery.title}
               onError={(e) => {
                 (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=800&q=80';
@@ -172,7 +173,7 @@ export const GalleryDetailPage: React.FC = () => {
                   className="bg-white rounded-2xl p-3 border border-slate-200 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all cursor-pointer group flex items-center gap-3"
                 >
                   <img
-                    src={item.imageUrl}
+                    src={getImageUrl(item.imageUrl)}
                     alt={item.title}
                     className="w-16 h-16 rounded-xl object-cover shrink-0 border border-slate-200"
                   />

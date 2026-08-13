@@ -13,6 +13,7 @@ async function startServer() {
   const DATA_DIR = path.join(process.cwd(), "data");
   const DB_FILE = path.join(DATA_DIR, "foundation_store.json");
   const UPLOADS_DIR = path.join(process.cwd(), "public", "uploads");
+  const DIST_UPLOADS_DIR = path.join(process.cwd(), "dist", "uploads");
 
   if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -21,8 +22,52 @@ async function startServer() {
     fs.mkdirSync(UPLOADS_DIR, { recursive: true });
   }
 
-  // Serve static uploaded images directly
-  app.use("/uploads", express.static(UPLOADS_DIR));
+  // Cache-control middleware for all API requests and uploads to prevent stale mobile cache
+  app.use((req, res, next) => {
+    if (req.path.startsWith("/api") || req.path.startsWith("/uploads")) {
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0");
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
+      res.setHeader("Surrogate-Control", "no-store");
+    }
+    next();
+  });
+
+  // Serve static uploaded images directly with fallback
+  app.use(
+    "/uploads",
+    express.static(UPLOADS_DIR, {
+      etag: false,
+      lastModified: false,
+      maxAge: 0,
+      setHeaders: (res) => {
+        res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0");
+        res.setHeader("Pragma", "no-cache");
+        res.setHeader("Expires", "0");
+      },
+    })
+  );
+
+  // Fallback explicit GET route for /uploads/:filename
+  app.get("/uploads/:filename", (req, res, next) => {
+    const filename = path.basename(req.params.filename);
+    const primaryPath = path.join(UPLOADS_DIR, filename);
+    const distPath = path.join(DIST_UPLOADS_DIR, filename);
+
+    if (fs.existsSync(primaryPath)) {
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0");
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
+      return res.sendFile(primaryPath);
+    }
+    if (fs.existsSync(distPath)) {
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0");
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
+      return res.sendFile(distPath);
+    }
+    next();
+  });
 
   function saveBase64Image(dataUrl: string, prefix = "img"): string {
     if (!dataUrl || typeof dataUrl !== "string" || !dataUrl.startsWith("data:image/")) {
@@ -36,7 +81,21 @@ async function startServer() {
       if (ext === "svg+xml") ext = "svg";
       const filename = `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}.${ext}`;
       const filePath = path.join(UPLOADS_DIR, filename);
-      fs.writeFileSync(filePath, Buffer.from(match[2], "base64"));
+      const buffer = Buffer.from(match[2], "base64");
+      fs.writeFileSync(filePath, buffer);
+
+      // Also sync to dist/uploads if dist exists in production
+      try {
+        if (fs.existsSync(path.join(process.cwd(), "dist"))) {
+          if (!fs.existsSync(DIST_UPLOADS_DIR)) {
+            fs.mkdirSync(DIST_UPLOADS_DIR, { recursive: true });
+          }
+          fs.writeFileSync(path.join(DIST_UPLOADS_DIR, filename), buffer);
+        }
+      } catch (e) {
+        console.warn("Could not copy to dist/uploads", e);
+      }
+
       return `/uploads/${filename}`;
     } catch (e) {
       console.warn("Failed to save base64 image", e);

@@ -37,7 +37,8 @@ export const ProgramDetailPage: React.FC = () => {
     setSelectedProgram,
     goBackFromDetail,
     viewGalleryDetail,
-    viewProgramDetail
+    viewProgramDetail,
+    getImageUrl
   } = useFoundation();
 
   useEffect(() => {
@@ -185,7 +186,14 @@ export const ProgramDetailPage: React.FC = () => {
                   onClick={() => viewGalleryDetail(item)}
                   className="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md hover:border-orange-300 p-3 space-y-2 cursor-pointer transition-all group"
                 >
-                  <img src={item.imageUrl} alt={item.title} className="w-full h-32 object-cover rounded-xl group-hover:scale-[1.02] transition-transform" />
+                  <img
+                    src={getImageUrl(item.imageUrl)}
+                    alt={item.title}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=800&q=80';
+                    }}
+                    className="w-full h-32 object-cover rounded-xl group-hover:scale-[1.02] transition-transform"
+                  />
                   <div className="text-xs font-bold text-slate-900 group-hover:text-orange-600 line-clamp-1">{item.title}</div>
                   <div className="text-[11px] text-slate-500">{item.date}</div>
                 </div>

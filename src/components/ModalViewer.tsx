@@ -13,7 +13,8 @@ export const ModalViewer: React.FC = () => {
     setSelectedGallery,
     activeTab,
     setActiveTab,
-    goBackFromDetail
+    goBackFromDetail,
+    getImageUrl
   } = useFoundation();
 
   // If we are currently on a dedicated detail page, do not render duplicate modal popups
@@ -184,8 +185,11 @@ export const ModalViewer: React.FC = () => {
           
           <div className="relative max-h-[60vh] bg-slate-900 overflow-hidden flex items-center justify-center">
             <img
-              src={selectedGallery.imageUrl}
+              src={getImageUrl(selectedGallery.imageUrl)}
               alt={selectedGallery.title}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=800&q=80';
+              }}
               className="w-full h-full object-contain max-h-[60vh]"
             />
             <button

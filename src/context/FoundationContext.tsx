@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import {
   FoundationSettings,
   TimelineItem,
@@ -21,6 +21,7 @@ import {
   INITIAL_DONATIONS,
   INITIAL_POPUPS
 } from '../data/initialData';
+import { formatImageUrl } from '../utils/imageUrl';
 
 interface FoundationContextType {
   settings: FoundationSettings;
@@ -48,6 +49,8 @@ interface FoundationContextType {
   setIsAdmin: (isAdmin: boolean) => void;
   refreshData: () => Promise<void>;
   isSyncing: boolean;
+  syncTimestamp: number;
+  getImageUrl: (url?: string) => string;
   
   // Modal & Page selections
   selectedProgram: ProgramItem | null;
@@ -564,11 +567,25 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const isServerLoaded = useRef(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [syncTimestamp, setSyncTimestamp] = useState<number>(() => Date.now());
+  const lastSyncTimeRef = useRef<number>(Date.now());
+
+  const getImageUrl = useCallback((url?: string) => {
+    return formatImageUrl(url, syncTimestamp);
+  }, [syncTimestamp]);
 
   const fetchServerData = async () => {
     setIsSyncing(true);
     try {
-      const res = await fetch('/api/data?t=' + Date.now());
+      const cacheBust = `?_t=${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+      const res = await fetch('/api/data' + cacheBust, {
+        method: 'GET',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
       if (res.ok) {
         const json = await res.json();
         if (json.data) {
@@ -599,6 +616,9 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           if (Array.isArray(d.donations)) setDonations(d.donations);
           if (Array.isArray(d.inquiries)) setInquiries(d.inquiries);
           if (Array.isArray(d.subscribers)) setSubscribers(d.subscribers);
+
+          setSyncTimestamp(Date.now());
+          lastSyncTimeRef.current = Date.now();
         }
       }
     } catch (err) {
@@ -613,21 +633,49 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     await fetchServerData();
   };
 
-  // Load latest state from server on mount & periodically sync PC changes to Mobile
+  // Load latest state from server on mount & listen to all mobile background / resume events
   useEffect(() => {
     fetchServerData();
 
-    // Auto sync on tab focus or visibility change (e.g. mobile app switch)
-    const handleFocus = () => fetchServerData();
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleFocus);
+    // 1. Mobile tab focus / visibility change (screen lock, app switch)
+    const handleVisibilityOrFocus = () => {
+      fetchServerData();
+    };
+
+    // 2. iOS Safari BFCache (Back-Forward Cache) page restoration
+    const handlePageShow = (e: PageTransitionEvent) => {
+      fetchServerData();
+    };
+
+    // 3. Network reconnection event
+    const handleOnline = () => {
+      fetchServerData();
+    };
+
+    // 4. Mobile user interaction touch check (throttled to at most once every 3 seconds)
+    const handleUserInteraction = () => {
+      if (Date.now() - lastSyncTimeRef.current > 3000) {
+        fetchServerData();
+      }
+    };
+
+    window.addEventListener('focus', handleVisibilityOrFocus);
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+    window.addEventListener('pageshow', handlePageShow as any);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('resume' as any, handleVisibilityOrFocus);
+    window.addEventListener('touchstart', handleUserInteraction, { passive: true });
 
     // Periodic sync every 2.5 seconds for instant cross-device updates
     const interval = setInterval(fetchServerData, 2500);
 
     return () => {
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleFocus);
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+      window.removeEventListener('pageshow', handlePageShow as any);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('resume' as any, handleVisibilityOrFocus);
+      window.removeEventListener('touchstart', handleUserInteraction);
       clearInterval(interval);
     };
   }, []);
@@ -643,7 +691,11 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     if (isServerLoaded.current) {
       fetch('/api/settings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        },
         body: JSON.stringify(settings)
       }).catch(() => {});
     }
@@ -658,7 +710,11 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     if (isServerLoaded.current) {
       fetch('/api/sync', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        },
         body: JSON.stringify({ programs })
       }).catch(() => {});
     }
@@ -673,7 +729,11 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     if (isServerLoaded.current) {
       fetch('/api/sync', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        },
         body: JSON.stringify({ notices })
       }).catch(() => {});
     }
@@ -686,9 +746,13 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       console.warn('Failed to save gallery to localStorage', e);
     }
     if (isServerLoaded.current) {
-      fetch('/api/sync', {
+      fetch('/api/gallery', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        },
         body: JSON.stringify({ gallery })
       }).catch(() => {});
     }
@@ -703,7 +767,11 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     if (isServerLoaded.current) {
       fetch('/api/sync', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        },
         body: JSON.stringify({ popups })
       }).catch(() => {});
     }
@@ -991,6 +1059,8 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         setIsAdmin,
         refreshData,
         isSyncing,
+        syncTimestamp,
+        getImageUrl,
         selectedProgram,
         setSelectedProgram,
         selectedNotice,

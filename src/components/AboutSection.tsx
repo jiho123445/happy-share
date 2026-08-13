@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 
 export const AboutSection: React.FC = () => {
-  const { settings, timeline, aboutSubTab, setAboutSubTab, setActiveTab, setAdminOpen, isAdmin } = useFoundation();
+  const { settings, timeline, aboutSubTab, setAboutSubTab, setActiveTab, setAdminOpen, isAdmin, getImageUrl } = useFoundation();
 
   const handleSubTabChange = (tab: AboutSubTab) => {
     setAboutSubTab(tab);
@@ -131,7 +131,7 @@ export const AboutSection: React.FC = () => {
                   <div className="relative inline-block mx-auto">
                     <div className="w-56 h-64 sm:w-64 sm:h-72 rounded-2xl overflow-hidden shadow-xl border-4 border-orange-100 mx-auto bg-slate-100">
                       <img
-                        src={settings.chairmanImageUrl || INITIAL_SETTINGS.chairmanImageUrl}
+                        src={getImageUrl(settings.chairmanImageUrl || INITIAL_SETTINGS.chairmanImageUrl)}
                         alt={`${settings.chairmanName} 이사장`}
                         className="w-full h-full object-cover object-top"
                         onError={(e) => {

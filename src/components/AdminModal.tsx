@@ -77,7 +77,8 @@ export const AdminModal: React.FC = () => {
     adminOpen,
     setAdminOpen,
     isAdmin,
-    setIsAdmin
+    setIsAdmin,
+    getImageUrl
   } = useFoundation();
 
   // Authentication State
@@ -1977,7 +1978,7 @@ export const AdminModal: React.FC = () => {
                           ) : (
                             <div className="flex gap-3 items-center">
                               <img
-                                src={g.imageUrl}
+                                src={getImageUrl(g.imageUrl)}
                                 alt={g.title}
                                 onError={(e) => {
                                   (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=800&q=80';

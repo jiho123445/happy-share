@@ -31,7 +31,8 @@ export const PopupModal: React.FC = () => {
     addPopup,
     settings,
     setAdminOpen,
-    navigateToNewsCategory
+    navigateToNewsCategory,
+    getImageUrl
   } = useFoundation();
 
   const [closedPopupIds, setClosedPopupIds] = useState<string[]>([]);
@@ -685,8 +686,11 @@ export const PopupModal: React.FC = () => {
                 {popup.imageUrl && (
                   <div className="w-full h-48 sm:h-56 rounded-xl overflow-hidden bg-slate-200 relative group/img">
                     <img
-                      src={popup.imageUrl}
+                      src={getImageUrl(popup.imageUrl)}
                       alt={popup.title}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=800&q=80';
+                      }}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover/img:scale-105"
                     />
                     {/* Admin Image Edit Button Hover Overlay */}

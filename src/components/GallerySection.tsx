@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 export const GallerySection: React.FC = () => {
-  const { gallery, viewGalleryDetail, setAdminOpen, refreshData, isSyncing } = useFoundation();
+  const { gallery, viewGalleryDetail, setAdminOpen, refreshData, isSyncing, getImageUrl } = useFoundation();
   const [selectedCategory, setSelectedCategory] = useState<string>('전체');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [manualRefreshing, setManualRefreshing] = useState(false);
@@ -163,8 +163,9 @@ export const GallerySection: React.FC = () => {
                 <div>
                   <div className="relative h-52 overflow-hidden bg-slate-100">
                     <img
-                      src={item.imageUrl}
+                      src={getImageUrl(item.imageUrl)}
                       alt={item.title}
+                      loading="lazy"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=800&q=80';
                       }}
