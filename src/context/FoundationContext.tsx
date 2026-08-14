@@ -10,7 +10,8 @@ import {
   NewsletterSubscriber,
   ActiveTab,
   AboutSubTab,
-  PopupItem
+  PopupItem,
+  DebugLog
 } from '../types';
 import {
   INITIAL_SETTINGS,
@@ -51,6 +52,13 @@ interface FoundationContextType {
   isSyncing: boolean;
   syncTimestamp: number;
   getImageUrl: (url?: string) => string;
+  debugLogs: DebugLog[];
+  syncStatus: 'idle' | 'syncing' | 'success' | 'error';
+  lastSyncTime: string | null;
+  syncError: string | null;
+  clearDebugLogs: () => void;
+  showDebugOverlay: boolean;
+  setShowDebugOverlay: React.Dispatch<React.SetStateAction<boolean>>;
   
   // Modal & Page selections
   selectedProgram: ProgramItem | null;
@@ -567,21 +575,40 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const isServerLoaded = useRef(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
+  const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
   const [syncTimestamp, setSyncTimestamp] = useState<number>(() => Date.now());
+  const [debugLogs, setDebugLogs] = useState<DebugLog[]>([]);
+  const [showDebugOverlay, setShowDebugOverlay] = useState<boolean>(true);
   const lastSyncTimeRef = useRef<number>(Date.now());
+
+  const addDebugLog = useCallback((type: 'info' | 'success' | 'warn' | 'error', message: string, details?: string) => {
+    const time = new Date().toLocaleTimeString('ko-KR', { hour12: false });
+    setDebugLogs(prev => [
+      { id: `log-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, time, type, message, details },
+      ...prev.slice(0, 49) // keep last 50 logs
+    ]);
+  }, []);
+
+  const clearDebugLogs = useCallback(() => {
+    setDebugLogs([]);
+  }, []);
 
   const getImageUrl = useCallback((url?: string) => {
     return formatImageUrl(url, syncTimestamp);
   }, [syncTimestamp]);
 
-  const fetchServerData = async () => {
+  const fetchServerData = async (isManual = false) => {
     setIsSyncing(true);
+    setSyncStatus('syncing');
+    const startTime = Date.now();
     try {
       const cacheBust = `?_t=${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
       const res = await fetch('/api/data' + cacheBust, {
         method: 'GET',
         headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
           'Pragma': 'no-cache',
           'Expires': '0'
         }
@@ -602,27 +629,43 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
               chairmanImageUrl: serverChairmanImg || prev.chairmanImageUrl || INITIAL_SETTINGS.chairmanImageUrl,
             }));
           }
-          if (Array.isArray(d.programs) && d.programs.length > 0) setPrograms(d.programs);
-          if (Array.isArray(d.notices) && d.notices.length > 0) setNotices(d.notices);
+          if (Array.isArray(d.programs) && d.programs.length > 0) setPrograms([...d.programs]);
+          if (Array.isArray(d.notices) && d.notices.length > 0) setNotices([...d.notices]);
           if (Array.isArray(d.gallery) && d.gallery.length > 0) {
-            setGallery(d.gallery);
+            setGallery([...d.gallery]);
             try {
               localStorage.setItem('nerve_nae_gallery', JSON.stringify(d.gallery));
             } catch (e) {
               console.warn('Failed to cache gallery to localStorage', e);
             }
           }
-          if (Array.isArray(d.popups) && d.popups.length > 0) setPopups(d.popups);
-          if (Array.isArray(d.donations)) setDonations(d.donations);
-          if (Array.isArray(d.inquiries)) setInquiries(d.inquiries);
-          if (Array.isArray(d.subscribers)) setSubscribers(d.subscribers);
+          if (Array.isArray(d.popups) && d.popups.length > 0) setPopups([...d.popups]);
+          if (Array.isArray(d.donations)) setDonations([...d.donations]);
+          if (Array.isArray(d.inquiries)) setInquiries([...d.inquiries]);
+          if (Array.isArray(d.subscribers)) setSubscribers([...d.subscribers]);
 
-          setSyncTimestamp(Date.now());
-          lastSyncTimeRef.current = Date.now();
+          const now = Date.now();
+          setSyncTimestamp(now);
+          lastSyncTimeRef.current = now;
+          const timeStr = new Date().toLocaleTimeString('ko-KR');
+          setLastSyncTime(timeStr);
+          setSyncStatus('success');
+          setSyncError(null);
+
+          addDebugLog(
+            'success',
+            `동기화 성공 (갤러리 ${d.gallery?.length || 0}개, 공지 ${d.notices?.length || 0}개, 사업 ${d.programs?.length || 0}개)`,
+            `소요시간: ${Date.now() - startTime}ms · ${isManual ? '수동 요청' : '자동 동기화'}`
+          );
         }
+      } else {
+        throw new Error(`HTTP ${res.status} ${res.statusText}`);
       }
-    } catch (err) {
-      console.warn('Server sync not available or offline', err);
+    } catch (err: any) {
+      console.warn('Server sync error', err);
+      setSyncStatus('error');
+      setSyncError(err?.message || '네트워크 연결 불가');
+      addDebugLog('error', `동기화 실패: ${err?.message || '네트워크 오류'}`, `소요시간: ${Date.now() - startTime}ms`);
     } finally {
       isServerLoaded.current = true;
       setIsSyncing(false);
@@ -630,16 +673,20 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const refreshData = async () => {
-    await fetchServerData();
+    addDebugLog('info', '사용자 즉시 동기화 요청 시작...');
+    await fetchServerData(true);
   };
 
   // Load latest state from server on mount & listen to all mobile background / resume events
   useEffect(() => {
+    addDebugLog('info', '초기 애플리케이션 시작: 서버 데이터 불러오는 중...');
     fetchServerData();
 
     // 1. Mobile tab focus / visibility change (screen lock, app switch)
     const handleVisibilityOrFocus = () => {
-      fetchServerData();
+      if (document.visibilityState === 'visible') {
+        fetchServerData();
+      }
     };
 
     // 2. iOS Safari BFCache (Back-Forward Cache) page restoration
@@ -649,6 +696,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     // 3. Network reconnection event
     const handleOnline = () => {
+      addDebugLog('info', '네트워크 온라인 감지: 최신 데이터 동기화 시도');
       fetchServerData();
     };
 
@@ -667,7 +715,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     window.addEventListener('touchstart', handleUserInteraction, { passive: true });
 
     // Periodic sync every 2.5 seconds for instant cross-device updates
-    const interval = setInterval(fetchServerData, 2500);
+    const interval = setInterval(() => fetchServerData(), 2500);
 
     return () => {
       window.removeEventListener('focus', handleVisibilityOrFocus);
@@ -678,128 +726,75 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       window.removeEventListener('touchstart', handleUserInteraction);
       clearInterval(interval);
     };
-  }, []);
+  }, [addDebugLog]);
 
-  // Sync to local storage with safe error handling & server persistence
+  // Local storage caching for offline backup only
   useEffect(() => {
     try {
       localStorage.setItem('nerve_nae_settings', JSON.stringify(settings));
-    } catch (e) {
-      console.warn('Failed to save settings to localStorage', e);
-    }
-    // Only push to server if data has already been initialized from server
-    if (isServerLoaded.current) {
-      fetch('/api/settings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache'
-        },
-        body: JSON.stringify(settings)
-      }).catch(() => {});
-    }
+    } catch (e) {}
   }, [settings]);
 
   useEffect(() => {
     try {
       localStorage.setItem('nerve_nae_programs', JSON.stringify(programs));
-    } catch (e) {
-      console.warn('Failed to save programs to localStorage', e);
-    }
-    if (isServerLoaded.current) {
-      fetch('/api/sync', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache'
-        },
-        body: JSON.stringify({ programs })
-      }).catch(() => {});
-    }
+    } catch (e) {}
   }, [programs]);
 
   useEffect(() => {
     try {
       localStorage.setItem('nerve_nae_notices', JSON.stringify(notices));
-    } catch (e) {
-      console.warn('Failed to save notices to localStorage', e);
-    }
-    if (isServerLoaded.current) {
-      fetch('/api/sync', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache'
-        },
-        body: JSON.stringify({ notices })
-      }).catch(() => {});
-    }
+    } catch (e) {}
   }, [notices]);
 
   useEffect(() => {
     try {
-      localStorage.setItem('nerve_nae_gallery', JSON.stringify(gallery));
-    } catch (e) {
-      console.warn('Failed to save gallery to localStorage', e);
-    }
-    if (isServerLoaded.current) {
-      fetch('/api/gallery', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache'
-        },
-        body: JSON.stringify({ gallery })
-      }).catch(() => {});
-    }
-  }, [gallery]);
-
-  useEffect(() => {
-    try {
       localStorage.setItem('nerve_nae_popups', JSON.stringify(popups));
-    } catch (e) {
-      console.warn('Failed to save popups to localStorage', e);
-    }
-    if (isServerLoaded.current) {
-      fetch('/api/sync', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache'
-        },
-        body: JSON.stringify({ popups })
-      }).catch(() => {});
-    }
+    } catch (e) {}
   }, [popups]);
 
   useEffect(() => {
     try {
       localStorage.setItem('nerve_nae_donations', JSON.stringify(donations));
-    } catch (e) {
-      console.warn('Failed to save donations to localStorage', e);
-    }
+    } catch (e) {}
   }, [donations]);
 
   useEffect(() => {
     try {
       localStorage.setItem('nerve_nae_inquiries', JSON.stringify(inquiries));
-    } catch (e) {
-      console.warn('Failed to save inquiries to localStorage', e);
-    }
+    } catch (e) {}
   }, [inquiries]);
 
   useEffect(() => {
     try {
       localStorage.setItem('nerve_nae_subscribers', JSON.stringify(subscribers));
-    } catch (e) {
-      console.warn('Failed to save subscribers to localStorage', e);
-    }
+    } catch (e) {}
   }, [subscribers]);
+
+  // Server post helper for admin mutations
+  const postMutationToServer = useCallback((endpoint: string, payload: any, actionName: string) => {
+    fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      },
+      body: JSON.stringify(payload)
+    })
+      .then(res => {
+        if (res.ok) {
+          addDebugLog('success', `[서버 저장 완료] ${actionName}`);
+          setSyncTimestamp(Date.now());
+        } else {
+          addDebugLog('error', `[서버 저장 실패] ${actionName} (HTTP ${res.status})`);
+        }
+      })
+      .catch(err => {
+        addDebugLog('error', `[서버 통신 에러] ${actionName}: ${err?.message || '오류'}`);
+      });
+  }, [addDebugLog]);
 
   // Program CRUD
   const addProgram = (item: Omit<ProgramItem, 'id' | 'code'>) => {
@@ -809,15 +804,21 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       id: `prg-${Date.now()}`,
       code: nextCode
     };
-    setPrograms(prev => [...prev, newProgram]);
+    const next = [...programs, newProgram];
+    setPrograms(next);
+    postMutationToServer('/api/sync', { programs: next }, `사업 추가: ${newProgram.title}`);
   };
 
   const updateProgram = (id: string, updated: Partial<ProgramItem>) => {
-    setPrograms(prev => prev.map(p => p.id === id ? { ...p, ...updated } : p));
+    const next = programs.map(p => p.id === id ? { ...p, ...updated } : p);
+    setPrograms(next);
+    postMutationToServer('/api/sync', { programs: next }, `사업 수정 (ID: ${id})`);
   };
 
   const deleteProgram = (id: string) => {
-    setPrograms(prev => prev.filter(p => p.id !== id));
+    const next = programs.filter(p => p.id !== id);
+    setPrograms(next);
+    postMutationToServer('/api/sync', { programs: next }, `사업 삭제 (ID: ${id})`);
   };
 
   // Notice CRUD
@@ -828,15 +829,21 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       date: item.date || new Date().toISOString().split('T')[0],
       views: 1
     };
-    setNotices(prev => [newNotice, ...prev]);
+    const next = [newNotice, ...notices];
+    setNotices(next);
+    postMutationToServer('/api/sync', { notices: next }, `공지 추가: ${newNotice.title}`);
   };
 
   const updateNotice = (id: string, updated: Partial<NoticeItem>) => {
-    setNotices(prev => prev.map(n => n.id === id ? { ...n, ...updated } : n));
+    const next = notices.map(n => n.id === id ? { ...n, ...updated } : n);
+    setNotices(next);
+    postMutationToServer('/api/sync', { notices: next }, `공지 수정 (ID: ${id})`);
   };
 
   const deleteNotice = (id: string) => {
-    setNotices(prev => prev.filter(n => n.id !== id));
+    const next = notices.filter(n => n.id !== id);
+    setNotices(next);
+    postMutationToServer('/api/sync', { notices: next }, `공지 삭제 (ID: ${id})`);
   };
 
   // Gallery CRUD
@@ -848,39 +855,30 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       author: item.author || '재단 관리자',
       isProtected: item.isProtected ?? true
     };
-    setGallery(prev => {
-      const next = [newGallery, ...prev];
-      fetch('/api/gallery', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gallery: next })
-      }).catch(() => {});
-      return next;
-    });
+    const next = [newGallery, ...gallery];
+    setGallery(next);
+    try {
+      localStorage.setItem('nerve_nae_gallery', JSON.stringify(next));
+    } catch (e) {}
+    postMutationToServer('/api/gallery', { gallery: next }, `갤러리 사진 추가: ${newGallery.title}`);
   };
 
   const updateGallery = (id: string, updated: Partial<GalleryItem>) => {
-    setGallery(prev => {
-      const next = prev.map(g => g.id === id ? { ...g, ...updated } : g);
-      fetch('/api/gallery', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gallery: next })
-      }).catch(() => {});
-      return next;
-    });
+    const next = gallery.map(g => g.id === id ? { ...g, ...updated } : g);
+    setGallery(next);
+    try {
+      localStorage.setItem('nerve_nae_gallery', JSON.stringify(next));
+    } catch (e) {}
+    postMutationToServer('/api/gallery', { gallery: next }, `갤러리 사진 수정 (ID: ${id})`);
   };
 
   const deleteGallery = (id: string) => {
-    setGallery(prev => {
-      const next = prev.filter(g => g.id !== id);
-      fetch('/api/gallery', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gallery: next })
-      }).catch(() => {});
-      return next;
-    });
+    const next = gallery.filter(g => g.id !== id);
+    setGallery(next);
+    try {
+      localStorage.setItem('nerve_nae_gallery', JSON.stringify(next));
+    } catch (e) {}
+    postMutationToServer('/api/gallery', { gallery: next }, `갤러리 사진 삭제 (ID: ${id})`);
   };
 
   // Donations CRUD
@@ -891,15 +889,21 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
       status: '접수완료'
     };
-    setDonations(prev => [newDonation, ...prev]);
+    const next = [newDonation, ...donations];
+    setDonations(next);
+    postMutationToServer('/api/sync', { donations: next }, `후원 신청 접수: ${newDonation.name}`);
   };
 
   const updateDonationStatus = (id: string, status: '접수완료' | '확인중' | '처리완료') => {
-    setDonations(prev => prev.map(d => d.id === id ? { ...d, status } : d));
+    const next = donations.map(d => d.id === id ? { ...d, status } : d);
+    setDonations(next);
+    postMutationToServer('/api/sync', { donations: next }, `후원 상태 변경: ${status}`);
   };
 
   const deleteDonation = (id: string) => {
-    setDonations(prev => prev.filter(d => d.id !== id));
+    const next = donations.filter(d => d.id !== id);
+    setDonations(next);
+    postMutationToServer('/api/sync', { donations: next }, `후원 내역 삭제`);
   };
 
   // Inquiries CRUD
@@ -910,15 +914,21 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
       status: '대기중'
     };
-    setInquiries(prev => [newInquiry, ...prev]);
+    const next = [newInquiry, ...inquiries];
+    setInquiries(next);
+    postMutationToServer('/api/sync', { inquiries: next }, `문의 접수: ${newInquiry.name}`);
   };
 
   const updateInquiryStatus = (id: string, status: '대기중' | '답변완료') => {
-    setInquiries(prev => prev.map(i => i.id === id ? { ...i, status } : i));
+    const next = inquiries.map(i => i.id === id ? { ...i, status } : i);
+    setInquiries(next);
+    postMutationToServer('/api/sync', { inquiries: next }, `문의 상태 변경: ${status}`);
   };
 
   const deleteInquiry = (id: string) => {
-    setInquiries(prev => prev.filter(i => i.id !== id));
+    const next = inquiries.filter(i => i.id !== id);
+    setInquiries(next);
+    postMutationToServer('/api/sync', { inquiries: next }, `문의 내역 삭제`);
   };
 
   // Subscribers CRUD
@@ -926,9 +936,12 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const trimmed = email.trim();
     if (!trimmed) return;
     const existing = subscribers.find(s => s.email.toLowerCase() === trimmed.toLowerCase());
+    let next: NewsletterSubscriber[];
     if (existing) {
       if (existing.status === '해지') {
-        setSubscribers(prev => prev.map(s => s.id === existing.id ? { ...s, status: '구독중', subscribedAt: new Date().toISOString().replace('T', ' ').substring(0, 16) } : s));
+        next = subscribers.map(s => s.id === existing.id ? { ...s, status: '구독중', subscribedAt: new Date().toISOString().replace('T', ' ').substring(0, 16) } : s);
+        setSubscribers(next);
+        postMutationToServer('/api/sync', { subscribers: next }, `뉴스레터 재구독: ${trimmed}`);
       }
       return;
     }
@@ -938,15 +951,21 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       subscribedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
       status: '구독중'
     };
-    setSubscribers(prev => [newSub, ...prev]);
+    next = [newSub, ...subscribers];
+    setSubscribers(next);
+    postMutationToServer('/api/sync', { subscribers: next }, `뉴스레터 신규 구독: ${trimmed}`);
   };
 
   const updateSubscriberStatus = (id: string, status: '구독중' | '해지') => {
-    setSubscribers(prev => prev.map(s => s.id === id ? { ...s, status } : s));
+    const next = subscribers.map(s => s.id === id ? { ...s, status } : s);
+    setSubscribers(next);
+    postMutationToServer('/api/sync', { subscribers: next }, `뉴스레터 상태 변경: ${status}`);
   };
 
   const deleteSubscriber = (id: string) => {
-    setSubscribers(prev => prev.filter(s => s.id !== id));
+    const next = subscribers.filter(s => s.id !== id);
+    setSubscribers(next);
+    postMutationToServer('/api/sync', { subscribers: next }, `뉴스레터 구독자 삭제`);
   };
 
   const addPopup = (popupData: Omit<PopupItem, 'id' | 'createdAt'>) => {
@@ -955,23 +974,39 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       id: `popup-${Date.now()}`,
       createdAt: new Date().toISOString().split('T')[0]
     };
-    setPopups(prev => [newPopup, ...prev]);
+    const next = [newPopup, ...popups];
+    setPopups(next);
+    postMutationToServer('/api/sync', { popups: next }, `팝업 추가: ${newPopup.title}`);
   };
 
   const updatePopup = (id: string, updatedData: Partial<PopupItem>) => {
-    setPopups(prev => prev.map(p => p.id === id ? { ...p, ...updatedData } : p));
+    const next = popups.map(p => p.id === id ? { ...p, ...updatedData } : p);
+    setPopups(next);
+    postMutationToServer('/api/sync', { popups: next }, `팝업 수정 (ID: ${id})`);
   };
 
   const deletePopup = (id: string) => {
-    setPopups(prev => prev.filter(p => p.id !== id));
+    const next = popups.filter(p => p.id !== id);
+    setPopups(next);
+    postMutationToServer('/api/sync', { popups: next }, `팝업 삭제 (ID: ${id})`);
   };
 
   const togglePopupActive = (id: string) => {
-    setPopups(prev => prev.map(p => p.id === id ? { ...p, isActive: !p.isActive } : p));
+    const next = popups.map(p => p.id === id ? { ...p, isActive: !p.isActive } : p);
+    setPopups(next);
+    postMutationToServer('/api/sync', { popups: next }, `팝업 활성 토글 (ID: ${id})`);
   };
 
   const updateSettings = (newSettings: Partial<FoundationSettings>) => {
-    setSettings(prev => ({ ...prev, ...newSettings }));
+    setSettings(prev => {
+      const next = { ...prev, ...newSettings };
+      try {
+        localStorage.setItem('nerve_nae_settings', JSON.stringify(next));
+      } catch (e) {}
+      postMutationToServer('/api/settings', next, '재단 기본 설정 업데이트');
+      setSyncTimestamp(Date.now());
+      return next;
+    });
   };
 
   const resetToDefaults = () => {
@@ -984,6 +1019,16 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setInquiries([]);
     setSubscribers([]);
     localStorage.clear();
+    postMutationToServer('/api/sync', {
+      settings: INITIAL_SETTINGS,
+      programs: INITIAL_PROGRAMS,
+      notices: INITIAL_NOTICES,
+      gallery: INITIAL_GALLERY,
+      popups: INITIAL_POPUPS,
+      donations: [],
+      inquiries: [],
+      subscribers: []
+    }, '초기 기본값으로 초기화');
   };
 
   const incrementNoticeViews = (id: string) => {
@@ -1061,6 +1106,13 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         isSyncing,
         syncTimestamp,
         getImageUrl,
+        debugLogs,
+        syncStatus,
+        lastSyncTime,
+        syncError,
+        clearDebugLogs,
+        showDebugOverlay,
+        setShowDebugOverlay,
         selectedProgram,
         setSelectedProgram,
         selectedNotice,

@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { useFoundation } from '../context/FoundationContext';
 import { INITIAL_SETTINGS } from '../data/initialData';
+import { getImageApiFallbackUrl } from '../utils/imageUrl';
 import { AboutSubTab } from '../types';
 import {
   Heart,
@@ -136,7 +137,11 @@ export const AboutSection: React.FC = () => {
                         className="w-full h-full object-cover object-top"
                         onError={(e) => {
                           const target = e.currentTarget;
-                          if (target.src !== INITIAL_SETTINGS.chairmanImageUrl && INITIAL_SETTINGS.chairmanImageUrl) {
+                          const originalUrl = settings.chairmanImageUrl;
+                          if (originalUrl && !target.dataset.hasRetried) {
+                            target.dataset.hasRetried = 'true';
+                            target.src = getImageApiFallbackUrl(originalUrl);
+                          } else if (INITIAL_SETTINGS.chairmanImageUrl && target.src !== INITIAL_SETTINGS.chairmanImageUrl) {
                             target.src = INITIAL_SETTINGS.chairmanImageUrl;
                           }
                         }}

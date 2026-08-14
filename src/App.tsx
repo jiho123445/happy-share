@@ -22,6 +22,7 @@ import { FloatingQuickMenu } from './components/FloatingQuickMenu';
 import { ModalViewer } from './components/ModalViewer';
 import { AdminModal } from './components/AdminModal';
 import { PopupModal } from './components/PopupModal';
+import { SyncDebugOverlay } from './components/SyncDebugOverlay';
 
 const MainContent: React.FC = () => {
   const { activeTab } = useFoundation();
@@ -107,6 +108,7 @@ export default function App() {
         <ModalViewer />
         <AdminModal />
         <PopupModal />
+        <SyncDebugOverlay />
       </div>
     </FoundationProvider>
   );

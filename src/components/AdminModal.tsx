@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useFoundation } from '../context/FoundationContext';
 import { INITIAL_SETTINGS } from '../data/initialData';
 import { Logo } from './Logo';
@@ -141,12 +141,15 @@ export const AdminModal: React.FC = () => {
 
   // Editable Settings state
   const [editSettings, setEditSettings] = useState(settings);
+  const prevAdminOpenRef = useRef(false);
 
   useEffect(() => {
-    if (adminOpen) {
+    // Only update editSettings when modal is freshly opened, not on every background sync poll
+    if (adminOpen && !prevAdminOpenRef.current) {
       setEditSettings(settings);
     }
-  }, [settings, adminOpen]);
+    prevAdminOpenRef.current = adminOpen;
+  }, [adminOpen, settings]);
 
   // Deletion & Toast UI States (Avoid browser native window.confirm/alert iframe blocking)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -327,7 +330,7 @@ export const AdminModal: React.FC = () => {
   };
 
   // Gallery File Upload Handlers (with HTML5 Canvas compression + server static upload)
-  const processImageFile = (file: File, callback: (finalUrl: string, fileName: string) => void) => {
+  const processImageFile = (file: File, callback: (finalUrl: string, fileName: string) => void, prefix: string = 'upload') => {
     if (!file.type.startsWith('image/')) {
       alert('이미지 파일(JPG, PNG, WEBP, GIF 등)만 업로드 가능합니다.');
       return;
@@ -337,7 +340,7 @@ export const AdminModal: React.FC = () => {
       const rawDataUrl = e.target?.result as string;
       if (!rawDataUrl) return;
 
-      // Compress photo using Canvas to max 1200px width/height and 0.82 quality (~60-90KB)
+      // Compress photo using Canvas to max 1200px width/height and 0.85 quality (~70-120KB)
       const img = new Image();
       img.onload = async () => {
         const canvas = document.createElement('canvas');
@@ -361,15 +364,20 @@ export const AdminModal: React.FC = () => {
         let processedUrl = rawDataUrl;
         if (ctx) {
           ctx.drawImage(img, 0, 0, width, height);
-          processedUrl = canvas.toDataURL('image/jpeg', 0.82);
+          processedUrl = canvas.toDataURL('image/jpeg', 0.85);
         }
 
         // Try direct server static upload for instant multi-device sync
         try {
           const res = await fetch('/api/upload', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ image: processedUrl, prefix: 'upload' })
+            headers: {
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0'
+            },
+            body: JSON.stringify({ image: processedUrl, prefix })
           });
           if (res.ok) {
             const json = await res.json();
@@ -762,38 +770,65 @@ export const AdminModal: React.FC = () => {
                         <label className="block font-bold text-slate-800">이사장 프로필 사진 (PC/모바일 공통 적용)</label>
                         <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
                           <CheckCircle2 className="w-3 h-3" />
-                          모바일/PC 실시간 동기화
+                          실시간 영구 저장 & 동기화
                         </span>
                       </div>
                       <div className="flex items-center gap-3">
                         <img
                           src={editSettings.chairmanImageUrl || INITIAL_SETTINGS.chairmanImageUrl}
                           alt="이사장 사진 미리보기"
-                          className="w-16 h-16 rounded-xl object-cover border border-slate-300 shrink-0"
+                          className="w-16 h-16 rounded-xl object-cover border border-slate-300 shrink-0 bg-white"
+                          onError={(e) => {
+                            const target = e.currentTarget;
+                            if (target.src !== INITIAL_SETTINGS.chairmanImageUrl && INITIAL_SETTINGS.chairmanImageUrl) {
+                              target.src = INITIAL_SETTINGS.chairmanImageUrl;
+                            }
+                          }}
                         />
                         <div className="flex-1 space-y-1.5">
-                          <label className="px-3.5 py-2 bg-white hover:bg-orange-50 border border-slate-300 hover:border-orange-400 rounded-xl text-xs font-bold text-slate-700 hover:text-orange-600 cursor-pointer flex items-center gap-2 transition-all w-fit">
-                            <Upload className="w-4 h-4 text-orange-500" />
-                            <span>내 컴퓨터에서 이사장 사진 파일 선택</span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  processImageFile(file, (dataUrl) => {
-                                    setEditSettings((prev) => ({ ...prev, chairmanImageUrl: dataUrl }));
-                                  });
-                                }
-                              }}
-                            />
-                          </label>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <label className="px-3.5 py-2 bg-white hover:bg-orange-50 border border-slate-300 hover:border-orange-400 rounded-xl text-xs font-bold text-slate-700 hover:text-orange-600 cursor-pointer flex items-center gap-2 transition-all w-fit shadow-2xs">
+                              <Upload className="w-4 h-4 text-orange-500" />
+                              <span>내 컴퓨터에서 이사장 사진 파일 선택</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    processImageFile(file, (finalUrl) => {
+                                      setEditSettings((prev) => ({ ...prev, chairmanImageUrl: finalUrl }));
+                                      updateSettings({ chairmanImageUrl: finalUrl });
+                                      showToast('이사장 프로필 사진이 등록 및 즉시 저장되었습니다.');
+                                    }, 'chairman');
+                                  }
+                                }}
+                              />
+                            </label>
+                            {editSettings.chairmanImageUrl && editSettings.chairmanImageUrl !== INITIAL_SETTINGS.chairmanImageUrl && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const defaultUrl = INITIAL_SETTINGS.chairmanImageUrl || '/uploads/chairman_profile.jpg';
+                                  setEditSettings((prev) => ({ ...prev, chairmanImageUrl: defaultUrl }));
+                                  updateSettings({ chairmanImageUrl: defaultUrl });
+                                  showToast('기본 이사장 사진으로 복원되었습니다.');
+                                }}
+                                className="text-[11px] text-slate-500 hover:text-red-500 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-red-50 transition-colors"
+                              >
+                                기본 사진 복원
+                              </button>
+                            )}
+                          </div>
                           <input
                             type="text"
                             placeholder="또는 사진 이미지 URL 입력"
                             value={editSettings.chairmanImageUrl || ''}
-                            onChange={(e) => setEditSettings({ ...editSettings, chairmanImageUrl: e.target.value })}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setEditSettings({ ...editSettings, chairmanImageUrl: val });
+                            }}
                             className="w-full p-2 bg-white border rounded-lg text-[11px] font-mono text-slate-600"
                           />
                         </div>
@@ -807,10 +842,10 @@ export const AdminModal: React.FC = () => {
                         <img
                           src={editSettings.heroImageUrl || 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1200&q=80'}
                           alt="메인 배너 미리보기"
-                          className="w-24 h-16 rounded-xl object-cover border border-slate-300 shrink-0"
+                          className="w-24 h-16 rounded-xl object-cover border border-slate-300 shrink-0 bg-white"
                         />
                         <div className="flex-1 space-y-1.5">
-                          <label className="px-3.5 py-2 bg-white hover:bg-orange-50 border border-slate-300 hover:border-orange-400 rounded-xl text-xs font-bold text-slate-700 hover:text-orange-600 cursor-pointer flex items-center gap-2 transition-all w-fit">
+                          <label className="px-3.5 py-2 bg-white hover:bg-orange-50 border border-slate-300 hover:border-orange-400 rounded-xl text-xs font-bold text-slate-700 hover:text-orange-600 cursor-pointer flex items-center gap-2 transition-all w-fit shadow-2xs">
                             <Upload className="w-4 h-4 text-orange-500" />
                             <span>내 컴퓨터에서 배너 이미지 선택</span>
                             <input
@@ -820,9 +855,11 @@ export const AdminModal: React.FC = () => {
                               onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
-                                  processImageFile(file, (dataUrl) => {
-                                    setEditSettings((prev) => ({ ...prev, heroImageUrl: dataUrl }));
-                                  });
+                                  processImageFile(file, (finalUrl) => {
+                                    setEditSettings((prev) => ({ ...prev, heroImageUrl: finalUrl }));
+                                    updateSettings({ heroImageUrl: finalUrl });
+                                    showToast('메인 대표 배너 이미지가 저장되었습니다.');
+                                  }, 'hero');
                                 }
                               }}
                             />

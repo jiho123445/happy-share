@@ -92,6 +92,14 @@ export interface NewsletterSubscriber {
   status: '구독중' | '해지';
 }
 
+export interface DebugLog {
+  id: string;
+  time: string;
+  type: 'info' | 'success' | 'warn' | 'error';
+  message: string;
+  details?: string;
+}
+
 export interface PopupItem {
   id: string;
   title: string;
