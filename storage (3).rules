@@ -2,24 +2,20 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    
-    // 헬퍼 함수: 관리자 로그인 여부 확인
+
     function isAdmin() {
-      return request.auth != null;
+      return request.auth != null
+        && request.auth.uid == 'a1MQmdMGkgdorEl6V3FAptCAYo52';
     }
 
-    // 1. 활동사진 파일 Storage 경로 ('activities/')
-    // 누구나 이미지 조회(read) 가능, 관리자만 업로드 및 삭제(write) 가능
     match /activities/{allPaths=**} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // 2. 공지사항 첨부 파일 Storage 경로 ('notices/')
     match /notices/{allPaths=**} {
       allow read: if true;
       allow write: if isAdmin();
     }
-
   }
 }
