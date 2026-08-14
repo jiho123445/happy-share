@@ -240,16 +240,7 @@ export function createExpressApp() {
     res.setHeader("Pragma", "no-cache");
     res.setHeader("Expires", "0");
     const current = readStore() || {};
-    let bodySettings = req.body || {};
-
-    if (
-      bodySettings.chairmanImageUrl &&
-      bodySettings.chairmanImageUrl.includes("photo-1560250097-0b93528c311a") &&
-      current.settings?.chairmanImageUrl &&
-      !current.settings.chairmanImageUrl.includes("photo-1560250097-0b93528c311a")
-    ) {
-      bodySettings.chairmanImageUrl = current.settings.chairmanImageUrl;
-    }
+    let bodySettings = req.body?.settings || req.body || {};
 
     if (bodySettings.chairmanImageUrl) {
       bodySettings.chairmanImageUrl = saveBase64Image(bodySettings.chairmanImageUrl, "chairman");
@@ -277,15 +268,6 @@ export function createExpressApp() {
     const payload = sanitizePayload(rawPayload);
     const current = readStore() || {};
     const payloadSettings = payload.settings || {};
-
-    if (
-      payloadSettings.chairmanImageUrl &&
-      payloadSettings.chairmanImageUrl.includes("photo-1560250097-0b93528c311a") &&
-      current.settings?.chairmanImageUrl &&
-      !current.settings.chairmanImageUrl.includes("photo-1560250097-0b93528c311a")
-    ) {
-      payloadSettings.chairmanImageUrl = current.settings.chairmanImageUrl;
-    }
 
     const merged = {
       ...current,

@@ -24,6 +24,8 @@ export interface GalleryItem {
   category: string; // e.g. '장학금 전달', '교육지원', '명절 나눔', '삼계탕 나눔', '생활용품 지원', '주거환경 개선', '복지시설 지원', '다문화가족 활동', '가족센터 활동', '지역사회 봉사'
   date: string;
   imageUrl: string;
+  /** Firebase Storage path for files uploaded by the gallery manager. */
+  storagePath?: string;
   description: string;
   location?: string;
   author?: string;

@@ -1,5 +1,7 @@
 import React from 'react';
 import { useFoundation } from '../context/FoundationContext';
+import { INITIAL_SETTINGS } from '../data/initialData';
+import { getImageApiFallbackUrl } from '../utils/imageUrl';
 import {
   Newspaper,
   Image as ImageIcon,
@@ -16,7 +18,9 @@ import {
   Eye,
   ShieldCheck,
   CheckCircle2,
-  ExternalLink
+  ExternalLink,
+  Quote,
+  Settings
 } from 'lucide-react';
 
 export const MainDashboardQuickPortal: React.FC = () => {
@@ -26,10 +30,13 @@ export const MainDashboardQuickPortal: React.FC = () => {
     programs,
     settings,
     setActiveTab,
+    setAboutSubTab,
     viewNoticeDetail,
     viewGalleryDetail,
     viewProgramDetail,
-    getImageUrl
+    getImageUrl,
+    isAdmin,
+    setAdminOpen
   } = useFoundation();
 
   // Get latest 3 notices
@@ -165,6 +172,108 @@ export const MainDashboardQuickPortal: React.FC = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Section 2.5: Chairman Greeting & Vision Spotlight (메인페이지 이사장 인사말 & 비전) */}
+        <div className="bg-gradient-to-br from-amber-50/90 via-orange-50/50 to-white rounded-3xl p-6 sm:p-10 border border-orange-200/80 shadow-md relative overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            
+            {/* Chairman Photo Profile Box */}
+            <div className="lg:col-span-4 flex flex-col items-center text-center space-y-3">
+              <div className="relative group">
+                <div className="w-48 h-56 sm:w-56 sm:h-64 rounded-2xl overflow-hidden shadow-xl border-4 border-white bg-slate-100 ring-2 ring-orange-200/60">
+                  <img
+                    src={getImageUrl(settings.chairmanImageUrl || INITIAL_SETTINGS.chairmanImageUrl)}
+                    alt={`${settings.chairmanName} 이사장`}
+                    className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      const originalUrl = settings.chairmanImageUrl;
+                      if (originalUrl && !target.dataset.hasRetried) {
+                        target.dataset.hasRetried = 'true';
+                        target.src = getImageApiFallbackUrl(originalUrl);
+                      } else if (INITIAL_SETTINGS.chairmanImageUrl && target.src !== INITIAL_SETTINGS.chairmanImageUrl) {
+                        target.src = INITIAL_SETTINGS.chairmanImageUrl;
+                      }
+                    }}
+                  />
+                </div>
+                <div className="absolute -bottom-3 -right-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white p-2.5 rounded-xl shadow-lg">
+                  <Quote className="w-5 h-5 fill-white" />
+                </div>
+              </div>
+
+              <div className="space-y-1 pt-1">
+                <div className="text-xl sm:text-2xl font-extrabold text-slate-900">
+                  {settings.chairmanName} <span className="text-sm font-bold text-orange-600">이사장</span>
+                </div>
+                <p className="text-xs text-slate-500 font-medium">
+                  사단법인 너브내행복나눔재단 대표
+                </p>
+                {isAdmin && (
+                  <button
+                    onClick={() => setAdminOpen(true)}
+                    className="inline-flex items-center gap-1 text-[11px] text-orange-600 hover:text-orange-700 bg-orange-100/70 hover:bg-orange-100 px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer mt-1"
+                  >
+                    <Settings className="w-3 h-3" />
+                    <span>관리자 사진 수정</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Greeting & Message Content */}
+            <div className="lg:col-span-8 space-y-5 text-slate-700">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-100 text-orange-800 text-xs font-extrabold border border-orange-200">
+                <Quote className="w-3.5 h-3.5 text-orange-600" />
+                <span>이사장 인사말 & 나눔 비전</span>
+              </div>
+
+              <h3 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 leading-snug">
+                "넓고 깊게 흐르는 너브내 강물처럼,
+                <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-amber-600">
+                  홍천 이웃을 향한 따뜻한 온기와 희망
+                </span>
+                이 스며듭니다."
+              </h3>
+
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed line-clamp-4 sm:line-clamp-none">
+                {settings.chairmanGreeting ? (
+                  settings.chairmanGreeting.split('\n\n')[0] || settings.chairmanGreeting
+                ) : (
+                  "안녕하십니까. 사단법인 너브내 행복나눔재단 이사장 윤성일입니다. '너브내'라는 이름처럼 이웃을 향한 정과 사랑이 넓고 깊게 흘러, 우리 지역사회 곳곳에 따뜻하게 스며들기를 바라는 마음으로 너브내 행복나눔재단은 첫걸음을 내디뎠습니다. 복지 사각지대 이웃들의 곁을 지키는 든든한 버팀목이 되겠습니다."
+                )}
+              </p>
+
+              <div className="pt-2 flex flex-wrap items-center gap-3">
+                <button
+                  onClick={() => {
+                    setActiveTab('about');
+                    setAboutSubTab('greeting');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-xs sm:text-sm font-bold px-5 py-3 rounded-xl shadow-md hover:shadow-lg transition-all"
+                >
+                  <span>이사장 인사말 전문 보기</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveTab('about');
+                    setAboutSubTab('purpose');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="inline-flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-bold px-4 py-3 rounded-xl border border-slate-200 shadow-2xs transition-all"
+                >
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  <span>설립목적 및 연혁</span>
+                </button>
+              </div>
+            </div>
+
           </div>
         </div>
 

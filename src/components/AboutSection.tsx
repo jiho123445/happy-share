@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { useFoundation } from '../context/FoundationContext';
 import { INITIAL_SETTINGS } from '../data/initialData';
+import { getImageApiFallbackUrl } from '../utils/imageUrl';
 import { AboutSubTab } from '../types';
 import {
   Heart,
@@ -24,24 +25,11 @@ import {
 } from 'lucide-react';
 
 export const AboutSection: React.FC = () => {
-  const { settings, timeline, aboutSubTab, setAboutSubTab, setActiveTab, setAdminOpen, isAdmin } = useFoundation();
+  const { settings, timeline, aboutSubTab, setAboutSubTab, setActiveTab, setAdminOpen, isAdmin, getImageUrl } = useFoundation();
 
   const handleSubTabChange = (tab: AboutSubTab) => {
     setAboutSubTab(tab);
     window.scrollTo({ top: 300, behavior: 'smooth' });
-  };
-
-  // ✅ 안전한 이미지 URL 처리 (500 에러를 유발하는 /uploads/ 경로 필터링)
-  const getSafeImageUrl = () => {
-    const url = settings.chairmanImageUrl;
-    if (!url) return 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80';
-    
-    // 500 에러를 내는 옛날 로컬 경로인 경우 기본 Unsplash 이미지로 안전하게 대체
-    if (url.startsWith('/uploads/') || url.includes('/uploads/chairman_')) {
-      return 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80';
-    }
-    
-    return url;
   };
 
   return (
@@ -143,15 +131,19 @@ export const AboutSection: React.FC = () => {
                 <div className="lg:col-span-4 text-center space-y-4 lg:sticky lg:top-28">
                   <div className="relative inline-block mx-auto">
                     <div className="w-56 h-64 sm:w-64 sm:h-72 rounded-2xl overflow-hidden shadow-xl border-4 border-orange-100 mx-auto bg-slate-100">
-                      {/* ✅ onError 무한 루프가 완전히 제거된 안전한 img 태그 */}
                       <img
-                        src={getSafeImageUrl()}
-                        alt={`${settings.chairmanName || '이사장'} 프로필`}
+                        src={getImageUrl(settings.chairmanImageUrl || INITIAL_SETTINGS.chairmanImageUrl)}
+                        alt={`${settings.chairmanName} 이사장`}
                         className="w-full h-full object-cover object-top"
                         onError={(e) => {
                           const target = e.currentTarget;
-                          target.onerror = null; // 💡 재귀 에러 완전 차단 (깜빡임 방지)
-                          target.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80';
+                          const originalUrl = settings.chairmanImageUrl;
+                          if (originalUrl && !target.dataset.hasRetried) {
+                            target.dataset.hasRetried = 'true';
+                            target.src = getImageApiFallbackUrl(originalUrl);
+                          } else if (INITIAL_SETTINGS.chairmanImageUrl && target.src !== INITIAL_SETTINGS.chairmanImageUrl) {
+                            target.src = INITIAL_SETTINGS.chairmanImageUrl;
+                          }
                         }}
                       />
                     </div>
@@ -270,6 +262,8 @@ export const AboutSection: React.FC = () => {
           {/* SUB-PAGE 2: 설립목적 및 정체성 */}
           {aboutSubTab === 'purpose' && (
             <div className="space-y-8 animate-fade-in">
+              
+              {/* Etymology & Vision Banner */}
               <div className="bg-gradient-to-r from-orange-500 via-amber-500 to-emerald-600 rounded-3xl p-8 sm:p-12 text-white shadow-xl space-y-6">
                 <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-bold text-white">
                   <Waves className="w-4 h-4 text-white" />
@@ -288,6 +282,7 @@ export const AboutSection: React.FC = () => {
                 </div>
               </div>
 
+              {/* 3 Core Pillars */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-md space-y-3">
                   <div className="w-12 h-12 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-lg">
@@ -320,6 +315,7 @@ export const AboutSection: React.FC = () => {
                 </div>
               </div>
 
+              {/* 7 Core Values Grid */}
               <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-md space-y-6">
                 <div className="text-center max-w-xl mx-auto space-y-1">
                   <h3 className="text-xl font-extrabold text-slate-900">
@@ -347,6 +343,7 @@ export const AboutSection: React.FC = () => {
                   ))}
                 </div>
               </div>
+
             </div>
           )}
 
@@ -370,6 +367,7 @@ export const AboutSection: React.FC = () => {
               <div className="relative pl-6 sm:pl-8 border-l-2 border-orange-200 space-y-8">
                 {timeline.map((item) => (
                   <div key={item.id} className="relative group">
+                    {/* Timeline Node */}
                     <div className="absolute -left-[31px] sm:-left-[39px] top-0 w-5 h-5 rounded-full bg-white border-4 border-orange-500 group-hover:scale-125 transition-transform" />
 
                     <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200/80 hover:border-orange-300 transition-all space-y-2">
@@ -401,6 +399,8 @@ export const AboutSection: React.FC = () => {
           {/* SUB-PAGE 4: 조직도 및 위탁기관 */}
           {aboutSubTab === 'organization' && (
             <div className="space-y-8 animate-fade-in">
+              
+              {/* Organization Chart Card */}
               <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-xl space-y-8">
                 <div>
                   <span className="text-xs font-bold text-orange-600 bg-orange-100 px-2.5 py-1 rounded-md">
@@ -411,7 +411,10 @@ export const AboutSection: React.FC = () => {
                   </h2>
                 </div>
 
+                {/* Visual Organization Tree */}
                 <div className="max-w-3xl mx-auto space-y-6 text-center">
+                  
+                  {/* Top Level: Board & Chairman */}
                   <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-2xl p-5 shadow-lg max-w-md mx-auto space-y-1">
                     <div className="text-xs font-bold opacity-90">의결 및 총괄 기구</div>
                     <div className="text-lg font-extrabold">이사회 / 이사장 ({settings.chairmanName})</div>
@@ -419,6 +422,7 @@ export const AboutSection: React.FC = () => {
 
                   <div className="w-0.5 h-6 bg-orange-300 mx-auto" />
 
+                  {/* Middle Level: Advisory & Steering */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl mx-auto">
                     <div className="bg-slate-100 rounded-xl p-3 border border-slate-300 text-slate-800 text-xs font-bold">
                       자문위원회 (복지·법률·의료)
@@ -430,6 +434,7 @@ export const AboutSection: React.FC = () => {
 
                   <div className="w-0.5 h-6 bg-orange-300 mx-auto" />
 
+                  {/* Operational Core: Secretariat */}
                   <div className="bg-slate-900 text-white rounded-2xl p-5 shadow-md max-w-lg mx-auto space-y-1">
                     <div className="text-xs text-orange-400 font-bold">집행 총괄</div>
                     <div className="text-base font-extrabold">사무국(상임이사)</div>
@@ -437,6 +442,7 @@ export const AboutSection: React.FC = () => {
 
                   <div className="w-0.5 h-6 bg-orange-300 mx-auto" />
 
+                  {/* Department Level */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="bg-orange-50 rounded-2xl p-4 border border-orange-200 space-y-1">
                       <div className="font-extrabold text-xs text-orange-700">기획·나눔사업팀</div>
@@ -453,9 +459,11 @@ export const AboutSection: React.FC = () => {
                       <div className="text-[11px] text-slate-600">다문화 및 가족맞춤 복지 수탁 운영</div>
                     </div>
                   </div>
+
                 </div>
               </div>
 
+              {/* Family Center Sub-agency Callout */}
               <div className="bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
                 <div className="space-y-2">
                   <span className="bg-emerald-500/30 text-emerald-300 text-xs font-bold px-3 py-1 rounded-full border border-emerald-400/30">
@@ -480,6 +488,7 @@ export const AboutSection: React.FC = () => {
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
+
             </div>
           )}
 

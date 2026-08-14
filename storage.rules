@@ -1,53 +1,25 @@
 rules_version = '2';
 
-// ⚠️ 현재 관리자 로그인은 Firebase Authentication이 아니라 화면(AdminModal)에서
-// 비밀번호 문자열만 비교하는 방식이라 request.auth가 항상 null이다.
-// (isAdmin() = request.auth != null 조건을 쓰면 업로드가 전부 permission-denied로 막힘)
-// firestore.rules도 동일한 이유로 foundation 문서를 완전 공개 쓰기로 열어두고 있으므로,
-// Storage도 같은 보안 수준(비밀번호는 클라이언트 화면에서만 보호)으로 맞춘다.
-// 추후 실제 Firebase Auth 로그인을 붙이면 isAdmin()을 request.auth != null로 다시 강화할 것.
 service firebase.storage {
   match /b/{bucket}/o {
-
-    // 활동사진(갤러리)
-    match /gallery/{allPaths=**} {
-      allow read: if true;
-      allow write: if true;
+    
+    // 헬퍼 함수: 관리자 로그인 여부 확인
+    function isAdmin() {
+      return request.auth != null;
     }
 
-    // 공지사항 첨부파일
-    match /notices/{allPaths=**} {
-      allow read: if true;
-      allow write: if true;
-    }
-
-    // 팝업 이미지
-    match /popups/{allPaths=**} {
-      allow read: if true;
-      allow write: if true;
-    }
-
-    // 이사장 프로필 사진
-    match /chairman/{allPaths=**} {
-      allow read: if true;
-      allow write: if true;
-    }
-
-    // 메인 배너 사진
-    match /hero/{allPaths=**} {
-      allow read: if true;
-      allow write: if true;
-    }
-
-    // 과거 경로 호환 (기존 activities/ 참조 코드가 남아있는 경우 대비)
+    // 1. 활동사진 파일 Storage 경로 ('activities/')
+    // 누구나 이미지 조회(read) 가능, 관리자만 업로드 및 삭제(write) 가능
     match /activities/{allPaths=**} {
       allow read: if true;
-      allow write: if true;
+      allow write: if isAdmin();
     }
 
-    // 그 외 모든 경로는 기본 차단
-    match /{allPaths=**} {
-      allow read, write: if false;
+    // 2. 공지사항 첨부 파일 Storage 경로 ('notices/')
+    match /notices/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
+
   }
 }

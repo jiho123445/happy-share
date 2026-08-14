@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useFoundation } from '../context/FoundationContext';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../lib/firebase';
 import { INITIAL_SETTINGS } from '../data/initialData';
 import { Logo } from './Logo';
 import { ProgramItem, NoticeItem, GalleryItem, NoticeAttachment, PopupItem } from '../types';
 import { downloadNoticeFile, exportDonationsToExcel, exportInquiriesToExcel, exportSubscribersToExcel } from '../utils/download';
-import { uploadImageBlob, uploadRawFile, canvasToBlob } from '../utils/uploadToStorage';
 import {
   X,
   Settings,
@@ -82,15 +83,17 @@ export const AdminModal: React.FC = () => {
     getImageUrl
   } = useFoundation();
 
-  // 1. 모든 상태(Hooks)들을 최상단에 하나도 빠짐없이 선언
+  // Authentication State
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => isAdmin);
   const [passwordInput, setPasswordInput] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [loginError, setLoginError] = useState<string | null>(null);
 
+  // Tab State
   const [activeTab, setActiveTab] = useState<'settings' | 'programs' | 'notices' | 'gallery' | 'donations' | 'inquiries' | 'subscribers' | 'popups'>('settings');
   const [subscriberSearch, setSubscriberSearch] = useState<string>('');
 
+  // Editing States
   const [editingProgramId, setEditingProgramId] = useState<string | null>(null);
   const [editProgramData, setEditProgramData] = useState<Partial<ProgramItem>>({});
   const [editDetailsText, setEditDetailsText] = useState<string>('');
@@ -104,12 +107,14 @@ export const AdminModal: React.FC = () => {
   const [editingPopupId, setEditingPopupId] = useState<string | null>(null);
   const [editPopupData, setEditPopupData] = useState<Partial<PopupItem>>({});
 
+  // New Popup Form State
   const [newPopupTitle, setNewPopupTitle] = useState('');
   const [newPopupContent, setNewPopupContent] = useState('');
   const [newPopupImageUrl, setNewPopupImageUrl] = useState('');
   const [newPopupLinkUrl, setNewPopupLinkUrl] = useState('');
   const [newPopupIsActive, setNewPopupIsActive] = useState(true);
 
+  // New Program Form State
   const [newProgTitle, setNewProgTitle] = useState('');
   const [newProgSubtitle, setNewProgSubtitle] = useState('');
   const [newProgSummary, setNewProgSummary] = useState('');
@@ -117,6 +122,7 @@ export const AdminModal: React.FC = () => {
   const [newProgImpact, setNewProgImpact] = useState('희망과 나눔의 공동체 형성');
   const [newProgDetails, setNewProgDetails] = useState('');
 
+  // New Notice Form State
   const [newNoticeTitle, setNewNoticeTitle] = useState('');
   const [newNoticeCategory, setNewNoticeCategory] = useState<'공지사항' | '재단소식' | '사업소식' | '후원소식' | '모집공고' | '보도자료'>('공지사항');
   const [newNoticeDate, setNewNoticeDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
@@ -124,6 +130,7 @@ export const AdminModal: React.FC = () => {
   const [newNoticeImportant, setNewNoticeImportant] = useState(false);
   const [newNoticeAttachments, setNewNoticeAttachments] = useState<NoticeAttachment[]>([]);
 
+  // New Gallery Form State
   const [newGalTitle, setNewGalTitle] = useState('');
   const [newGalCategory, setNewGalCategory] = useState('명절 나눔');
   const [newGalDate, setNewGalDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
@@ -133,34 +140,39 @@ export const AdminModal: React.FC = () => {
   const [uploadMode, setUploadMode] = useState<'file' | 'url'>('file');
   const [dragActive, setDragActive] = useState(false);
   const [newGalFileName, setNewGalFileName] = useState('');
+  const [newGalStoragePath, setNewGalStoragePath] = useState('');
 
+  // Editable Settings state
   const [editSettings, setEditSettings] = useState(settings);
   const prevAdminOpenRef = useRef(false);
 
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  const [resetConfirmOpen, setResetConfirmOpen] = useState<boolean>(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  const [newAdminPassword, setNewAdminPassword] = useState('');
-  const [confirmAdminPassword, setConfirmAdminPassword] = useState('');
-  const [passwordChangeSuccess, setPasswordChangeSuccess] = useState<string | null>(null);
-  const [passwordChangeError, setPasswordChangeError] = useState<string | null>(null);
-
-  // 💡 아래에 있던 uploadingImage를 위로 올려서 다른 Hooks와 나란히 배치!
-  const [uploadingImage, setUploadingImage] = useState<boolean>(false);
-
   useEffect(() => {
+    // Only update editSettings when modal is freshly opened, not on every background sync poll
     if (adminOpen && !prevAdminOpenRef.current) {
       setEditSettings(settings);
     }
     prevAdminOpenRef.current = adminOpen;
   }, [adminOpen, settings]);
 
+  // Deletion & Toast UI States (Avoid browser native window.confirm/alert iframe blocking)
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState<boolean>(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  // Password Change State
+  const [newAdminPassword, setNewAdminPassword] = useState('');
+  const [confirmAdminPassword, setConfirmAdminPassword] = useState('');
+  const [passwordChangeSuccess, setPasswordChangeSuccess] = useState<string | null>(null);
+  const [passwordChangeError, setPasswordChangeError] = useState<string | null>(null);
+
+  if (!adminOpen) return null;
+
+  // Password Authentication Handler
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     const currentPassword = settings.adminPassword || '1026';
@@ -204,6 +216,7 @@ export const AdminModal: React.FC = () => {
     showToast('재단 기본 정보 및 계좌 설정이 저장되었습니다.');
   };
 
+  // Program Handlers
   const handleCreateProgram = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProgTitle || !newProgSummary) return;
@@ -239,11 +252,12 @@ export const AdminModal: React.FC = () => {
     showToast('사업 정보가 수정되었습니다.');
   };
 
+  // Notice Handlers
   const handleNoticeFileUpload = (files: FileList | null, isEdit = false) => {
     if (!files || files.length === 0) return;
 
     Array.from(files).forEach((file) => {
-      const addAttachment = (url: string) => {
+      const addAttachment = (dataUrl: string) => {
         const formattedSize = file.size > 1024 * 1024
           ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
           : Math.round(file.size / 1024) + ' KB';
@@ -251,7 +265,7 @@ export const AdminModal: React.FC = () => {
         const fileExt = file.name.split('.').pop()?.toUpperCase() || 'FILE';
         const attachmentObj: NoticeAttachment = {
           name: file.name,
-          url,
+          url: dataUrl,
           size: formattedSize,
           type: fileExt
         };
@@ -272,19 +286,14 @@ export const AdminModal: React.FC = () => {
       };
 
       if (file.type.startsWith('image/')) {
-        processImageFile(file, (url) => addAttachment(url), 'notices');
+        processImageFile(file, (dataUrl) => addAttachment(dataUrl));
       } else {
-        setUploadingImage(true);
-        uploadRawFile(file, 'notices')
-          .then((url) => addAttachment(url))
-          .catch((err) => {
-            console.error('첨부파일 업로드 실패', err);
-            alert(
-              '첨부파일(' + file.name + ') 업로드에 실패했습니다. 다시 시도해 주세요.\n' +
-              '(오류: ' + (err?.message || err) + ')'
-            );
-          })
-          .finally(() => setUploadingImage(false));
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const dataUrl = e.target?.result as string;
+          if (dataUrl) addAttachment(dataUrl);
+        };
+        reader.readAsDataURL(file);
       }
     });
   };
@@ -323,11 +332,8 @@ export const AdminModal: React.FC = () => {
     showToast('공지사항 내용이 수정되었습니다.');
   };
 
-  const processImageFile = (
-    file: File,
-    callback: (finalUrl: string, fileName: string) => void,
-    folder: string = 'gallery'
-  ) => {
+  // Gallery File Upload Handlers (with HTML5 Canvas compression + server static upload)
+  const processImageFile = (file: File, callback: (finalUrl: string, fileName: string) => void, prefix: string = 'upload') => {
     if (!file.type.startsWith('image/')) {
       alert('이미지 파일(JPG, PNG, WEBP, GIF 등)만 업로드 가능합니다.');
       return;
@@ -337,6 +343,7 @@ export const AdminModal: React.FC = () => {
       const rawDataUrl = e.target?.result as string;
       if (!rawDataUrl) return;
 
+      // Compress photo using Canvas to max 1200px width/height and 0.85 quality (~70-120KB)
       const img = new Image();
       img.onload = async () => {
         const canvas = document.createElement('canvas');
@@ -357,45 +364,162 @@ export const AdminModal: React.FC = () => {
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
+        let processedUrl = rawDataUrl;
         if (ctx) {
           ctx.drawImage(img, 0, 0, width, height);
+          processedUrl = canvas.toDataURL('image/jpeg', 0.85);
         }
 
-        setUploadingImage(true);
+        // Try direct server static upload for instant multi-device sync
         try {
-          const blob = await canvasToBlob(canvas, 0.85);
-          if (!blob) throw new Error('이미지 압축에 실패했습니다.');
-          const downloadUrl = await uploadImageBlob(blob, folder, file.name);
-          callback(downloadUrl, file.name);
-        } catch (uploadErr: any) {
-          console.error('Firebase Storage 업로드 실패', uploadErr);
-          alert(
-            '이미지 업로드에 실패했습니다. 인터넷 연결을 확인하고 다시 시도해 주세요.\n' +
-            '(오류: ' + (uploadErr?.message || uploadErr) + ')'
-          );
-        } finally {
-          setUploadingImage(false);
+          const res = await fetch('/api/upload', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0'
+            },
+            body: JSON.stringify({ image: processedUrl, prefix })
+          });
+          if (res.ok) {
+            const json = await res.json();
+            if (json.url) {
+              callback(json.url, file.name);
+              return;
+            }
+          }
+        } catch (uploadErr) {
+          console.warn('Server upload fallback to dataUrl', uploadErr);
         }
+
+        callback(processedUrl, file.name);
       };
       img.onerror = () => {
-        alert('이미지 파일을 읽을 수 없습니다. 다른 파일을 선택해 주세요.');
+        callback(rawDataUrl, file.name);
       };
       img.src = rawDataUrl;
     };
     reader.readAsDataURL(file);
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, isEdit = false) => {
+
+  // Gallery File Upload Handlers
+  // IMPORTANT: gallery images are compressed in the browser only.
+  // They are NOT written to /api/upload or the server filesystem.
+  const processGalleryImageFile = (
+    file: File,
+    callback: (dataUrl: string, fileName: string) => void
+  ) => {
+    if (!file.type.startsWith('image/')) {
+      alert('이미지 파일(JPG, PNG, WEBP, GIF 등)만 업로드 가능합니다.');
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      const rawDataUrl = e.target?.result as string;
+      if (!rawDataUrl) return;
+
+      const img = new Image();
+
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const MAX_SIZE = 1200;
+
+        if (width > MAX_SIZE || height > MAX_SIZE) {
+          if (width > height) {
+            height = Math.round((height * MAX_SIZE) / width);
+            width = MAX_SIZE;
+          } else {
+            width = Math.round((width * MAX_SIZE) / height);
+            height = MAX_SIZE;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          callback(rawDataUrl, file.name);
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // JPEG is used for consistent, reasonably small storage files.
+        const processedUrl = canvas.toDataURL('image/jpeg', 0.85);
+        callback(processedUrl, file.name);
+      };
+
+      img.onerror = () => callback(rawDataUrl, file.name);
+      img.src = rawDataUrl;
+    };
+
+    reader.readAsDataURL(file);
+  };
+
+  /**
+   * Upload a browser-compressed data URL directly to Firebase Cloud Storage.
+   * Returns both the public download URL and the permanent Storage path.
+   */
+  const uploadGalleryImageToFirebase = async (
+    dataUrl: string,
+    originalFileName: string
+  ): Promise<{ imageUrl: string; storagePath: string }> => {
+    const response = await fetch(dataUrl);
+    const blob = await response.blob();
+
+    if (!blob.type.startsWith('image/')) {
+      throw new Error('이미지 데이터가 올바르지 않습니다.');
+    }
+
+    const safeExtension = 'jpg';
+    const baseName = originalFileName
+      .replace(/\.[^/.]+$/, '')
+      .replace(/[^a-zA-Z0-9가-힣_-]/g, '_')
+      .slice(0, 60) || 'gallery';
+
+    const uniqueName =
+      `${Date.now()}_${crypto.randomUUID()}_${baseName}.${safeExtension}`;
+
+    const storagePath = `activities/${uniqueName}`;
+    const storageRef = ref(storage, storagePath);
+
+    const snapshot = await uploadBytes(storageRef, blob, {
+      contentType: 'image/jpeg',
+      cacheControl: 'public,max-age=31536000,immutable'
+    });
+
+    const imageUrl = await getDownloadURL(snapshot.ref);
+
+    return { imageUrl, storagePath };
+  };
+
+  const handleFileUpload = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    isEdit = false
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    processImageFile(file, (url, fileName) => {
+
+    processGalleryImageFile(file, (dataUrl, fileName) => {
       if (isEdit) {
-        setEditGalleryData(prev => ({ ...prev, imageUrl: url }));
+        setEditGalleryData(prev => ({
+          ...prev,
+          imageUrl: dataUrl,
+          storagePath: ''
+        }));
       } else {
-        setNewGalUrl(url);
+        setNewGalUrl(dataUrl);
         setNewGalFileName(fileName);
+        setNewGalStoragePath('');
       }
-    }, 'gallery');
+    });
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -414,68 +538,146 @@ export const AdminModal: React.FC = () => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      processImageFile(file, (url, fileName) => {
-        if (isEdit) {
-          setEditGalleryData(prev => ({ ...prev, imageUrl: url }));
-        } else {
-          setNewGalUrl(url);
-          setNewGalFileName(fileName);
-        }
-      }, 'gallery');
-    }
+
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+
+    processGalleryImageFile(file, (dataUrl, fileName) => {
+      if (isEdit) {
+        setEditGalleryData(prev => ({
+          ...prev,
+          imageUrl: dataUrl,
+          storagePath: ''
+        }));
+      } else {
+        setNewGalUrl(dataUrl);
+        setNewGalFileName(fileName);
+        setNewGalStoragePath('');
+      }
+    });
   };
 
-  const handleCreateGallery = (e: React.FormEvent) => {
+  // Gallery Handlers
+  const handleCreateGallery = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newGalTitle) {
+
+    if (!newGalTitle.trim()) {
       alert('활동 제목을 입력해 주세요.');
       return;
     }
-    if (!newGalUrl) {
+
+    if (!newGalUrl.trim()) {
       alert('PC에서 사진 파일을 선택하거나 이미지 URL을 입력해 주세요.');
       return;
     }
-    addGallery({
-      title: newGalTitle,
-      category: newGalCategory,
-      date: newGalDate || new Date().toISOString().split('T')[0],
-      imageUrl: newGalUrl,
-      description: newGalDesc || newGalTitle,
-      location: newGalLocation,
-      author: '재단 관리자',
-      isProtected: true
-    });
-    setNewGalTitle('');
-    setNewGalDesc('');
-    setNewGalUrl('');
-    setNewGalFileName('');
-    setNewGalDate(new Date().toISOString().split('T')[0]);
-    showToast('새로운 활동 사진이 관리자 계정 보호 모드로 등록되었습니다.');
+
+    try {
+      let finalImageUrl = newGalUrl.trim();
+      let storagePath = newGalStoragePath;
+
+      // Only local file selections are data URLs.
+      // URL-mode entries are kept as external URLs and are NOT uploaded.
+      if (finalImageUrl.startsWith('data:image/')) {
+        showToast('사진을 Firebase Storage에 안전하게 저장하는 중입니다...');
+
+        const uploaded = await uploadGalleryImageToFirebase(
+          finalImageUrl,
+          newGalFileName || 'gallery.jpg'
+        );
+
+        finalImageUrl = uploaded.imageUrl;
+        storagePath = uploaded.storagePath;
+      }
+
+      addGallery({
+        title: newGalTitle.trim(),
+        category: newGalCategory,
+        date: newGalDate || new Date().toISOString().split('T')[0],
+        imageUrl: finalImageUrl,
+        storagePath: storagePath || undefined,
+        description: newGalDesc.trim() || newGalTitle.trim(),
+        location: newGalLocation,
+        author: '재단 관리자',
+        isProtected: true
+      });
+
+      setNewGalTitle('');
+      setNewGalDesc('');
+      setNewGalUrl('');
+      setNewGalFileName('');
+      setNewGalStoragePath('');
+      setNewGalDate(new Date().toISOString().split('T')[0]);
+
+      showToast(
+        finalImageUrl.startsWith('https://firebasestorage.googleapis.com/')
+          ? '사진이 Firebase Storage에 영구 저장되었습니다.'
+          : '활동 사진이 등록되었습니다.'
+      );
+    } catch (error) {
+      console.error('Firebase Storage gallery upload failed:', error);
+      alert(
+        '사진 저장에 실패했습니다.\n\n' +
+        '1) 관리자 인증 상태\n' +
+        '2) Firebase Storage 활성화\n' +
+        '3) Storage 보안 규칙\n' +
+        '을 확인해 주세요.'
+      );
+    }
   };
 
-  const handleSaveGalleryEdit = (id: string) => {
-    updateGallery(id, {
-      ...editGalleryData,
-      author: '재단 관리자',
-      isProtected: true
-    });
-    setEditingGalleryId(null);
-    setEditGalleryData({});
-    showToast('관리자 승인을 거쳐 갤러리 사진 정보가 정식 수정되었습니다.');
+
+  const handleSaveGalleryEdit = async (id: string) => {
+    try {
+      let updatedData: Partial<GalleryItem> = {
+        ...editGalleryData,
+        author: '재단 관리자',
+        isProtected: true
+      };
+
+      // If the administrator selected a new local image, move that image
+      // directly into Firebase Storage before updating Firestore metadata.
+      if (
+        typeof updatedData.imageUrl === 'string' &&
+        updatedData.imageUrl.startsWith('data:image/')
+      ) {
+        showToast('수정 사진을 Firebase Storage에 저장하는 중입니다...');
+
+        const uploaded = await uploadGalleryImageToFirebase(
+          updatedData.imageUrl,
+          `gallery-edit-${id}.jpg`
+        );
+
+        updatedData = {
+          ...updatedData,
+          imageUrl: uploaded.imageUrl,
+          storagePath: uploaded.storagePath
+        };
+      }
+
+      updateGallery(id, updatedData);
+      setEditingGalleryId(null);
+      setEditGalleryData({});
+      showToast('갤러리 정보가 안전하게 저장되었습니다.');
+    } catch (error) {
+      console.error('Firebase Storage gallery edit failed:', error);
+      alert(
+        '사진 수정 저장에 실패했습니다.\n\n' +
+        'Firebase Storage 설정과 관리자 인증 상태를 확인해 주세요.'
+      );
+    }
   };
 
+  // Popup Handlers
   const handlePopupImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isEdit = false) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    processImageFile(file, (url) => {
+    processImageFile(file, (dataUrl) => {
       if (isEdit) {
-        setEditPopupData(prev => ({ ...prev, imageUrl: url }));
+        setEditPopupData(prev => ({ ...prev, imageUrl: dataUrl }));
       } else {
-        setNewPopupImageUrl(url);
+        setNewPopupImageUrl(dataUrl);
       }
-    }, 'popups');
+    });
   };
 
   const handleCreatePopup = (e: React.FormEvent) => {
@@ -505,9 +707,6 @@ export const AdminModal: React.FC = () => {
     setEditPopupData({});
     showToast('팝업창 정보가 수정되었습니다.');
   };
-
-  // ✅ [수정 완료] 모든 함수와 Hooks 선언이 완전히 끝난 후 최종 조건문 검사
-  if (!adminOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-xs flex items-center justify-center p-4">
@@ -1113,9 +1312,10 @@ export const AdminModal: React.FC = () => {
                 </div>
               )}
 
-              {/* 2. Programs Tab */}
+              {/* 2. Programs Tab (주요사업 작성/수정/삭제) */}
               {activeTab === 'programs' && (
                 <div className="space-y-6">
+                  {/* Create New Program Form */}
                   <form onSubmit={handleCreateProgram} className="bg-white p-5 rounded-2xl border border-slate-200 space-y-4">
                     <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
                       <Plus className="w-4 h-4 text-emerald-600" />
@@ -1184,6 +1384,7 @@ export const AdminModal: React.FC = () => {
                     </div>
                   </form>
 
+                  {/* Program List & Edit */}
                   <div className="space-y-3">
                     <h5 className="font-bold text-slate-800 text-xs">등록된 주요 사업 목록 ({programs.length}건)</h5>
                     {programs.map((p) => (
@@ -1382,9 +1583,10 @@ export const AdminModal: React.FC = () => {
                 </div>
               )}
 
-              {/* 3. Notices Tab */}
+              {/* 3. Notices Tab (공지사항 게시/수정/삭제) */}
               {activeTab === 'notices' && (
                 <div className="space-y-6">
+                  {/* Create Notice Form */}
                   <form onSubmit={handleCreateNotice} className="bg-white p-5 rounded-2xl border border-slate-200 space-y-4">
                     <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
                       <Plus className="w-4 h-4 text-orange-600" />
@@ -1440,6 +1642,7 @@ export const AdminModal: React.FC = () => {
                       className="w-full p-2.5 bg-slate-50 border rounded-xl text-xs"
                     />
 
+                    {/* Attachment Upload Field */}
                     <div className="space-y-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
                       <div className="flex items-center justify-between text-xs font-bold text-slate-700">
                         <span className="flex items-center gap-1.5">
@@ -1460,6 +1663,7 @@ export const AdminModal: React.FC = () => {
                         />
                       </label>
 
+                      {/* File preview list */}
                       {newNoticeAttachments.length > 0 && (
                         <div className="space-y-1.5 pt-1">
                           {newNoticeAttachments.map((att, idx) => (
@@ -1503,6 +1707,7 @@ export const AdminModal: React.FC = () => {
                     </div>
                   </form>
 
+                  {/* Notice List & Edit */}
                   <div className="bg-white rounded-2xl border border-slate-200 divide-y divide-slate-100">
                     {notices.map((n) => (
                       <div key={n.id} className="p-4 text-xs">
@@ -1536,6 +1741,7 @@ export const AdminModal: React.FC = () => {
                               className="w-full p-2 bg-white border rounded-lg text-xs"
                             />
 
+                            {/* Editing attachments */}
                             <div className="space-y-2 bg-white p-3 rounded-lg border border-slate-200">
                               <div className="flex items-center justify-between text-xs font-bold text-slate-700">
                                 <span>첨부파일 관리</span>
@@ -1680,7 +1886,7 @@ export const AdminModal: React.FC = () => {
                 </div>
               )}
 
-              {/* 4. Gallery Tab */}
+              {/* 4. Gallery Tab (활동사진 작성/수정/삭제) */}
               {activeTab === 'gallery' && (
                 <div className="space-y-6">
                   <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-200 flex items-center justify-between">
@@ -1705,6 +1911,7 @@ export const AdminModal: React.FC = () => {
                         <span>새 활동 사진 파일 등록</span>
                       </h4>
 
+                      {/* Mode Toggle Buttons */}
                       <div className="inline-flex bg-slate-100 p-1 rounded-xl text-xs font-bold text-slate-600">
                         <button
                           type="button"
@@ -1772,6 +1979,7 @@ export const AdminModal: React.FC = () => {
                       </div>
                     </div>
 
+                    {/* PC File Upload Zone */}
                     {uploadMode === 'file' ? (
                       <div className="space-y-2">
                         <label className="block text-xs font-bold text-slate-700">활동 사진 파일 선택 (내 컴퓨터)</label>
@@ -1849,6 +2057,7 @@ export const AdminModal: React.FC = () => {
                         )}
                       </div>
                     ) : (
+                      /* Web URL Mode */
                       <div className="space-y-2">
                         <label className="block text-xs font-bold text-slate-700">웹 이미지 URL 입력</label>
                         <div className="flex gap-2">
@@ -1887,6 +2096,7 @@ export const AdminModal: React.FC = () => {
                     </div>
                   </form>
 
+                  {/* Registered Photo Gallery List */}
                   <div className="space-y-3">
                     <h5 className="font-bold text-slate-800 text-xs flex items-center justify-between">
                       <span>등록된 활동 사진 목록 ({gallery.length}개)</span>
@@ -1942,6 +2152,7 @@ export const AdminModal: React.FC = () => {
                                 </div>
                               </div>
 
+                              {/* Image preview & PC upload button in edit mode */}
                               <div className="flex items-center gap-2">
                                 {editGalleryData.imageUrl && (
                                   <img
@@ -2332,6 +2543,7 @@ export const AdminModal: React.FC = () => {
                     </div>
                   </div>
 
+                  {/* Summary Stats Cards */}
                   <div className="grid grid-cols-3 gap-3">
                     <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-center">
                       <div className="text-xs text-slate-500 font-medium">전체 신청 건수</div>
@@ -2351,6 +2563,7 @@ export const AdminModal: React.FC = () => {
                     </div>
                   </div>
 
+                  {/* Search Filter */}
                   <div className="relative">
                     <input
                       type="text"
@@ -2361,6 +2574,7 @@ export const AdminModal: React.FC = () => {
                     />
                   </div>
 
+                  {/* List Table */}
                   {subscribers.length === 0 ? (
                     <div className="text-center py-12 text-slate-400 text-xs space-y-2">
                       <Mail className="w-8 h-8 mx-auto text-slate-300" />
@@ -2447,6 +2661,7 @@ export const AdminModal: React.FC = () => {
               {/* 8. Popups Tab */}
               {activeTab === 'popups' && (
                 <div className="space-y-6">
+                  {/* Create New Popup Form */}
                   <form onSubmit={handleCreatePopup} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
                     <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                       <h4 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
@@ -2539,6 +2754,7 @@ export const AdminModal: React.FC = () => {
                     </div>
                   </form>
 
+                  {/* Registered Popups List */}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between px-1">
                       <h4 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
