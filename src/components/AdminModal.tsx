@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useFoundation } from '../context/FoundationContext';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '../lib/firebase';
+import { signInWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword } from 'firebase/auth';
+import { doc, setDoc, deleteField } from 'firebase/firestore';
+import { auth, db, storage } from '../lib/firebase';
 import { INITIAL_SETTINGS } from '../data/initialData';
 import { Logo } from './Logo';
 import { ProgramItem, NoticeItem, GalleryItem, NoticeAttachment, PopupItem } from '../types';
@@ -85,6 +87,8 @@ export const AdminModal: React.FC = () => {
 
   // Authentication State
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => isAdmin);
+  const ADMIN_UID = import.meta.env.VITE_ADMIN_UID || '';
+  const [adminEmail, setAdminEmail] = useState<string>(() => import.meta.env.VITE_ADMIN_EMAIL || '');
   const [passwordInput, setPasswordInput] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -170,23 +174,41 @@ export const AdminModal: React.FC = () => {
   const [passwordChangeSuccess, setPasswordChangeSuccess] = useState<string | null>(null);
   const [passwordChangeError, setPasswordChangeError] = useState<string | null>(null);
 
+  // Firebase Authentication handler. The old Firestore-stored password is no longer trusted.
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      const signedIn = !!user && (!ADMIN_UID || user.uid === ADMIN_UID);
+      setIsAuthenticated(signedIn);
+      setIsAdmin(signedIn);
+    });
+    return () => unsubscribe();
+  }, [setIsAdmin]);
+
   if (!adminOpen) return null;
 
-  // Password Authentication Handler
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const currentPassword = settings.adminPassword || '1026';
-    if (passwordInput === currentPassword) {
-      setIsAuthenticated(true);
-      setIsAdmin(true);
+    if (!adminEmail.trim()) {
+      setLoginError('관리자 이메일을 입력해 주세요.');
+      return;
+    }
+    try {
+      await signInWithEmailAndPassword(auth, adminEmail.trim(), passwordInput);
+      // Legacy password was stored in the public foundation document. Remove it after a successful admin login.
+      await setDoc(
+        doc(db, 'foundation', 'global'),
+        { settings: { adminPassword: deleteField() } },
+        { merge: true }
+      );
       setLoginError(null);
       setPasswordInput('');
-    } else {
-      setLoginError('비밀번호가 올바르지 않습니다.');
+    } catch (error: any) {
+      console.error('Firebase 관리자 로그인 실패:', error);
+      setLoginError('관리자 이메일 또는 비밀번호가 올바르지 않거나 Firebase Authentication 설정이 필요합니다.');
     }
   };
 
-  const handlePasswordChange = (e: React.FormEvent) => {
+  const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newAdminPassword) {
       setPasswordChangeError('새 비밀번호를 입력해 주세요.');
@@ -198,17 +220,22 @@ export const AdminModal: React.FC = () => {
       setPasswordChangeSuccess(null);
       return;
     }
-    const updated = {
-      ...editSettings,
-      adminPassword: newAdminPassword
-    };
-    updateSettings(updated);
-    setEditSettings(updated);
-    setNewAdminPassword('');
-    setConfirmAdminPassword('');
-    setPasswordChangeError(null);
-    setPasswordChangeSuccess('관리자 비밀번호가 성공적으로 변경되었습니다.');
-    showToast('관리자 비밀번호가 변경되었습니다.');
+    if (!auth.currentUser) {
+      setPasswordChangeError('먼저 Firebase 관리자 계정으로 로그인해 주세요.');
+      return;
+    }
+    try {
+      await updatePassword(auth.currentUser, newAdminPassword);
+      setNewAdminPassword('');
+      setConfirmAdminPassword('');
+      setPasswordChangeError(null);
+      setPasswordChangeSuccess('Firebase 관리자 비밀번호가 성공적으로 변경되었습니다.');
+      showToast('Firebase 관리자 비밀번호가 변경되었습니다.');
+    } catch (error: any) {
+      console.error('Firebase Firebase 관리자 비밀번호 변경 실패:', error);
+      setPasswordChangeError('비밀번호 변경에 실패했습니다. 다시 로그인한 후 시도해 주세요.');
+      setPasswordChangeSuccess(null);
+    }
   };
 
   const handleSaveSettings = () => {
@@ -741,7 +768,8 @@ export const AdminModal: React.FC = () => {
           <div className="flex items-center gap-2">
             {isAuthenticated && (
               <button
-                onClick={() => {
+                onClick={async () => {
+                  await signOut(auth);
                   setIsAuthenticated(false);
                   setIsAdmin(false);
                 }}
@@ -791,6 +819,20 @@ export const AdminModal: React.FC = () => {
               </div>
 
               <form onSubmit={handleLogin} className="space-y-4 text-left">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">관리자 이메일</label>
+                  <input
+                    type="email"
+                    value={adminEmail}
+                    onChange={(e) => {
+                      setAdminEmail(e.target.value);
+                      if (loginError) setLoginError(null);
+                    }}
+                    placeholder="Firebase 관리자 이메일"
+                    className="w-full p-3.5 bg-slate-50 border border-slate-300 rounded-2xl text-sm focus:outline-none focus:border-orange-500 focus:bg-white transition-colors"
+                    autoComplete="username"
+                  />
+                </div>
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
@@ -799,7 +841,7 @@ export const AdminModal: React.FC = () => {
                       setPasswordInput(e.target.value);
                       if (loginError) setLoginError(null);
                     }}
-                    placeholder="관리자 비밀번호 입력"
+                    placeholder="Firebase 관리자 비밀번호 입력"
                     className="w-full p-3.5 pl-4 pr-12 bg-slate-50 border border-slate-300 rounded-2xl text-sm font-mono focus:outline-none focus:border-orange-500 focus:bg-white transition-colors"
                     autoFocus
                   />
@@ -1254,7 +1296,7 @@ export const AdminModal: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <Lock className="w-4 h-4 text-orange-600" />
                         <label className="block font-extrabold text-slate-800 text-sm">
-                          관리자 비밀번호 변경
+                          Firebase 관리자 비밀번호 변경
                         </label>
                       </div>
 
@@ -2981,37 +3023,7 @@ export const AdminModal: React.FC = () => {
 
             {/* Footer actions */}
             <div className="p-4 bg-slate-100 border-t border-slate-200 flex items-center justify-between text-xs shrink-0">
-              {resetConfirmOpen ? (
-                <div className="flex items-center gap-2 bg-red-50 border border-red-200 px-3 py-1.5 rounded-xl animate-in fade-in">
-                  <span className="text-xs font-bold text-red-700">모든 데이터를 초기 상태로 복원할까요?</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      resetToDefaults();
-                      setResetConfirmOpen(false);
-                      showToast('데이터가 초기 시드 상태로 복원되었습니다.');
-                    }}
-                    className="bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs px-2.5 py-1 rounded-lg shadow-2xs transition-colors cursor-pointer"
-                  >
-                    복원하기
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setResetConfirmOpen(false)}
-                    className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs px-2 py-1 rounded-lg transition-colors cursor-pointer"
-                  >
-                    취소
-                  </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setResetConfirmOpen(true)}
-                  className="text-slate-500 hover:text-red-600 flex items-center gap-1 font-medium cursor-pointer"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" /> 초기 시드 데이터로 재설정
-                </button>
-              )}
+              <div className="text-xs text-slate-500">Firebase 관리자 계정으로 보호됨</div>
 
               <button
                 onClick={() => setAdminOpen(false)}

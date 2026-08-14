@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
-import { db, storage } from '../lib/firebase';
+import { auth, db, storage } from '../lib/firebase';
 import { testFirestoreConnection, GLOBAL_FOUNDATION_DOC, handleFirestoreError, OperationType } from '../lib/firestoreService';
 import {
   FoundationSettings,
@@ -619,9 +619,10 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           const d = docSnap.data();
           if (d) {
             if (d.settings) {
+              const { adminPassword: _legacyPassword, ...safeSettings } = d.settings as any;
               setSettings(prev => ({
                 ...prev,
-                ...d.settings,
+                ...safeSettings,
                 heroImageUrl: d.settings.heroImageUrl || prev.heroImageUrl || INITIAL_SETTINGS.heroImageUrl,
                 chairmanImageUrl: d.settings.chairmanImageUrl || prev.chairmanImageUrl || INITIAL_SETTINGS.chairmanImageUrl,
               }));
@@ -669,9 +670,11 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             subscribers,
             updatedAt: new Date().toISOString()
           };
-          setDoc(globalDocRef, initialPayload, { merge: true }).catch(err => {
-            handleFirestoreError(err, OperationType.WRITE, 'foundation/global');
-          });
+          if (auth.currentUser) {
+            setDoc(globalDocRef, initialPayload, { merge: true }).catch(err => {
+              handleFirestoreError(err, OperationType.WRITE, 'foundation/global');
+            });
+          }
         }
       },
       (error) => {
@@ -695,7 +698,8 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       if (snap.exists()) {
         const d = snap.data();
         if (d.settings) {
-          setSettings(prev => ({ ...prev, ...d.settings }));
+          const { adminPassword: _legacyPassword, ...safeSettings } = d.settings as any;
+          setSettings(prev => ({ ...prev, ...safeSettings }));
         }
         if (Array.isArray(d.programs) && d.programs.length > 0) setPrograms([...d.programs]);
         if (Array.isArray(d.notices) && d.notices.length > 0) setNotices([...d.notices]);
@@ -1312,7 +1316,9 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const updateSettings = (newSettings: Partial<FoundationSettings>) => {
     setSettings(prev => {
-      const next = { ...prev, ...newSettings };
+      const { adminPassword: _legacyPassword, ...safePrev } = prev;
+      const { adminPassword: _incomingPassword, ...safeNewSettings } = newSettings as any;
+      const next = { ...safePrev, ...safeNewSettings } as FoundationSettings;
       try {
         localStorage.setItem('nerve_nae_settings', JSON.stringify(next));
       } catch (e) {}
