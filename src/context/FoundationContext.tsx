@@ -91,8 +91,8 @@ interface FoundationContextType {
 
   // Gallery CRUD
   addGallery: (item: Omit<GalleryItem, 'id' | 'date'> & { date?: string; author?: string; isProtected?: boolean }) => void;
-  updateGallery: (id: string, item: Partial<GalleryItem>) => void;
-  deleteGallery: (id: string) => void;
+  updateGallery: (id: string, item: Partial<GalleryItem>) => Promise<void>;
+  deleteGallery: (id: string) => Promise<void>;
 
   // Donations CRUD
   addDonation: (donation: Omit<DonationApplication, 'id' | 'createdAt' | 'status'>) => void;
@@ -1023,33 +1023,100 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       });
   };
 
-  const updateGallery = (id: string, updated: Partial<GalleryItem>) => {
+  /**
+   * Firebase Storage 파일 삭제 helper.
+   *
+   * 중요:
+   * - legacy /uploads 경로에는 절대 접근하지 않습니다.
+   * - storagePath가 없으면 아무 작업도 하지 않습니다.
+   * - 이미 파일이 없는 경우(object-not-found)만 성공으로 취급합니다.
+   * - 권한 오류 등 다른 오류는 호출자에게 전달하여 Firestore와 Storage의
+   *   상태가 조용히 어긋나는 것을 막습니다.
+   */
+  const removeGalleryStorageFile = async (storagePath?: string) => {
+    if (!storagePath || !storagePath.startsWith('activities/')) {
+      return;
+    }
+
+    try {
+      await deleteObject(ref(storage, storagePath));
+    } catch (error: any) {
+      if (error?.code === 'storage/object-not-found') {
+        console.warn(`Gallery Storage file already absent: ${storagePath}`);
+        return;
+      }
+
+      console.error(`Gallery Storage file delete failed: ${storagePath}`, error);
+      throw error;
+    }
+  };
+
+  /**
+   * 갤러리 메타데이터 수정.
+   *
+   * 사진을 교체한 경우:
+   * 1) AdminModal이 새 사진을 Storage에 먼저 업로드
+   * 2) Firestore에 새 imageUrl/storagePath 저장
+   * 3) Firestore 저장 성공 후 기존 Storage 파일 삭제
+   *
+   * 따라서 새 사진 업로드/Firestore 저장이 실패하면 기존 사진은 보존됩니다.
+   */
+  const updateGallery = async (id: string, updated: Partial<GalleryItem>) => {
+    const target = gallery.find(g => g.id === id);
+    if (!target) {
+      throw new Error('수정할 갤러리 항목을 찾을 수 없습니다.');
+    }
+
     const next = gallery.map(g =>
       g.id === id ? { ...g, ...updated } : g
     );
 
-    setGallery(next);
-
-    try {
-      localStorage.setItem('nerve_nae_gallery', JSON.stringify(next));
-    } catch (e) {}
-
     const globalDocRef = doc(db, 'foundation', 'global');
 
-    setDoc(
-      globalDocRef,
-      {
-        gallery: next,
-        updatedAt: new Date().toISOString()
-      },
-      { merge: true }
-    )
-      .then(() => {
-        setSyncTimestamp(Date.now());
-        setSyncStatus('success');
-        setSyncError(null);
-      })
-      .catch((err) => {
+    try {
+      await setDoc(
+        globalDocRef,
+        {
+          gallery: next,
+          updatedAt: new Date().toISOString()
+        },
+        { merge: true }
+      );
+
+      // Firestore가 새 이미지 정보를 확정한 뒤 기존 파일을 정리합니다.
+      const oldPath = target.storagePath;
+      const newPath = updated.storagePath;
+
+      if (
+        oldPath &&
+        oldPath.startsWith('activities/') &&
+        oldPath !== newPath &&
+        typeof updated.imageUrl === 'string' &&
+        updated.imageUrl.startsWith('https://firebasestorage.googleapis.com/')
+      ) {
+        try {
+          await removeGalleryStorageFile(oldPath);
+        } catch (storageError) {
+          // 새 사진과 Firestore 데이터는 이미 정상 저장되었으므로
+          // 여기서 롤백하지 않습니다. 대신 관리자에게 정리 실패를 알립니다.
+          console.error('기존 갤러리 사진 정리 실패:', storageError);
+          setSyncStatus('error');
+          setSyncError('새 사진은 저장되었지만 기존 사진 파일 정리에 실패했습니다.');
+          throw storageError;
+        }
+      }
+
+      setGallery(next);
+
+      try {
+        localStorage.setItem('nerve_nae_gallery', JSON.stringify(next));
+      } catch (e) {}
+
+      setSyncTimestamp(Date.now());
+      setSyncStatus('success');
+      setSyncError(null);
+    } catch (err) {
+      if (!(err as any)?.code?.startsWith?.('storage/')) {
         handleFirestoreError(
           err,
           OperationType.WRITE,
@@ -1057,47 +1124,64 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         );
         setSyncStatus('error');
         setSyncError('갤러리 수정에 실패했습니다.');
-      });
+      }
+      throw err;
+    }
   };
 
-  const deleteGallery = (id: string) => {
+  /**
+   * 갤러리 항목 삭제.
+   *
+   * Firestore 메타데이터를 먼저 확정한 뒤 Firebase Storage 파일을 삭제합니다.
+   * Storage 삭제가 실패해도 게시물 자체를 잃지 않으며, 관리자에게 실패를 알립니다.
+   * legacy /uploads 사진은 storagePath가 없으므로 절대 삭제하지 않습니다.
+   */
+  const deleteGallery = async (id: string) => {
     const target = gallery.find(g => g.id === id);
+    if (!target) {
+      throw new Error('삭제할 갤러리 항목을 찾을 수 없습니다.');
+    }
+
     const next = gallery.filter(g => g.id !== id);
-
-    setGallery(next);
-
-    try {
-      localStorage.setItem('nerve_nae_gallery', JSON.stringify(next));
-    } catch (e) {}
-
     const globalDocRef = doc(db, 'foundation', 'global');
 
-    // Delete the Firebase Storage file when this gallery item was uploaded
-    // by the new Storage-based uploader. Legacy /uploads URLs are untouched.
-    const storageDeletePromise = target?.storagePath
-      ? deleteObject(ref(storage, target.storagePath)).catch((err) => {
-          // Do not block metadata deletion if the file was already removed.
-          console.warn('Gallery Storage file delete warning:', err);
-        })
-      : Promise.resolve();
+    try {
+      await setDoc(
+        globalDocRef,
+        {
+          gallery: next,
+          updatedAt: new Date().toISOString()
+        },
+        { merge: true }
+      );
 
-    storageDeletePromise
-      .then(() =>
-        setDoc(
-          globalDocRef,
-          {
-            gallery: next,
-            updatedAt: new Date().toISOString()
-          },
-          { merge: true }
-        )
-      )
-      .then(() => {
-        setSyncTimestamp(Date.now());
-        setSyncStatus('success');
-        setSyncError(null);
-      })
-      .catch((err) => {
+      setGallery(next);
+
+      try {
+        localStorage.setItem('nerve_nae_gallery', JSON.stringify(next));
+      } catch (e) {}
+
+      // 신형 Firebase Storage 사진만 삭제합니다.
+      if (target.storagePath) {
+        try {
+          await removeGalleryStorageFile(target.storagePath);
+        } catch (storageError) {
+          console.error('갤러리 Storage 파일 삭제 실패:', storageError);
+          setSyncStatus('error');
+          setSyncError(
+            '갤러리 항목은 삭제되었지만 Firebase Storage 사진 파일 정리에 실패했습니다.'
+          );
+          throw storageError;
+        }
+      }
+
+      setSyncTimestamp(Date.now());
+      setSyncStatus('success');
+      setSyncError(null);
+    } catch (err) {
+      // Storage 정리 실패는 위에서 이미 사용자에게 의미 있는 상태를 만들었으므로
+      // Firestore 쓰기 오류와 동일하게 처리하되 원본 오류를 다시 전달합니다.
+      if (!(err as any)?.code?.startsWith?.('storage/')) {
         handleFirestoreError(
           err,
           OperationType.WRITE,
@@ -1105,7 +1189,9 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         );
         setSyncStatus('error');
         setSyncError('갤러리 삭제에 실패했습니다.');
-      });
+      }
+      throw err;
+    }
   };
 
   // Donations CRUD

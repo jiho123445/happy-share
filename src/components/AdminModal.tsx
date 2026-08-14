@@ -511,8 +511,10 @@ export const AdminModal: React.FC = () => {
       if (isEdit) {
         setEditGalleryData(prev => ({
           ...prev,
-          imageUrl: dataUrl,
-          storagePath: ''
+          imageUrl: dataUrl
+          // 기존 storagePath는 유지합니다.
+          // 새 사진이 Firebase Storage에 성공적으로 업로드된 후
+          // handleSaveGalleryEdit에서 새 storagePath로 교체합니다.
         }));
       } else {
         setNewGalUrl(dataUrl);
@@ -546,8 +548,10 @@ export const AdminModal: React.FC = () => {
       if (isEdit) {
         setEditGalleryData(prev => ({
           ...prev,
-          imageUrl: dataUrl,
-          storagePath: ''
+          imageUrl: dataUrl
+          // 기존 storagePath는 유지합니다.
+          // 새 사진이 Firebase Storage에 성공적으로 업로드된 후
+          // handleSaveGalleryEdit에서 새 storagePath로 교체합니다.
         }));
       } else {
         setNewGalUrl(dataUrl);
@@ -654,7 +658,7 @@ export const AdminModal: React.FC = () => {
         };
       }
 
-      updateGallery(id, updatedData);
+      await updateGallery(id, updatedData);
       setEditingGalleryId(null);
       setEditGalleryData({});
       showToast('갤러리 정보가 안전하게 저장되었습니다.');
@@ -2243,10 +2247,23 @@ export const AdminModal: React.FC = () => {
                                     <span className="text-[11px] font-bold text-red-700">삭제할까요?</span>
                                     <button
                                       type="button"
-                                      onClick={() => {
-                                        deleteGallery(g.id);
-                                        setDeleteConfirmId(null);
-                                        showToast('갤러리 사진 항목이 삭제되었습니다.');
+                                      onClick={async () => {
+                                        try {
+                                          await deleteGallery(g.id);
+                                          setDeleteConfirmId(null);
+                                          showToast(
+                                            g.storagePath
+                                              ? '갤러리 항목과 Firebase Storage 사진이 함께 삭제되었습니다.'
+                                              : '갤러리 항목이 삭제되었습니다. (기존 /uploads 사진은 보호되었습니다.)'
+                                          );
+                                        } catch (error) {
+                                          console.error('Gallery delete failed:', error);
+                                          alert(
+                                            '갤러리 삭제 중 문제가 발생했습니다.\n\n' +
+                                            'Firestore 항목은 처리되었지만 Firebase Storage 사진 파일 정리가 실패했을 수 있습니다.\n' +
+                                            'Firebase Console의 Storage > activities를 확인해 주세요.'
+                                          );
+                                        }
                                       }}
                                       className="bg-red-600 hover:bg-red-700 text-white font-extrabold text-[11px] px-2.5 py-0.5 rounded-lg shadow-2xs transition-colors cursor-pointer"
                                     >
