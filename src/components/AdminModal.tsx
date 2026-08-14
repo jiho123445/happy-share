@@ -4,6 +4,7 @@ import { INITIAL_SETTINGS } from '../data/initialData';
 import { Logo } from './Logo';
 import { ProgramItem, NoticeItem, GalleryItem, NoticeAttachment, PopupItem } from '../types';
 import { downloadNoticeFile, exportDonationsToExcel, exportInquiriesToExcel, exportSubscribersToExcel } from '../utils/download';
+import { uploadImageBlob, uploadRawFile, canvasToBlob } from '../utils/uploadToStorage';
 import {
   X,
   Settings,
@@ -250,11 +251,14 @@ export const AdminModal: React.FC = () => {
   };
 
   // Notice Handlers
+  // 첨부파일(이미지 포함)은 전부 Firebase Storage에 업로드하고 다운로드 URL만 저장한다.
+  // (base64로 Firestore 문서에 직접 넣으면 1MB 제한에 걸려 저장이 조용히 실패, 이후
+  //  동기화 시 방금 올린 공지/첨부가 사라지는 "리셋" 현상의 원인이 되므로 절대 금지)
   const handleNoticeFileUpload = (files: FileList | null, isEdit = false) => {
     if (!files || files.length === 0) return;
 
     Array.from(files).forEach((file) => {
-      const addAttachment = (dataUrl: string) => {
+      const addAttachment = (url: string) => {
         const formattedSize = file.size > 1024 * 1024
           ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
           : Math.round(file.size / 1024) + ' KB';
@@ -262,7 +266,7 @@ export const AdminModal: React.FC = () => {
         const fileExt = file.name.split('.').pop()?.toUpperCase() || 'FILE';
         const attachmentObj: NoticeAttachment = {
           name: file.name,
-          url: dataUrl,
+          url,
           size: formattedSize,
           type: fileExt
         };
@@ -283,14 +287,19 @@ export const AdminModal: React.FC = () => {
       };
 
       if (file.type.startsWith('image/')) {
-        processImageFile(file, (dataUrl) => addAttachment(dataUrl));
+        processImageFile(file, (url) => addAttachment(url), 'notices');
       } else {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const dataUrl = e.target?.result as string;
-          if (dataUrl) addAttachment(dataUrl);
-        };
-        reader.readAsDataURL(file);
+        setUploadingImage(true);
+        uploadRawFile(file, 'notices')
+          .then((url) => addAttachment(url))
+          .catch((err) => {
+            console.error('첨부파일 업로드 실패', err);
+            alert(
+              '첨부파일(' + file.name + ') 업로드에 실패했습니다. 다시 시도해 주세요.\n' +
+              '(오류: ' + (err?.message || err) + ')'
+            );
+          })
+          .finally(() => setUploadingImage(false));
       }
     });
   };
@@ -329,8 +338,18 @@ export const AdminModal: React.FC = () => {
     showToast('공지사항 내용이 수정되었습니다.');
   };
 
-  // Gallery File Upload Handlers (with HTML5 Canvas compression + server static upload)
-  const processImageFile = (file: File, callback: (finalUrl: string, fileName: string) => void, prefix: string = 'upload') => {
+  // Gallery / Settings / Popup 이미지 업로드 핸들러
+  // HTML5 Canvas로 압축(최대 1200px, 품질 0.85) 후 Firebase Storage에 업로드하고
+  // 다운로드 URL만 콜백으로 전달한다.
+  // ⚠️ 절대 base64 문자열을 그대로 Firestore에 저장하지 않는다 (1MB 문서 제한 때문에
+  // 첨부/사진 몇 개만 추가돼도 저장이 조용히 실패해 데이터가 "리셋"되는 원인이었음).
+  const [uploadingImage, setUploadingImage] = useState<boolean>(false);
+
+  const processImageFile = (
+    file: File,
+    callback: (finalUrl: string, fileName: string) => void,
+    folder: string = 'gallery'
+  ) => {
     if (!file.type.startsWith('image/')) {
       alert('이미지 파일(JPG, PNG, WEBP, GIF 등)만 업로드 가능합니다.');
       return;
@@ -361,39 +380,28 @@ export const AdminModal: React.FC = () => {
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
-        let processedUrl = rawDataUrl;
         if (ctx) {
           ctx.drawImage(img, 0, 0, width, height);
-          processedUrl = canvas.toDataURL('image/jpeg', 0.85);
         }
 
-        // Try direct server static upload for instant multi-device sync
+        setUploadingImage(true);
         try {
-          const res = await fetch('/api/upload', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-              'Pragma': 'no-cache',
-              'Expires': '0'
-            },
-            body: JSON.stringify({ image: processedUrl, prefix })
-          });
-          if (res.ok) {
-            const json = await res.json();
-            if (json.url) {
-              callback(json.url, file.name);
-              return;
-            }
-          }
-        } catch (uploadErr) {
-          console.warn('Server upload fallback to dataUrl', uploadErr);
+          const blob = await canvasToBlob(canvas, 0.85);
+          if (!blob) throw new Error('이미지 압축에 실패했습니다.');
+          const downloadUrl = await uploadImageBlob(blob, folder, file.name);
+          callback(downloadUrl, file.name);
+        } catch (uploadErr: any) {
+          console.error('Firebase Storage 업로드 실패', uploadErr);
+          alert(
+            '이미지 업로드에 실패했습니다. 인터넷 연결을 확인하고 다시 시도해 주세요.\n' +
+            '(오류: ' + (uploadErr?.message || uploadErr) + ')'
+          );
+        } finally {
+          setUploadingImage(false);
         }
-
-        callback(processedUrl, file.name);
       };
       img.onerror = () => {
-        callback(rawDataUrl, file.name);
+        alert('이미지 파일을 읽을 수 없습니다. 다른 파일을 선택해 주세요.');
       };
       img.src = rawDataUrl;
     };
@@ -403,14 +411,14 @@ export const AdminModal: React.FC = () => {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, isEdit = false) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    processImageFile(file, (dataUrl, fileName) => {
+    processImageFile(file, (url, fileName) => {
       if (isEdit) {
-        setEditGalleryData(prev => ({ ...prev, imageUrl: dataUrl }));
+        setEditGalleryData(prev => ({ ...prev, imageUrl: url }));
       } else {
-        setNewGalUrl(dataUrl);
+        setNewGalUrl(url);
         setNewGalFileName(fileName);
       }
-    });
+    }, 'gallery');
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -431,14 +439,14 @@ export const AdminModal: React.FC = () => {
     setDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
-      processImageFile(file, (dataUrl, fileName) => {
+      processImageFile(file, (url, fileName) => {
         if (isEdit) {
-          setEditGalleryData(prev => ({ ...prev, imageUrl: dataUrl }));
+          setEditGalleryData(prev => ({ ...prev, imageUrl: url }));
         } else {
-          setNewGalUrl(dataUrl);
+          setNewGalUrl(url);
           setNewGalFileName(fileName);
         }
-      });
+      }, 'gallery');
     }
   };
 
@@ -486,13 +494,13 @@ export const AdminModal: React.FC = () => {
   const handlePopupImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isEdit = false) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    processImageFile(file, (dataUrl) => {
+    processImageFile(file, (url) => {
       if (isEdit) {
-        setEditPopupData(prev => ({ ...prev, imageUrl: dataUrl }));
+        setEditPopupData(prev => ({ ...prev, imageUrl: url }));
       } else {
-        setNewPopupImageUrl(dataUrl);
+        setNewPopupImageUrl(url);
       }
-    });
+    }, 'popups');
   };
 
   const handleCreatePopup = (e: React.FormEvent) => {

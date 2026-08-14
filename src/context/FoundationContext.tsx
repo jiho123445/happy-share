@@ -897,9 +897,18 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       .then(() => {
         addDebugLog('success', `[⚡ Firestore 클라우드 즉시 저장 완료] ${actionName}`);
         setSyncTimestamp(Date.now());
+        setSyncStatus('success');
+        setSyncError(null);
       })
       .catch((err) => {
         handleFirestoreError(err, OperationType.WRITE, 'foundation/global');
+        // 저장 실패를 콘솔에만 남기지 않고 화면에도 즉시 알린다.
+        // (조용히 실패하면 관리자는 저장된 줄 알고 넘어가고, 다음 동기화 때
+        //  방금 작업한 내용이 예전 상태로 "리셋"된 것처럼 사라져 보이는 문제가 있었음)
+        const message = err instanceof Error ? err.message : String(err);
+        setSyncStatus('error');
+        setSyncError(`저장 실패: ${actionName} — ${message}`);
+        addDebugLog('error', `[❌ Firestore 저장 실패] ${actionName}`, message);
       });
 
     // 2. Also send to Express /api/ endpoint if available

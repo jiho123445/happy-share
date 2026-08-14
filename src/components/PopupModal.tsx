@@ -19,6 +19,7 @@ import {
   Link as LinkIcon
 } from 'lucide-react';
 import { PopupItem } from '../types';
+import { uploadImageBlob, canvasToBlob } from '../utils/uploadToStorage';
 
 export const PopupModal: React.FC = () => {
   const {
@@ -208,21 +209,60 @@ export const PopupModal: React.FC = () => {
   };
 
   // Handle Image File Upload for Edit or New
+  // Firebase Storage에 업로드 후 다운로드 URL만 사용한다. (base64를 Firestore 문서에
+  // 직접 저장하면 1MB 문서 용량 제한에 걸려 저장이 조용히 실패하는 문제가 있었음)
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isEditMode: boolean) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('이미지 파일만 업로드할 수 있습니다.');
+      return;
+    }
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      if (event.target?.result) {
-        const dataUrl = event.target.result as string;
-        if (isEditMode) {
-          setEditImageUrl(dataUrl);
-        } else {
-          setNewImageUrl(dataUrl);
+      const rawDataUrl = event.target?.result as string;
+      if (!rawDataUrl) return;
+
+      const img = new Image();
+      img.onload = async () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const MAX_SIZE = 1200;
+        if (width > MAX_SIZE || height > MAX_SIZE) {
+          if (width > height) {
+            height = Math.round((height * MAX_SIZE) / width);
+            width = MAX_SIZE;
+          } else {
+            width = Math.round((width * MAX_SIZE) / height);
+            height = MAX_SIZE;
+          }
         }
-        showToast('이미지가 선택되었습니다.');
-      }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) ctx.drawImage(img, 0, 0, width, height);
+
+        try {
+          const blob = await canvasToBlob(canvas, 0.85);
+          if (!blob) throw new Error('이미지 압축에 실패했습니다.');
+          const url = await uploadImageBlob(blob, 'popups', file.name);
+          if (isEditMode) {
+            setEditImageUrl(url);
+          } else {
+            setNewImageUrl(url);
+          }
+          showToast('이미지 업로드가 완료되었습니다.');
+        } catch (err: any) {
+          console.error('팝업 이미지 업로드 실패', err);
+          alert('이미지 업로드에 실패했습니다. 다시 시도해 주세요.\n(오류: ' + (err?.message || err) + ')');
+        }
+      };
+      img.onerror = () => {
+        alert('이미지 파일을 읽을 수 없습니다.');
+      };
+      img.src = rawDataUrl;
     };
     reader.readAsDataURL(file);
   };
