@@ -2,6 +2,13 @@
 1. Firebase Authentication Email/Password 활성화
 2. 관리자 계정 생성
 3. 관리자 UID 확인
-4. .env에 VITE_ADMIN_EMAIL / VITE_ADMIN_UID 입력
+4. 배포 환경(Vercel/AI Studio 등)에 VITE_ADMIN_EMAIL / VITE_ADMIN_UID 입력
 5. firestore.rules / storage.rules의 REPLACE_WITH_ADMIN_UID 교체
 6. Preview 테스트 후 운영 배포
+
+[관리자 인증 통합 수정본]
+- 기존 PopupModal의 1026/Firestore adminPassword 인증은 제거되었습니다.
+- 관리자 인증은 Firebase Authentication + VITE_ADMIN_UID만 사용합니다.
+- sessionStorage의 관리자 플래그는 더 이상 권한 근거로 사용하지 않습니다.
+- VITE_ADMIN_UID가 설정되면 그 값을 사용하고, 없으면 현재 지정된 관리자 UID를 사용합니다.
+- 사진 저장/Storage 데이터 구조는 변경하지 않습니다.

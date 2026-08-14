@@ -1,0 +1,558 @@
+--- original/src/lib/firebase.ts
++++ modified/src/lib/firebase.ts
+@@ -1,8 +1,16 @@
+ import { initializeApp } from 'firebase/app';
+ import { getAuth } from 'firebase/auth';
+ import { getFirestore } from 'firebase/firestore';
++import { getStorage } from 'firebase/storage';
+ import firebaseConfig from '../../firebase-applet-config.json';
+ 
+ const app = initializeApp(firebaseConfig);
++
+ export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+ export const auth = getAuth(app);
++
++// IMPORTANT: Storage must use the same Firebase app/config as Firestore.
++// This prevents the old placeholder firebaseInit configuration from being used.
++export const storage = getStorage(app);
++
++export default app;
+--- original/src/firebase/firebaseInit.js
++++ modified/src/firebase/firebaseInit.js
+@@ -1,31 +1,9 @@
+ /**
+- * firebaseInit.js - 파이어베이스 초기화 모듈
+- * 
+- * 목적: Firebase App, Authentication, Firestore, Cloud Storage를 초기화하고
+- * 프로젝트 전역에서 재사용할 수 있도록 서비스 객체들을 export합니다.
++ * Firebase compatibility wrapper.
++ *
++ * The project previously had a second Firebase configuration here with
++ * placeholder values. That could point Storage/Auth at a different project.
++ * Keep this file temporarily so existing imports continue to work, but use
++ * the single real configuration from src/lib/firebase.ts.
+  */
+-
+-import { initializeApp, getApps, getApp } from "firebase/app";
+-import { getAuth } from "firebase/auth";
+-import { getFirestore } from "firebase/firestore";
+-import { getStorage } from "firebase/storage";
+-
+-// 환경변수 또는 파이어베이스 프로젝트 설정값
+-const firebaseConfig = {
+-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyYOUR_API_KEY_HERE",
+-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "your-app.firebaseapp.com",
+-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "your-app-id",
+-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "your-app.appspot.com",
+-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "123456789",
+-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:123456789:web:abcdef"
+-};
+-
+-// 앱 중복 초기화 방지
+-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+-
+-// 파이어베이스 핵심 서비스 객체 생성
+-export const auth = getAuth(app);
+-export const db = getFirestore(app);
+-export const storage = getStorage(app);
+-
+-export default app;
++export { default, db, auth, storage } from "../lib/firebase.ts";
+--- original/src/firebase/gallery.js
++++ modified/src/firebase/gallery.js
+@@ -20,7 +20,7 @@
+   getDownloadURL,
+   deleteObject
+ } from "firebase/storage";
+-import { db, storage } from "./firebaseInit.js";
++import { db, storage } from "../lib/firebase.ts";
+ 
+ const COLLECTION_NAME = "activities";
+ 
+--- original/src/types.ts
++++ modified/src/types.ts
+@@ -24,6 +24,8 @@
+   category: string; // e.g. '장학금 전달', '교육지원', '명절 나눔', '삼계탕 나눔', '생활용품 지원', '주거환경 개선', '복지시설 지원', '다문화가족 활동', '가족센터 활동', '지역사회 봉사'
+   date: string;
+   imageUrl: string;
++  /** Firebase Storage path for files uploaded by the gallery manager. */
++  storagePath?: string;
+   description: string;
+   location?: string;
+   author?: string;
+--- original/src/components/AdminModal.tsx
++++ modified/src/components/AdminModal.tsx
+@@ -1,5 +1,7 @@
+ import React, { useState, useEffect, useRef } from 'react';
+ import { useFoundation } from '../context/FoundationContext';
++import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
++import { storage } from '../lib/firebase';
+ import { INITIAL_SETTINGS } from '../data/initialData';
+ import { Logo } from './Logo';
+ import { ProgramItem, NoticeItem, GalleryItem, NoticeAttachment, PopupItem } from '../types';
+@@ -138,6 +140,7 @@
+   const [uploadMode, setUploadMode] = useState<'file' | 'url'>('file');
+   const [dragActive, setDragActive] = useState(false);
+   const [newGalFileName, setNewGalFileName] = useState('');
++  const [newGalStoragePath, setNewGalStoragePath] = useState('');
+ 
+   // Editable Settings state
+   const [editSettings, setEditSettings] = useState(settings);
+@@ -400,15 +403,121 @@
+     reader.readAsDataURL(file);
+   };
+ 
+-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, isEdit = false) => {
++
++  // Gallery File Upload Handlers
++  // IMPORTANT: gallery images are compressed in the browser only.
++  // They are NOT written to /api/upload or the server filesystem.
++  const processGalleryImageFile = (
++    file: File,
++    callback: (dataUrl: string, fileName: string) => void
++  ) => {
++    if (!file.type.startsWith('image/')) {
++      alert('이미지 파일(JPG, PNG, WEBP, GIF 등)만 업로드 가능합니다.');
++      return;
++    }
++
++    const reader = new FileReader();
++
++    reader.onload = (e) => {
++      const rawDataUrl = e.target?.result as string;
++      if (!rawDataUrl) return;
++
++      const img = new Image();
++
++      img.onload = () => {
++        const canvas = document.createElement('canvas');
++        let width = img.width;
++        let height = img.height;
++        const MAX_SIZE = 1200;
++
++        if (width > MAX_SIZE || height > MAX_SIZE) {
++          if (width > height) {
++            height = Math.round((height * MAX_SIZE) / width);
++            width = MAX_SIZE;
++          } else {
++            width = Math.round((width * MAX_SIZE) / height);
++            height = MAX_SIZE;
++          }
++        }
++
++        canvas.width = width;
++        canvas.height = height;
++
++        const ctx = canvas.getContext('2d');
++        if (!ctx) {
++          callback(rawDataUrl, file.name);
++          return;
++        }
++
++        ctx.drawImage(img, 0, 0, width, height);
++
++        // JPEG is used for consistent, reasonably small storage files.
++        const processedUrl = canvas.toDataURL('image/jpeg', 0.85);
++        callback(processedUrl, file.name);
++      };
++
++      img.onerror = () => callback(rawDataUrl, file.name);
++      img.src = rawDataUrl;
++    };
++
++    reader.readAsDataURL(file);
++  };
++
++  /**
++   * Upload a browser-compressed data URL directly to Firebase Cloud Storage.
++   * Returns both the public download URL and the permanent Storage path.
++   */
++  const uploadGalleryImageToFirebase = async (
++    dataUrl: string,
++    originalFileName: string
++  ): Promise<{ imageUrl: string; storagePath: string }> => {
++    const response = await fetch(dataUrl);
++    const blob = await response.blob();
++
++    if (!blob.type.startsWith('image/')) {
++      throw new Error('이미지 데이터가 올바르지 않습니다.');
++    }
++
++    const safeExtension = 'jpg';
++    const baseName = originalFileName
++      .replace(/\.[^/.]+$/, '')
++      .replace(/[^a-zA-Z0-9가-힣_-]/g, '_')
++      .slice(0, 60) || 'gallery';
++
++    const uniqueName =
++      `${Date.now()}_${crypto.randomUUID()}_${baseName}.${safeExtension}`;
++
++    const storagePath = `activities/${uniqueName}`;
++    const storageRef = ref(storage, storagePath);
++
++    const snapshot = await uploadBytes(storageRef, blob, {
++      contentType: 'image/jpeg',
++      cacheControl: 'public,max-age=31536000,immutable'
++    });
++
++    const imageUrl = await getDownloadURL(snapshot.ref);
++
++    return { imageUrl, storagePath };
++  };
++
++  const handleFileUpload = (
++    e: React.ChangeEvent<HTMLInputElement>,
++    isEdit = false
++  ) => {
+     const file = e.target.files?.[0];
+     if (!file) return;
+-    processImageFile(file, (dataUrl, fileName) => {
++
++    processGalleryImageFile(file, (dataUrl, fileName) => {
+       if (isEdit) {
+-        setEditGalleryData(prev => ({ ...prev, imageUrl: dataUrl }));
++        setEditGalleryData(prev => ({
++          ...prev,
++          imageUrl: dataUrl,
++          storagePath: ''
++        }));
+       } else {
+         setNewGalUrl(dataUrl);
+         setNewGalFileName(fileName);
++        setNewGalStoragePath('');
+       }
+     });
+   };
+@@ -429,57 +538,133 @@
+     e.preventDefault();
+     e.stopPropagation();
+     setDragActive(false);
+-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+-      const file = e.dataTransfer.files[0];
+-      processImageFile(file, (dataUrl, fileName) => {
+-        if (isEdit) {
+-          setEditGalleryData(prev => ({ ...prev, imageUrl: dataUrl }));
+-        } else {
+-          setNewGalUrl(dataUrl);
+-          setNewGalFileName(fileName);
+-        }
+-      });
+-    }
++
++    const file = e.dataTransfer.files?.[0];
++    if (!file) return;
++
++    processGalleryImageFile(file, (dataUrl, fileName) => {
++      if (isEdit) {
++        setEditGalleryData(prev => ({
++          ...prev,
++          imageUrl: dataUrl,
++          storagePath: ''
++        }));
++      } else {
++        setNewGalUrl(dataUrl);
++        setNewGalFileName(fileName);
++        setNewGalStoragePath('');
++      }
++    });
+   };
+ 
+   // Gallery Handlers
+-  const handleCreateGallery = (e: React.FormEvent) => {
++  const handleCreateGallery = async (e: React.FormEvent) => {
+     e.preventDefault();
+-    if (!newGalTitle) {
++
++    if (!newGalTitle.trim()) {
+       alert('활동 제목을 입력해 주세요.');
+       return;
+     }
+-    if (!newGalUrl) {
++
++    if (!newGalUrl.trim()) {
+       alert('PC에서 사진 파일을 선택하거나 이미지 URL을 입력해 주세요.');
+       return;
+     }
+-    addGallery({
+-      title: newGalTitle,
+-      category: newGalCategory,
+-      date: newGalDate || new Date().toISOString().split('T')[0],
+-      imageUrl: newGalUrl,
+-      description: newGalDesc || newGalTitle,
+-      location: newGalLocation,
+-      author: '재단 관리자',
+-      isProtected: true
+-    });
+-    setNewGalTitle('');
+-    setNewGalDesc('');
+-    setNewGalUrl('');
+-    setNewGalFileName('');
+-    setNewGalDate(new Date().toISOString().split('T')[0]);
+-    showToast('새로운 활동 사진이 관리자 계정 보호 모드로 등록되었습니다.');
++
++    try {
++      let finalImageUrl = newGalUrl.trim();
++      let storagePath = newGalStoragePath;
++
++      // Only local file selections are data URLs.
++      // URL-mode entries are kept as external URLs and are NOT uploaded.
++      if (finalImageUrl.startsWith('data:image/')) {
++        showToast('사진을 Firebase Storage에 안전하게 저장하는 중입니다...');
++
++        const uploaded = await uploadGalleryImageToFirebase(
++          finalImageUrl,
++          newGalFileName || 'gallery.jpg'
++        );
++
++        finalImageUrl = uploaded.imageUrl;
++        storagePath = uploaded.storagePath;
++      }
++
++      addGallery({
++        title: newGalTitle.trim(),
++        category: newGalCategory,
++        date: newGalDate || new Date().toISOString().split('T')[0],
++        imageUrl: finalImageUrl,
++        storagePath: storagePath || undefined,
++        description: newGalDesc.trim() || newGalTitle.trim(),
++        location: newGalLocation,
++        author: '재단 관리자',
++        isProtected: true
++      });
++
++      setNewGalTitle('');
++      setNewGalDesc('');
++      setNewGalUrl('');
++      setNewGalFileName('');
++      setNewGalStoragePath('');
++      setNewGalDate(new Date().toISOString().split('T')[0]);
++
++      showToast(
++        finalImageUrl.startsWith('https://firebasestorage.googleapis.com/')
++          ? '사진이 Firebase Storage에 영구 저장되었습니다.'
++          : '활동 사진이 등록되었습니다.'
++      );
++    } catch (error) {
++      console.error('Firebase Storage gallery upload failed:', error);
++      alert(
++        '사진 저장에 실패했습니다.\n\n' +
++        '1) 관리자 인증 상태\n' +
++        '2) Firebase Storage 활성화\n' +
++        '3) Storage 보안 규칙\n' +
++        '을 확인해 주세요.'
++      );
++    }
+   };
+ 
+-  const handleSaveGalleryEdit = (id: string) => {
+-    updateGallery(id, {
+-      ...editGalleryData,
+-      author: '재단 관리자',
+-      isProtected: true
+-    });
+-    setEditingGalleryId(null);
+-    setEditGalleryData({});
+-    showToast('관리자 승인을 거쳐 갤러리 사진 정보가 정식 수정되었습니다.');
++
++  const handleSaveGalleryEdit = async (id: string) => {
++    try {
++      let updatedData: Partial<GalleryItem> = {
++        ...editGalleryData,
++        author: '재단 관리자',
++        isProtected: true
++      };
++
++      // If the administrator selected a new local image, move that image
++      // directly into Firebase Storage before updating Firestore metadata.
++      if (
++        typeof updatedData.imageUrl === 'string' &&
++        updatedData.imageUrl.startsWith('data:image/')
++      ) {
++        showToast('수정 사진을 Firebase Storage에 저장하는 중입니다...');
++
++        const uploaded = await uploadGalleryImageToFirebase(
++          updatedData.imageUrl,
++          `gallery-edit-${id}.jpg`
++        );
++
++        updatedData = {
++          ...updatedData,
++          imageUrl: uploaded.imageUrl,
++          storagePath: uploaded.storagePath
++        };
++      }
++
++      updateGallery(id, updatedData);
++      setEditingGalleryId(null);
++      setEditGalleryData({});
++      showToast('갤러리 정보가 안전하게 저장되었습니다.');
++    } catch (error) {
++      console.error('Firebase Storage gallery edit failed:', error);
++      alert(
++        '사진 수정 저장에 실패했습니다.\n\n' +
++        'Firebase Storage 설정과 관리자 인증 상태를 확인해 주세요.'
++      );
++    }
+   };
+ 
+   // Popup Handlers
+--- original/src/context/FoundationContext.tsx
++++ modified/src/context/FoundationContext.tsx
+@@ -1,6 +1,7 @@
+ import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+ import { doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
+-import { db } from '../lib/firebase';
++import { ref, deleteObject } from 'firebase/storage';
++import { db, storage } from '../lib/firebase';
+ import { testFirestoreConnection, GLOBAL_FOUNDATION_DOC, handleFirestoreError, OperationType } from '../lib/firestoreService';
+ import {
+   FoundationSettings,
+@@ -627,7 +628,9 @@
+             }
+             if (Array.isArray(d.programs) && d.programs.length > 0) setPrograms([...d.programs]);
+             if (Array.isArray(d.notices) && d.notices.length > 0) setNotices([...d.notices]);
+-            if (Array.isArray(d.gallery) && d.gallery.length > 0) {
++            // Firestore is the authoritative source for gallery data.
++            // An empty gallery is also meaningful and must clear stale local cache.
++            if (Array.isArray(d.gallery)) {
+               setGallery([...d.gallery]);
+               try {
+                 localStorage.setItem('nerve_nae_gallery', JSON.stringify(d.gallery));
+@@ -976,30 +979,133 @@
+       author: item.author || '재단 관리자',
+       isProtected: item.isProtected ?? true
+     };
++
+     const next = [newGallery, ...gallery];
++
++    // Optimistic UI update.
+     setGallery(next);
++
++    // LocalStorage is cache only, never the source of truth.
+     try {
+       localStorage.setItem('nerve_nae_gallery', JSON.stringify(next));
+     } catch (e) {}
+-    postMutationToServer('/api/gallery', { gallery: next }, `갤러리 사진 추가: ${newGallery.title}`);
++
++    // IMPORTANT: gallery metadata is written directly to Firestore.
++    // Do NOT send gallery data through /api/gallery because that endpoint
++    // can convert image data into server-local /uploads files.
++    const globalDocRef = doc(db, 'foundation', 'global');
++
++    setDoc(
++      globalDocRef,
++      {
++        gallery: next,
++        updatedAt: new Date().toISOString()
++      },
++      { merge: true }
++    )
++      .then(() => {
++        setSyncTimestamp(Date.now());
++        setSyncStatus('success');
++        setSyncError(null);
++        addDebugLog(
++          'success',
++          `Firebase Storage 갤러리 등록 완료: ${newGallery.title}`
++        );
++      })
++      .catch((err) => {
++        handleFirestoreError(
++          err,
++          OperationType.WRITE,
++          'foundation/global.gallery'
++        );
++        setSyncStatus('error');
++        setSyncError('갤러리 저장에 실패했습니다.');
++      });
+   };
+ 
+   const updateGallery = (id: string, updated: Partial<GalleryItem>) => {
+-    const next = gallery.map(g => g.id === id ? { ...g, ...updated } : g);
++    const next = gallery.map(g =>
++      g.id === id ? { ...g, ...updated } : g
++    );
++
+     setGallery(next);
++
+     try {
+       localStorage.setItem('nerve_nae_gallery', JSON.stringify(next));
+     } catch (e) {}
+-    postMutationToServer('/api/gallery', { gallery: next }, `갤러리 사진 수정 (ID: ${id})`);
++
++    const globalDocRef = doc(db, 'foundation', 'global');
++
++    setDoc(
++      globalDocRef,
++      {
++        gallery: next,
++        updatedAt: new Date().toISOString()
++      },
++      { merge: true }
++    )
++      .then(() => {
++        setSyncTimestamp(Date.now());
++        setSyncStatus('success');
++        setSyncError(null);
++      })
++      .catch((err) => {
++        handleFirestoreError(
++          err,
++          OperationType.WRITE,
++          'foundation/global.gallery'
++        );
++        setSyncStatus('error');
++        setSyncError('갤러리 수정에 실패했습니다.');
++      });
+   };
+ 
+   const deleteGallery = (id: string) => {
++    const target = gallery.find(g => g.id === id);
+     const next = gallery.filter(g => g.id !== id);
++
+     setGallery(next);
++
+     try {
+       localStorage.setItem('nerve_nae_gallery', JSON.stringify(next));
+     } catch (e) {}
+-    postMutationToServer('/api/gallery', { gallery: next }, `갤러리 사진 삭제 (ID: ${id})`);
++
++    const globalDocRef = doc(db, 'foundation', 'global');
++
++    // Delete the Firebase Storage file when this gallery item was uploaded
++    // by the new Storage-based uploader. Legacy /uploads URLs are untouched.
++    const storageDeletePromise = target?.storagePath
++      ? deleteObject(ref(storage, target.storagePath)).catch((err) => {
++          // Do not block metadata deletion if the file was already removed.
++          console.warn('Gallery Storage file delete warning:', err);
++        })
++      : Promise.resolve();
++
++    storageDeletePromise
++      .then(() =>
++        setDoc(
++          globalDocRef,
++          {
++            gallery: next,
++            updatedAt: new Date().toISOString()
++          },
++          { merge: true }
++        )
++      )
++      .then(() => {
++        setSyncTimestamp(Date.now());
++        setSyncStatus('success');
++        setSyncError(null);
++      })
++      .catch((err) => {
++        handleFirestoreError(
++          err,
++          OperationType.WRITE,
++          'foundation/global.gallery'
++        );
++        setSyncStatus('error');
++        setSyncError('갤러리 삭제에 실패했습니다.');
++      });
+   };
+ 
+   // Donations CRUD

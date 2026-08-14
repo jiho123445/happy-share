@@ -2,13 +2,15 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
+    
+    // 헬퍼 함수: 관리자 로그인 여부 확인
     function isAdmin() {
       return request.auth != null
         && request.auth.uid == 'a1MQmdMGkgdorEl6V3FAptCAYo52';
     }
 
-    // Public website reads; only the configured Firebase admin may write.
+    // 1. 활동사진('activities') & 공지사항('notices')
+    // 누구나 읽기 가능, 관리자만 쓰기(생성/수정/삭제) 가능
     match /activities/{activityId} {
       allow read: if true;
       allow write: if isAdmin();
@@ -19,8 +21,8 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Public visitors may submit these forms; only the configured admin
-    // may read, update, or delete submitted records.
+    // 2. 문의하기('contacts') & 후원신청('donations')
+    // 누구나 작성(create) 가능, 관리자만 조회/수정/삭제 가능 (개인정보 보호)
     match /contacts/{contactId} {
       allow create: if true;
       allow read, update, delete: if isAdmin();
@@ -31,8 +33,5 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
-    match /{document=**} {
-      allow read, write: if false;
-    }
   }
 }
