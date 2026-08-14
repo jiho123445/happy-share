@@ -5,8 +5,7 @@ service firebase.storage {
     
     // 헬퍼 함수: 관리자 로그인 여부 확인
     function isAdmin() {
-      return request.auth != null
-        && request.auth.uid == 'a1MQmdMGkgdorEl6V3FAptCAYo52';
+      return request.auth != null;
     }
 
     // 1. 활동사진 파일 Storage 경로 ('activities/')
