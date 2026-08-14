@@ -1,7 +1,6 @@
 import React, { useRef } from 'react';
 import { useFoundation } from '../context/FoundationContext';
 import { INITIAL_SETTINGS } from '../data/initialData';
-import { getImageApiFallbackUrl } from '../utils/imageUrl';
 import { AboutSubTab } from '../types';
 import {
   Heart,
@@ -25,11 +24,19 @@ import {
 } from 'lucide-react';
 
 export const AboutSection: React.FC = () => {
-  const { settings, timeline, aboutSubTab, setAboutSubTab, setActiveTab, setAdminOpen, isAdmin, getImageUrl } = useFoundation();
+  const { settings, timeline, aboutSubTab, setAboutSubTab, setActiveTab, setAdminOpen, isAdmin } = useFoundation();
 
   const handleSubTabChange = (tab: AboutSubTab) => {
     setAboutSubTab(tab);
     window.scrollTo({ top: 300, behavior: 'smooth' });
+  };
+
+  // ✅ Firebase Storage 직링크 또는 기본 로컬 이미지 경로 우선 처리
+  const getChairmanPhotoUrl = () => {
+    if (settings.chairmanImageUrl && settings.chairmanImageUrl.trim().startsWith('http')) {
+      return settings.chairmanImageUrl.trim();
+    }
+    return settings.chairmanImageUrl || INITIAL_SETTINGS.chairmanImageUrl || '/uploads/chairman_profile.jpg';
   };
 
   return (
@@ -132,18 +139,12 @@ export const AboutSection: React.FC = () => {
                   <div className="relative inline-block mx-auto">
                     <div className="w-56 h-64 sm:w-64 sm:h-72 rounded-2xl overflow-hidden shadow-xl border-4 border-orange-100 mx-auto bg-slate-100">
                       <img
-                        src={getImageUrl(settings.chairmanImageUrl || INITIAL_SETTINGS.chairmanImageUrl)}
-                        alt={`${settings.chairmanName} 이사장`}
+                        src={getChairmanPhotoUrl()}
+                        alt={`${settings.chairmanName || '이사장'} 프로필`}
                         className="w-full h-full object-cover object-top"
                         onError={(e) => {
                           const target = e.currentTarget;
-                          const originalUrl = settings.chairmanImageUrl;
-                          if (originalUrl && !target.dataset.hasRetried) {
-                            target.dataset.hasRetried = 'true';
-                            target.src = getImageApiFallbackUrl(originalUrl);
-                          } else if (INITIAL_SETTINGS.chairmanImageUrl && target.src !== INITIAL_SETTINGS.chairmanImageUrl) {
-                            target.src = INITIAL_SETTINGS.chairmanImageUrl;
-                          }
+                          target.src = '/uploads/chairman_profile.jpg';
                         }}
                       />
                     </div>
