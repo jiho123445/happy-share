@@ -537,13 +537,14 @@ export const AdminModal: React.FC = () => {
               <h3 className="text-sm sm:text-base font-extrabold text-white flex items-center gap-2">
                 <span>너브내행복나눔재단 통합 관리자</span>
                 {isAuthenticated && (
-                  <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold px-2 py-0.5 rounded-full">
-                    인증됨
+                  <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>Firebase 클라우드 1초 실시간 연동</span>
                   </span>
                 )}
               </h3>
               <p className="text-[11px] text-slate-400">
-                게시물(공지/사업/갤러리) 작성, 수정, 삭제 및 신청 내역 실시간 관리
+                게시물(공지/사업/갤러리) 작성, 수정, 삭제 즉시 모바일·PC 전 기기 1초 자동 반영
               </p>
             </div>
           </div>

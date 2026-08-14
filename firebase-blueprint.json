@@ -1,0 +1,27 @@
+{
+  "entities": {
+    "FoundationData": {
+      "title": "FoundationData",
+      "description": "Global foundation content including settings, programs, notices, gallery, popups, donations, inquiries, subscribers",
+      "type": "object",
+      "properties": {
+        "settings": { "type": "object", "description": "Global foundation settings and metadata" },
+        "programs": { "type": "array", "description": "Array of programs" },
+        "notices": { "type": "array", "description": "Array of notices and announcements" },
+        "gallery": { "type": "array", "description": "Array of gallery activity photos" },
+        "popups": { "type": "array", "description": "Array of active and inactive popups" },
+        "donations": { "type": "array", "description": "Array of donation history records" },
+        "inquiries": { "type": "array", "description": "Array of user inquiries" },
+        "subscribers": { "type": "array", "description": "Array of newsletter subscribers" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp of last update" },
+        "updatedBy": { "type": "string", "description": "Identifier of updater" }
+      }
+    }
+  },
+  "firestore": {
+    "/foundation/global": {
+      "schema": "FoundationData",
+      "description": "Single real-time shared document containing all synchronized foundation website data"
+    }
+  }
+}

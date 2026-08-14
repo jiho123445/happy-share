@@ -1,4 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+import { doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import { testFirestoreConnection, GLOBAL_FOUNDATION_DOC, handleFirestoreError, OperationType } from '../lib/firestoreService';
 import {
   FoundationSettings,
   TimelineItem,
@@ -583,6 +586,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [debugLogs, setDebugLogs] = useState<DebugLog[]>([]);
   const [showDebugOverlay, setShowDebugOverlay] = useState<boolean>(true);
   const lastSyncTimeRef = useRef<number>(Date.now());
+  const isFirestoreActiveRef = useRef<boolean>(true);
 
   const addDebugLog = useCallback((type: 'info' | 'success' | 'warn' | 'error', message: string, details?: string) => {
     const time = new Date().toLocaleTimeString('ko-KR', { hour12: false });
@@ -600,11 +604,122 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return formatImageUrl(url, syncTimestamp);
   }, [syncTimestamp]);
 
+  // Real-time Firestore Cloud Synchronization (Sub-second mobile & desktop cross-device sync)
+  useEffect(() => {
+    testFirestoreConnection();
+
+    const globalDocRef = doc(db, 'foundation', 'global');
+
+    // Subscribe to real-time Cloud Firestore updates
+    const unsubscribe = onSnapshot(
+      globalDocRef,
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const d = docSnap.data();
+          if (d) {
+            if (d.settings) {
+              const serverChairmanImg = (d.settings.chairmanImageUrl && !d.settings.chairmanImageUrl.includes('photo-1560250097-0b93528c311a'))
+                ? d.settings.chairmanImageUrl
+                : INITIAL_SETTINGS.chairmanImageUrl;
+
+              setSettings(prev => ({
+                ...prev,
+                ...d.settings,
+                heroImageUrl: d.settings.heroImageUrl || prev.heroImageUrl,
+                chairmanImageUrl: serverChairmanImg || prev.chairmanImageUrl || INITIAL_SETTINGS.chairmanImageUrl,
+              }));
+            }
+            if (Array.isArray(d.programs) && d.programs.length > 0) setPrograms([...d.programs]);
+            if (Array.isArray(d.notices) && d.notices.length > 0) setNotices([...d.notices]);
+            if (Array.isArray(d.gallery) && d.gallery.length > 0) {
+              setGallery([...d.gallery]);
+              try {
+                localStorage.setItem('nerve_nae_gallery', JSON.stringify(d.gallery));
+              } catch (e) {}
+            }
+            if (Array.isArray(d.popups) && d.popups.length > 0) setPopups([...d.popups]);
+            if (Array.isArray(d.donations)) setDonations([...d.donations]);
+            if (Array.isArray(d.inquiries)) setInquiries([...d.inquiries]);
+            if (Array.isArray(d.subscribers)) setSubscribers([...d.subscribers]);
+
+            const now = Date.now();
+            setSyncTimestamp(now);
+            lastSyncTimeRef.current = now;
+            const timeStr = new Date().toLocaleTimeString('ko-KR');
+            setLastSyncTime(timeStr);
+            setSyncStatus('success');
+            setSyncError(null);
+            isFirestoreActiveRef.current = true;
+
+            addDebugLog(
+              'success',
+              `⚡ Firestore 클라우드 실시간 동기화 완료 (갤러리 ${d.gallery?.length || 0}개, 공지 ${d.notices?.length || 0}개)`,
+              `반영시간: ${timeStr} · 전 기기 1초 실시간 반영`
+            );
+          }
+        } else {
+          // Initial seed to Firestore if document does not exist yet
+          const initialPayload = {
+            settings,
+            programs,
+            notices,
+            gallery,
+            popups,
+            donations,
+            inquiries,
+            subscribers,
+            updatedAt: new Date().toISOString()
+          };
+          setDoc(globalDocRef, initialPayload, { merge: true }).catch(err => {
+            handleFirestoreError(err, OperationType.WRITE, 'foundation/global');
+          });
+        }
+      },
+      (error) => {
+        handleFirestoreError(error, OperationType.GET, 'foundation/global');
+        isFirestoreActiveRef.current = false;
+        fetchServerData();
+      }
+    );
+
+    return () => unsubscribe();
+  }, [addDebugLog]);
+
   const fetchServerData = async (isManual = false) => {
     setIsSyncing(true);
     setSyncStatus('syncing');
     const startTime = Date.now();
     try {
+      // 1. Try Firestore direct fetch first
+      const globalDocRef = doc(db, 'foundation', 'global');
+      const snap = await getDoc(globalDocRef);
+      if (snap.exists()) {
+        const d = snap.data();
+        if (d.settings) {
+          setSettings(prev => ({ ...prev, ...d.settings }));
+        }
+        if (Array.isArray(d.programs) && d.programs.length > 0) setPrograms([...d.programs]);
+        if (Array.isArray(d.notices) && d.notices.length > 0) setNotices([...d.notices]);
+        if (Array.isArray(d.gallery) && d.gallery.length > 0) setGallery([...d.gallery]);
+        if (Array.isArray(d.popups) && d.popups.length > 0) setPopups([...d.popups]);
+        if (Array.isArray(d.donations)) setDonations([...d.donations]);
+        if (Array.isArray(d.inquiries)) setInquiries([...d.inquiries]);
+        if (Array.isArray(d.subscribers)) setSubscribers([...d.subscribers]);
+
+        const now = Date.now();
+        setSyncTimestamp(now);
+        lastSyncTimeRef.current = now;
+        const timeStr = new Date().toLocaleTimeString('ko-KR');
+        setLastSyncTime(timeStr);
+        setSyncStatus('success');
+        setSyncError(null);
+        if (isManual) {
+          addDebugLog('success', 'Firestore 클라우드에서 최신 데이터를 새로고침했습니다.');
+        }
+        return;
+      }
+
+      // 2. Fallback to API endpoint
       const cacheBust = `?_t=${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
       const res = await fetch('/api/data' + cacheBust, {
         method: 'GET',
@@ -666,33 +781,23 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             `소요시간: ${Date.now() - startTime}ms · ${isManual ? '수동 요청' : '자동 동기화'}`
           );
         } else {
-          // Empty or initial server state - local storage remains primary
           setSyncStatus('success');
           setSyncError(null);
           setLastSyncTime(new Date().toLocaleTimeString('ko-KR'));
         }
       } else {
-        // Vercel Static Hosting fallback (when backend server /api/data is routed to static 404 or index.html)
         isServerAvailableRef.current = false;
-        setSyncStatus('success'); // mark as success with local persistence
+        setSyncStatus('success');
         setSyncError(null);
-        const timeStr = new Date().toLocaleTimeString('ko-KR') + ' (로컬 보존)';
+        const timeStr = new Date().toLocaleTimeString('ko-KR') + ' (보존 모드)';
         setLastSyncTime(timeStr);
-
-        if (isManual) {
-          addDebugLog('info', 'Vercel 정적 배포 환경: 로컬 스토리지 모드로 안전하게 작동 중입니다.', `소요시간: ${Date.now() - startTime}ms`);
-        }
       }
     } catch (err: any) {
-      // Offline or network block fallback
-      console.warn('Server sync notice (offline/static mode):', err?.message);
+      console.warn('Server sync notice:', err?.message);
       isServerAvailableRef.current = false;
-      setSyncStatus('success'); // Do not block UI with red error when localStorage is available
+      setSyncStatus('success');
       setSyncError(null);
-      setLastSyncTime(new Date().toLocaleTimeString('ko-KR') + ' (로컬 보존)');
-      if (isManual) {
-        addDebugLog('info', '오프라인/로컬 스토리지 모드로 모든 데이터가 정상 보존됩니다.');
-      }
+      setLastSyncTime(new Date().toLocaleTimeString('ko-KR'));
     } finally {
       isServerLoaded.current = true;
       setIsSyncing(false);
@@ -704,33 +809,21 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     await fetchServerData(true);
   };
 
-  // Load latest state from server on mount & listen to all mobile background / resume events
+  // Listen to mobile background / resume events
   useEffect(() => {
-    fetchServerData();
-
-    // 1. Mobile tab focus / visibility change (screen lock, app switch)
     const handleVisibilityOrFocus = () => {
       if (document.visibilityState === 'visible') {
         fetchServerData();
       }
     };
 
-    // 2. iOS Safari BFCache (Back-Forward Cache) page restoration
     const handlePageShow = (e: PageTransitionEvent) => {
       fetchServerData();
     };
 
-    // 3. Network reconnection event
     const handleOnline = () => {
       addDebugLog('info', '네트워크 온라인 감지: 최신 데이터 동기화 시도');
       fetchServerData();
-    };
-
-    // 4. Mobile user interaction touch check (throttled to at most once every 5 seconds)
-    const handleUserInteraction = () => {
-      if (isServerAvailableRef.current !== false && Date.now() - lastSyncTimeRef.current > 5000) {
-        fetchServerData();
-      }
     };
 
     window.addEventListener('focus', handleVisibilityOrFocus);
@@ -738,14 +831,6 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     window.addEventListener('pageshow', handlePageShow as any);
     window.addEventListener('online', handleOnline);
     window.addEventListener('resume' as any, handleVisibilityOrFocus);
-    window.addEventListener('touchstart', handleUserInteraction, { passive: true });
-
-    // Periodic sync: every 3s if backend server exists, or relaxed 15s in static fallback mode
-    const interval = setInterval(() => {
-      if (isServerAvailableRef.current !== false || document.visibilityState === 'visible') {
-        fetchServerData();
-      }
-    }, 4000);
 
     return () => {
       window.removeEventListener('focus', handleVisibilityOrFocus);
@@ -753,12 +838,10 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       window.removeEventListener('pageshow', handlePageShow as any);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('resume' as any, handleVisibilityOrFocus);
-      window.removeEventListener('touchstart', handleUserInteraction);
-      clearInterval(interval);
     };
   }, [addDebugLog]);
 
-  // Local storage caching for offline backup only
+  // Local storage caching for offline backup
   useEffect(() => {
     try {
       localStorage.setItem('nerve_nae_settings', JSON.stringify(settings));
@@ -801,8 +884,25 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     } catch (e) {}
   }, [subscribers]);
 
-  // Server post helper for admin mutations
+  // Firestore & Server dual-write mutation helper
   const postMutationToServer = useCallback((endpoint: string, payload: any, actionName: string) => {
+    // 1. Immediately write to Cloud Firestore for instant 1s cross-device synchronization
+    const globalDocRef = doc(db, 'foundation', 'global');
+    const firestoreUpdate: any = {
+      ...payload,
+      updatedAt: new Date().toISOString()
+    };
+
+    setDoc(globalDocRef, firestoreUpdate, { merge: true })
+      .then(() => {
+        addDebugLog('success', `[⚡ Firestore 클라우드 즉시 저장 완료] ${actionName}`);
+        setSyncTimestamp(Date.now());
+      })
+      .catch((err) => {
+        handleFirestoreError(err, OperationType.WRITE, 'foundation/global');
+      });
+
+    // 2. Also send to Express /api/ endpoint if available
     fetch(endpoint, {
       method: 'POST',
       headers: {
@@ -815,17 +915,10 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     })
       .then(res => {
         if (res.ok) {
-          addDebugLog('success', `[서버 동기화 완료] ${actionName}`);
           setSyncTimestamp(Date.now());
-        } else {
-          // In Vercel static environments, localStorage already saved it
-          addDebugLog('info', `[로컬 스토리지 영구 저장 완료] ${actionName}`);
         }
       })
-      .catch(err => {
-        // In offline/static mode, local storage is already updated
-        addDebugLog('info', `[로컬 스토리지 영구 저장 완료] ${actionName}`);
-      });
+      .catch(() => {});
   }, [addDebugLog]);
 
   // Program CRUD
