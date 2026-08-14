@@ -1,7 +1,180 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useFoundation } from '../context/FoundationContext';
 import { downloadNoticeFile } from '../utils/download';
-import { X, Calendar, Eye, MapPin, CheckCircle2, Heart, Download, Building2, Paperclip } from 'lucide-react';
+import { GalleryItem } from '../types';
+import {
+  X,
+  Calendar,
+  Eye,
+  MapPin,
+  CheckCircle2,
+  Heart,
+  Download,
+  Building2,
+  Paperclip,
+  ChevronLeft,
+  ChevronRight,
+  Image as ImageIcon,
+  Layers
+} from 'lucide-react';
+
+interface GalleryModalProps {
+  item: GalleryItem;
+  onClose: () => void;
+  getImageUrl: (url?: string) => string;
+}
+
+const GalleryModalContent: React.FC<GalleryModalProps> = ({ item, onClose, getImageUrl }) => {
+  const allImages = (item.images && item.images.length > 0)
+    ? item.images
+    : (item.imageUrl ? [item.imageUrl] : []);
+
+  const [activeIdx, setActiveIdx] = useState(0);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') {
+        setActiveIdx(prev => (prev === 0 ? allImages.length - 1 : prev - 1));
+      } else if (e.key === 'ArrowRight') {
+        setActiveIdx(prev => (prev === allImages.length - 1 ? 0 : prev + 1));
+      } else if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [allImages.length, onClose]);
+
+  const activePhotoUrl = allImages[activeIdx] || item.imageUrl;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl max-w-4xl w-full overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[92vh]">
+        
+        {/* Top Image Viewer Stage */}
+        <div className="relative bg-slate-950 flex items-center justify-center min-h-[300px] max-h-[55vh] overflow-hidden select-none">
+          <img
+            src={getImageUrl(activePhotoUrl)}
+            alt={`${item.title} - 사진 ${activeIdx + 1}`}
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=800&q=80';
+            }}
+            className="w-full h-full object-contain max-h-[55vh]"
+          />
+
+          {/* Close button */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2.5 text-white bg-slate-900/80 hover:bg-slate-900 rounded-full shadow-lg transition-all cursor-pointer z-20"
+          >
+            <X className="w-5 h-5" />
+          </button>
+
+          {/* Photo Counter Badge */}
+          {allImages.length > 1 && (
+            <div className="absolute top-4 left-4 bg-slate-900/85 backdrop-blur-xs text-white text-xs font-bold px-3 py-1.5 rounded-full border border-white/20 flex items-center gap-1.5 z-20 shadow-md">
+              <Layers className="w-3.5 h-3.5 text-emerald-400" />
+              <span>사진 {activeIdx + 1} / {allImages.length}</span>
+            </div>
+          )}
+
+          {/* Prev/Next Navigation Controls */}
+          {allImages.length > 1 && (
+            <>
+              <button
+                onClick={() => setActiveIdx(prev => (prev === 0 ? allImages.length - 1 : prev - 1))}
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-slate-900/75 hover:bg-emerald-600 text-white flex items-center justify-center shadow-lg transition-all cursor-pointer active:scale-95 z-20 backdrop-blur-xs"
+                aria-label="이전 사진"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+              <button
+                onClick={() => setActiveIdx(prev => (prev === allImages.length - 1 ? 0 : prev + 1))}
+                className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-slate-900/75 hover:bg-emerald-600 text-white flex items-center justify-center shadow-lg transition-all cursor-pointer active:scale-95 z-20 backdrop-blur-xs"
+                aria-label="다음 사진"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Thumbnail Preview Strip */}
+        {allImages.length > 1 && (
+          <div className="bg-slate-900 px-4 py-3 border-t border-slate-800 flex items-center gap-2 overflow-x-auto">
+            <span className="text-[11px] font-bold text-slate-400 shrink-0 flex items-center gap-1 mr-1">
+              <ImageIcon className="w-3.5 h-3.5 text-emerald-400" />
+              <span>전체 {allImages.length}장:</span>
+            </span>
+            {allImages.map((imgUrl, idx) => (
+              <button
+                key={idx}
+                onClick={() => setActiveIdx(idx)}
+                className={`relative w-12 h-12 rounded-lg overflow-hidden shrink-0 transition-all border-2 cursor-pointer ${
+                  activeIdx === idx
+                    ? 'border-emerald-500 ring-2 ring-emerald-400/50 scale-105 shadow-md'
+                    : 'border-slate-700 opacity-60 hover:opacity-100'
+                }`}
+              >
+                <img
+                  src={getImageUrl(imgUrl)}
+                  alt={`썸네일 ${idx + 1}`}
+                  className="w-full h-full object-cover"
+                />
+                <span className="absolute bottom-0 right-0 bg-slate-950/80 text-white text-[9px] font-bold px-1 rounded-tl">
+                  {idx + 1}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Details & Metadata Footer */}
+        <div className="p-6 space-y-3 overflow-y-auto">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full">
+              {item.category}
+            </span>
+            <div className="flex items-center gap-4 text-xs text-slate-500">
+              <span className="flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                {item.date}
+              </span>
+              {item.location && (
+                <span className="flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+                  {item.location}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <h3 className="text-xl font-extrabold text-slate-900">
+            {item.title}
+          </h3>
+
+          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed whitespace-pre-line">
+            {item.description}
+          </p>
+
+          <div className="pt-2 flex items-center justify-between border-t border-slate-100 mt-2">
+            <span className="text-xs text-slate-400">
+              총 {allImages.length}장의 고화질 사진이 등록되어 있습니다.
+            </span>
+            <button
+              onClick={onClose}
+              className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-5 py-2 rounded-xl transition-all cursor-pointer"
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+};
 
 export const ModalViewer: React.FC = () => {
   const {
@@ -180,65 +353,11 @@ export const ModalViewer: React.FC = () => {
   // Gallery Lightbox Modal
   if (selectedGallery) {
     return (
-      <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4">
-        <div className="bg-white rounded-3xl max-w-3xl w-full overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-          
-          <div className="relative max-h-[60vh] bg-slate-900 overflow-hidden flex items-center justify-center">
-            <img
-              src={getImageUrl(selectedGallery.imageUrl)}
-              alt={selectedGallery.title}
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=800&q=80';
-              }}
-              className="w-full h-full object-contain max-h-[60vh]"
-            />
-            <button
-              onClick={() => setSelectedGallery(null)}
-              className="absolute top-4 right-4 p-2 text-white bg-slate-900/80 hover:bg-slate-900 rounded-full shadow-lg"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          <div className="p-6 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full">
-                {selectedGallery.category}
-              </span>
-              <div className="flex items-center gap-3 text-xs text-slate-400">
-                <span className="flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5" />
-                  {selectedGallery.date}
-                </span>
-                {selectedGallery.location && (
-                  <span className="flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-                    {selectedGallery.location}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <h3 className="text-xl font-bold text-slate-900">
-              {selectedGallery.title}
-            </h3>
-
-            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-              {selectedGallery.description}
-            </p>
-
-            <div className="pt-2 text-right">
-              <button
-                onClick={() => setSelectedGallery(null)}
-                className="bg-slate-900 text-white font-bold text-xs px-5 py-2 rounded-xl"
-              >
-                닫기
-              </button>
-            </div>
-          </div>
-
-        </div>
-      </div>
+      <GalleryModalContent
+        item={selectedGallery}
+        onClose={() => setSelectedGallery(null)}
+        getImageUrl={getImageUrl}
+      />
     );
   }
 

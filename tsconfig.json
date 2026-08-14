@@ -16,12 +16,17 @@
     "allowJs": true,
     "resolveJsonModule": true,
     "jsx": "react-jsx",
+    "types": ["vite/client", "node"],
     "paths": {
       "@/*": [
-        "./*"
+        "./src/*"
       ]
     },
     "allowImportingTsExtensions": true,
     "noEmit": true
-  }
+  },
+  "include": [
+    "src",
+    "server.ts"
+  ]
 }

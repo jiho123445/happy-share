@@ -20,7 +20,8 @@ import {
   CheckCircle2,
   ExternalLink,
   Quote,
-  Settings
+  Settings,
+  Layers
 } from 'lucide-react';
 
 export const MainDashboardQuickPortal: React.FC = () => {
@@ -302,45 +303,82 @@ export const MainDashboardQuickPortal: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {recentGallery.map((item) => (
-              <div
-                key={item.id}
-                onClick={() => viewGalleryDetail(item)}
-                className="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-lg hover:border-emerald-300 transition-all cursor-pointer group flex flex-col justify-between"
-              >
-                <div>
-                  <div className="h-44 overflow-hidden relative bg-slate-100">
-                    <img
-                      src={getImageUrl(item.imageUrl)}
-                      alt={item.title}
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=800&q=80';
-                      }}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <span className="absolute top-3 left-3 text-xs bg-slate-900/80 backdrop-blur-xs text-white font-bold px-2.5 py-1 rounded-md">
-                      {item.category}
+            {recentGallery.map((item) => {
+              const itemImages = (item.images && item.images.length > 0)
+                ? item.images
+                : (item.imageUrl ? [item.imageUrl] : []);
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => viewGalleryDetail(item)}
+                  className="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-lg hover:border-emerald-300 transition-all cursor-pointer group flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="h-44 overflow-hidden relative bg-slate-900">
+                      <img
+                        src={getImageUrl(item.imageUrl)}
+                        alt={item.title}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=800&q=80';
+                        }}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <span className="absolute top-3 left-3 text-xs bg-slate-900/80 backdrop-blur-xs text-white font-bold px-2.5 py-1 rounded-md z-10">
+                        {item.category}
+                      </span>
+
+                      {itemImages.length > 1 && (
+                        <span className="absolute top-3 right-3 bg-slate-900/85 backdrop-blur-xs text-white text-[10px] font-bold px-2.5 py-1 rounded-md flex items-center gap-1 shadow-md border border-white/10 z-10">
+                          <Layers className="w-3 h-3 text-emerald-400" />
+                          <span>사진 {itemImages.length}장</span>
+                        </span>
+                      )}
+                    </div>
+
+                    {itemImages.length > 1 && (
+                      <div className="bg-slate-50 px-3 py-1.5 border-b border-slate-100 flex items-center gap-1.5 overflow-x-auto">
+                        <span className="text-[9px] font-bold text-slate-400 shrink-0">
+                          사진 {itemImages.length}장:
+                        </span>
+                        {itemImages.slice(0, 4).map((imgUrl, idx) => (
+                          <div
+                            key={idx}
+                            className="w-7 h-7 rounded overflow-hidden border border-slate-200 shrink-0 bg-slate-100"
+                          >
+                            <img
+                              src={getImageUrl(imgUrl)}
+                              alt={`미리보기 ${idx + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        ))}
+                        {itemImages.length > 4 && (
+                          <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0">
+                            +{itemImages.length - 4}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="p-5 space-y-2">
+                      <h3 className="font-bold text-slate-900 text-sm line-clamp-1 group-hover:text-emerald-600 transition-colors">
+                        {item.title}
+                      </h3>
+                      <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                        {item.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="px-5 pb-4 pt-1 flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-50">
+                    <span>{item.date}</span>
+                    <span className="font-bold text-emerald-600 flex items-center gap-0.5 group-hover:translate-x-1 transition-transform">
+                      {itemImages.length > 1 ? `${itemImages.length}장 전체보기` : '사진 크게보기'} <ChevronRight className="w-3 h-3" />
                     </span>
                   </div>
-
-                  <div className="p-5 space-y-2">
-                    <h3 className="font-bold text-slate-900 text-sm line-clamp-1 group-hover:text-emerald-600 transition-colors">
-                      {item.title}
-                    </h3>
-                    <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
-                      {item.description}
-                    </p>
-                  </div>
                 </div>
-
-                <div className="px-5 pb-4 pt-1 flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-50">
-                  <span>{item.date}</span>
-                  <span className="font-bold text-emerald-600 flex items-center gap-0.5 group-hover:translate-x-1 transition-transform">
-                    사진 크게보기 <ChevronRight className="w-3 h-3" />
-                  </span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

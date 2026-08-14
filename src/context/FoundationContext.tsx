@@ -24,7 +24,8 @@ import {
   INITIAL_NOTICES,
   INITIAL_GALLERY,
   INITIAL_DONATIONS,
-  INITIAL_POPUPS
+  INITIAL_POPUPS,
+  INITIAL_GALLERY_CATEGORIES
 } from '../data/initialData';
 import { formatImageUrl } from '../utils/imageUrl';
 
@@ -34,6 +35,7 @@ interface FoundationContextType {
   programs: ProgramItem[];
   notices: NoticeItem[];
   gallery: GalleryItem[];
+  galleryCategories: string[];
   donations: DonationApplication[];
   inquiries: ContactInquiry[];
   subscribers: NewsletterSubscriber[];
@@ -93,6 +95,12 @@ interface FoundationContextType {
   addGallery: (item: Omit<GalleryItem, 'id' | 'date'> & { date?: string; author?: string; isProtected?: boolean }) => void;
   updateGallery: (id: string, item: Partial<GalleryItem>) => Promise<void>;
   deleteGallery: (id: string) => Promise<void>;
+
+  // Gallery Categories CRUD (카테고리 항목 추가/수정/삭제/재정렬)
+  addGalleryCategory: (category: string) => Promise<void>;
+  updateGalleryCategory: (oldCategory: string, newCategory: string) => Promise<void>;
+  deleteGalleryCategory: (category: string) => Promise<void>;
+  setGalleryCategories: (categories: string[]) => Promise<void>;
 
   // Donations CRUD
   addDonation: (donation: Omit<DonationApplication, 'id' | 'createdAt' | 'status'>) => void;
@@ -336,6 +344,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         if (Array.isArray(parsed) && parsed.length > 0) {
           return parsed.map((g: GalleryItem) => ({
             ...g,
+            images: (g.images && g.images.length > 0) ? g.images : (g.imageUrl ? [g.imageUrl] : []),
             author: g.author || '재단 관리자',
             isProtected: g.isProtected ?? true
           }));
@@ -344,7 +353,25 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     } catch (e) {
       console.warn('Failed to parse cached gallery', e);
     }
-    return INITIAL_GALLERY;
+    return INITIAL_GALLERY.map((g) => ({
+      ...g,
+      images: (g.images && g.images.length > 0) ? g.images : (g.imageUrl ? [g.imageUrl] : [])
+    }));
+  });
+
+  const [galleryCategories, setGalleryCategoriesState] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('nerve_nae_gallery_categories');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to parse cached gallery categories', e);
+    }
+    return INITIAL_GALLERY_CATEGORIES;
   });
 
   const [donations, setDonations] = useState<DonationApplication[]>(() => {
@@ -474,6 +501,16 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       if (found) setSelectedGallery(found);
     }
   }, [notices, programs, gallery]);
+
+  // Keep selectedGallery updated when gallery array changes
+  useEffect(() => {
+    if (selectedGallery) {
+      const updated = gallery.find(g => g.id === selectedGallery.id);
+      if (updated && (updated.images?.length !== selectedGallery.images?.length || updated.imageUrl !== selectedGallery.imageUrl || updated.title !== selectedGallery.title)) {
+        setSelectedGallery(updated);
+      }
+    }
+  }, [gallery]);
 
   // Handle browser Back / Forward navigation (PopState)
   useEffect(() => {
@@ -632,9 +669,24 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             // Firestore is the authoritative source for gallery data.
             // An empty gallery is also meaningful and must clear stale local cache.
             if (Array.isArray(d.gallery)) {
-              setGallery([...d.gallery]);
+              const normalizedGallery = d.gallery.map((g: any) => ({
+                ...g,
+                images: (Array.isArray(g.images) && g.images.length > 0) ? g.images : (g.imageUrl ? [g.imageUrl] : [])
+              }));
+              setGallery(normalizedGallery);
               try {
-                localStorage.setItem('nerve_nae_gallery', JSON.stringify(d.gallery));
+                localStorage.setItem('nerve_nae_gallery', JSON.stringify(normalizedGallery));
+              } catch (e) {}
+            }
+            if (Array.isArray(d.galleryCategories) && d.galleryCategories.length > 0) {
+              setGalleryCategoriesState([...d.galleryCategories]);
+              try {
+                localStorage.setItem('nerve_nae_gallery_categories', JSON.stringify(d.galleryCategories));
+              } catch (e) {}
+            } else if (Array.isArray(d.settings?.galleryCategories) && d.settings.galleryCategories.length > 0) {
+              setGalleryCategoriesState([...d.settings.galleryCategories]);
+              try {
+                localStorage.setItem('nerve_nae_gallery_categories', JSON.stringify(d.settings.galleryCategories));
               } catch (e) {}
             }
             if (Array.isArray(d.popups) && d.popups.length > 0) setPopups([...d.popups]);
@@ -758,12 +810,24 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           if (Array.isArray(d.programs) && d.programs.length > 0) setPrograms([...d.programs]);
           if (Array.isArray(d.notices) && d.notices.length > 0) setNotices([...d.notices]);
           if (Array.isArray(d.gallery) && d.gallery.length > 0) {
-            setGallery([...d.gallery]);
+            const normalizedGallery = d.gallery.map((g: any) => ({
+              ...g,
+              images: (Array.isArray(g.images) && g.images.length > 0) ? g.images : (g.imageUrl ? [g.imageUrl] : [])
+            }));
+            setGallery(normalizedGallery);
             try {
-              localStorage.setItem('nerve_nae_gallery', JSON.stringify(d.gallery));
+              localStorage.setItem('nerve_nae_gallery', JSON.stringify(normalizedGallery));
             } catch (e) {
               console.warn('Failed to cache gallery to localStorage', e);
             }
+          }
+          if (Array.isArray(d.galleryCategories) && d.galleryCategories.length > 0) {
+            setGalleryCategoriesState([...d.galleryCategories]);
+            try {
+              localStorage.setItem('nerve_nae_gallery_categories', JSON.stringify(d.galleryCategories));
+            } catch (e) {}
+          } else if (Array.isArray(d.settings?.galleryCategories) && d.settings.galleryCategories.length > 0) {
+            setGalleryCategoriesState([...d.settings.galleryCategories]);
           }
           if (Array.isArray(d.popups) && d.popups.length > 0) setPopups([...d.popups]);
           if (Array.isArray(d.donations)) setDonations([...d.donations]);
@@ -862,6 +926,12 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       localStorage.setItem('nerve_nae_notices', JSON.stringify(notices));
     } catch (e) {}
   }, [notices]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('nerve_nae_gallery_categories', JSON.stringify(galleryCategories));
+    } catch (e) {}
+  }, [galleryCategories]);
 
   useEffect(() => {
     try {
@@ -976,8 +1046,17 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   // Gallery CRUD
   const addGallery = (item: Omit<GalleryItem, 'id' | 'date'> & { date?: string; author?: string; isProtected?: boolean }) => {
+    const primaryImg = item.imageUrl || (item.images && item.images[0]) || '';
+    const allImages = (item.images && item.images.length > 0) ? item.images : (primaryImg ? [primaryImg] : []);
+    const primaryStoragePath = item.storagePath || (item.storagePaths && item.storagePaths[0]);
+    const allStoragePaths = (item.storagePaths && item.storagePaths.length > 0) ? item.storagePaths : (primaryStoragePath ? [primaryStoragePath] : undefined);
+
     const newGallery: GalleryItem = {
       ...item,
+      imageUrl: primaryImg,
+      images: allImages,
+      storagePath: primaryStoragePath,
+      storagePaths: allStoragePaths,
       id: `gal-${Date.now()}`,
       date: item.date || new Date().toISOString().split('T')[0],
       author: item.author || '재단 관리자',
@@ -1013,7 +1092,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         setSyncError(null);
         addDebugLog(
           'success',
-          `Firebase Storage 갤러리 등록 완료: ${newGallery.title}`
+          `Firebase Storage 갤러리 등록 완료: ${newGallery.title} (사진 ${allImages.length}장)`
         );
       })
       .catch((err) => {
@@ -1058,12 +1137,12 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   /**
    * 갤러리 메타데이터 수정.
    *
-   * 사진을 교체한 경우:
-   * 1) AdminModal이 새 사진을 Storage에 먼저 업로드
-   * 2) Firestore에 새 imageUrl/storagePath 저장
-   * 3) Firestore 저장 성공 후 기존 Storage 파일 삭제
+   * 다중 사진 지원:
+   * 1) AdminModal이 추가/수정된 사진들을 Storage에 먼저 업로드
+   * 2) Firestore에 새 imageUrl/images/storagePaths 저장
+   * 3) Firestore 저장 성공 후 제거된 기존 Storage 파일만 선별 정리
    *
-   * 따라서 새 사진 업로드/Firestore 저장이 실패하면 기존 사진은 보존됩니다.
+   * 따라서 업로드/저장이 실패해도 기존 사진과 데이터는 완전히 보존됩니다.
    */
   const updateGallery = async (id: string, updated: Partial<GalleryItem>) => {
     const target = gallery.find(g => g.id === id);
@@ -1071,8 +1150,21 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       throw new Error('수정할 갤러리 항목을 찾을 수 없습니다.');
     }
 
+    const primaryImg = updated.imageUrl ?? (updated.images && updated.images[0]) ?? target.imageUrl;
+    const allImages = updated.images ?? (target.images && target.images.length > 0 ? target.images : (primaryImg ? [primaryImg] : []));
+    const primaryStoragePath = updated.storagePath ?? (updated.storagePaths && updated.storagePaths[0]) ?? target.storagePath;
+    const allStoragePaths = updated.storagePaths ?? target.storagePaths;
+
+    const consolidatedUpdate: Partial<GalleryItem> = {
+      ...updated,
+      imageUrl: primaryImg,
+      images: allImages,
+      storagePath: primaryStoragePath,
+      storagePaths: allStoragePaths
+    };
+
     const next = gallery.map(g =>
-      g.id === id ? { ...g, ...updated } : g
+      g.id === id ? { ...g, ...consolidatedUpdate } : g
     );
 
     const globalDocRef = doc(db, 'foundation', 'global');
@@ -1087,26 +1179,33 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         { merge: true }
       );
 
-      // Firestore가 새 이미지 정보를 확정한 뒤 기존 파일을 정리합니다.
-      const oldPath = target.storagePath;
-      const newPath = updated.storagePath;
+      // Firestore가 새 이미지 정보를 확정한 뒤 더 이상 사용되지 않는 기존 Storage 파일들을 정리합니다.
+      const oldPaths = new Set<string>();
+      if (target.storagePath && target.storagePath.startsWith('activities/')) oldPaths.add(target.storagePath);
+      if (Array.isArray(target.storagePaths)) {
+        target.storagePaths.forEach(p => {
+          if (p && p.startsWith('activities/')) oldPaths.add(p);
+        });
+      }
 
-      if (
-        oldPath &&
-        oldPath.startsWith('activities/') &&
-        oldPath !== newPath &&
-        typeof updated.imageUrl === 'string' &&
-        updated.imageUrl.startsWith('https://firebasestorage.googleapis.com/')
-      ) {
-        try {
-          await removeGalleryStorageFile(oldPath);
-        } catch (storageError) {
-          // 새 사진과 Firestore 데이터는 이미 정상 저장되었으므로
-          // 여기서 롤백하지 않습니다. 대신 관리자에게 정리 실패를 알립니다.
-          console.error('기존 갤러리 사진 정리 실패:', storageError);
-          setSyncStatus('error');
-          setSyncError('새 사진은 저장되었지만 기존 사진 파일 정리에 실패했습니다.');
-          throw storageError;
+      const keptPaths = new Set<string>();
+      if (consolidatedUpdate.storagePath && consolidatedUpdate.storagePath.startsWith('activities/')) {
+        keptPaths.add(consolidatedUpdate.storagePath);
+      }
+      if (Array.isArray(consolidatedUpdate.storagePaths)) {
+        consolidatedUpdate.storagePaths.forEach(p => {
+          if (p && p.startsWith('activities/')) keptPaths.add(p);
+        });
+      }
+
+      // 제거된 파일만 안전하게 정리
+      for (const oldP of oldPaths) {
+        if (!keptPaths.has(oldP)) {
+          try {
+            await removeGalleryStorageFile(oldP);
+          } catch (storageError) {
+            console.warn(`제거된 갤러리 파일 정리 건너뜀 (${oldP}):`, storageError);
+          }
         }
       }
 
@@ -1136,8 +1235,8 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   /**
    * 갤러리 항목 삭제.
    *
-   * Firestore 메타데이터를 먼저 확정한 뒤 Firebase Storage 파일을 삭제합니다.
-   * Storage 삭제가 실패해도 게시물 자체를 잃지 않으며, 관리자에게 실패를 알립니다.
+   * Firestore 메타데이터를 먼저 확정한 뒤 Firebase Storage 파일들을 삭제합니다.
+   * 다중 사진의 모든 storagePaths 및 storagePath를 안전하게 삭제 정리합니다.
    * legacy /uploads 사진은 storagePath가 없으므로 절대 삭제하지 않습니다.
    */
   const deleteGallery = async (id: string) => {
@@ -1165,17 +1264,22 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         localStorage.setItem('nerve_nae_gallery', JSON.stringify(next));
       } catch (e) {}
 
-      // 신형 Firebase Storage 사진만 삭제합니다.
-      if (target.storagePath) {
+      // 신형 Firebase Storage 사진들 전체 삭제 정리
+      const pathsToDelete = new Set<string>();
+      if (target.storagePath && target.storagePath.startsWith('activities/')) {
+        pathsToDelete.add(target.storagePath);
+      }
+      if (Array.isArray(target.storagePaths)) {
+        target.storagePaths.forEach(p => {
+          if (p && p.startsWith('activities/')) pathsToDelete.add(p);
+        });
+      }
+
+      for (const p of pathsToDelete) {
         try {
-          await removeGalleryStorageFile(target.storagePath);
+          await removeGalleryStorageFile(p);
         } catch (storageError) {
-          console.error('갤러리 Storage 파일 삭제 실패:', storageError);
-          setSyncStatus('error');
-          setSyncError(
-            '갤러리 항목은 삭제되었지만 Firebase Storage 사진 파일 정리에 실패했습니다.'
-          );
-          throw storageError;
+          console.warn(`갤러리 파일 정리 건너뜀 (${p}):`, storageError);
         }
       }
 
@@ -1183,8 +1287,6 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       setSyncStatus('success');
       setSyncError(null);
     } catch (err) {
-      // Storage 정리 실패는 위에서 이미 사용자에게 의미 있는 상태를 만들었으므로
-      // Firestore 쓰기 오류와 동일하게 처리하되 원본 오류를 다시 전달합니다.
       if (!(err as any)?.code?.startsWith?.('storage/')) {
         handleFirestoreError(
           err,
@@ -1195,6 +1297,130 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         setSyncError('갤러리 삭제에 실패했습니다.');
       }
       throw err;
+    }
+  };
+
+  // Gallery Categories CRUD
+  const addGalleryCategory = async (category: string) => {
+    const trimmed = category.trim();
+    if (!trimmed) return;
+    if (galleryCategories.includes(trimmed)) return;
+
+    const next = [...galleryCategories, trimmed];
+    setGalleryCategoriesState(next);
+    try {
+      localStorage.setItem('nerve_nae_gallery_categories', JSON.stringify(next));
+    } catch (e) {}
+
+    const globalDocRef = doc(db, 'foundation', 'global');
+    try {
+      await setDoc(
+        globalDocRef,
+        {
+          galleryCategories: next,
+          updatedAt: new Date().toISOString()
+        },
+        { merge: true }
+      );
+      postMutationToServer('/api/sync', { galleryCategories: next }, `갤러리 카테고리 추가: ${trimmed}`);
+      addDebugLog('success', `갤러리 카테고리 항목 추가 완료: ${trimmed}`);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, 'foundation/global.galleryCategories');
+    }
+  };
+
+  const updateGalleryCategory = async (oldCategory: string, newCategory: string) => {
+    const trimmedNew = newCategory.trim();
+    if (!trimmedNew || oldCategory === trimmedNew) return;
+
+    const nextCategories = galleryCategories.map(c => c === oldCategory ? trimmedNew : c);
+    if (!nextCategories.includes(trimmedNew)) {
+      nextCategories.push(trimmedNew);
+    }
+    const uniqueCategories = Array.from(new Set(nextCategories));
+
+    // Update gallery items that have the old category so data integrity is 100% preserved
+    const nextGallery = gallery.map(item =>
+      item.category === oldCategory ? { ...item, category: trimmedNew } : item
+    );
+
+    setGalleryCategoriesState(uniqueCategories);
+    setGallery(nextGallery);
+
+    try {
+      localStorage.setItem('nerve_nae_gallery_categories', JSON.stringify(uniqueCategories));
+      localStorage.setItem('nerve_nae_gallery', JSON.stringify(nextGallery));
+    } catch (e) {}
+
+    const globalDocRef = doc(db, 'foundation', 'global');
+    try {
+      await setDoc(
+        globalDocRef,
+        {
+          galleryCategories: uniqueCategories,
+          gallery: nextGallery,
+          updatedAt: new Date().toISOString()
+        },
+        { merge: true }
+      );
+      postMutationToServer(
+        '/api/sync',
+        { galleryCategories: uniqueCategories, gallery: nextGallery },
+        `갤러리 카테고리 수정: ${oldCategory} -> ${trimmedNew}`
+      );
+      addDebugLog('success', `갤러리 카테고리 항목 수정 완료 (${oldCategory} → ${trimmedNew})`);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, 'foundation/global.galleryCategories');
+      throw err;
+    }
+  };
+
+  const deleteGalleryCategory = async (categoryToDelete: string) => {
+    const nextCategories = galleryCategories.filter(c => c !== categoryToDelete);
+    setGalleryCategoriesState(nextCategories);
+
+    try {
+      localStorage.setItem('nerve_nae_gallery_categories', JSON.stringify(nextCategories));
+    } catch (e) {}
+
+    const globalDocRef = doc(db, 'foundation', 'global');
+    try {
+      await setDoc(
+        globalDocRef,
+        {
+          galleryCategories: nextCategories,
+          updatedAt: new Date().toISOString()
+        },
+        { merge: true }
+      );
+      postMutationToServer('/api/sync', { galleryCategories: nextCategories }, `갤러리 카테고리 삭제: ${categoryToDelete}`);
+      addDebugLog('success', `갤러리 카테고리 항목 삭제 완료: ${categoryToDelete}`);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, 'foundation/global.galleryCategories');
+      throw err;
+    }
+  };
+
+  const setGalleryCategories = async (newCategories: string[]) => {
+    const filtered = Array.from(new Set(newCategories.map(c => c.trim()).filter(Boolean)));
+    setGalleryCategoriesState(filtered);
+    try {
+      localStorage.setItem('nerve_nae_gallery_categories', JSON.stringify(filtered));
+    } catch (e) {}
+
+    const globalDocRef = doc(db, 'foundation', 'global');
+    try {
+      await setDoc(
+        globalDocRef,
+        {
+          galleryCategories: filtered,
+          updatedAt: new Date().toISOString()
+        },
+        { merge: true }
+      );
+      postMutationToServer('/api/sync', { galleryCategories: filtered }, `갤러리 카테고리 일괄 갱신`);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, 'foundation/global.galleryCategories');
     }
   };
 
@@ -1455,9 +1681,14 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         deleteNotice,
 
         // Gallery CRUD
+        galleryCategories,
         addGallery,
         updateGallery,
         deleteGallery,
+        addGalleryCategory,
+        updateGalleryCategory,
+        deleteGalleryCategory,
+        setGalleryCategories,
 
         // Donations CRUD
         addDonation,

@@ -1,5 +1,15 @@
 import { FoundationSettings, TimelineItem, ProgramItem, AwardItem, NoticeItem, GalleryItem, DonationApplication, PopupItem } from '../types';
 
+export const INITIAL_GALLERY_CATEGORIES: string[] = [
+  '장학금 전달',
+  '교육지원',
+  '명절 나눔',
+  '삼계탕 나눔',
+  '주거환경 개선',
+  '복지시설 지원',
+  '다문화지원'
+];
+
 export const INITIAL_SETTINGS: FoundationSettings = {
   adminPassword: '1026',
   name: '사단법인 너브내행복나눔재단',
@@ -48,7 +58,8 @@ export const INITIAL_SETTINGS: FoundationSettings = {
     facebook: 'https://facebook.com',
     instagram: 'https://instagram.com',
     youtube: 'https://youtube.com'
-  }
+  },
+  galleryCategories: INITIAL_GALLERY_CATEGORIES
 };
 
 export const INITIAL_TIMELINE: TimelineItem[] = [

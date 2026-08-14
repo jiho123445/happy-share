@@ -41,8 +41,22 @@ import {
   FileCheck,
   Mail,
   ShieldCheck,
-  Bell
+  Bell,
+  Tag,
+  AlertCircle,
+  Edit2,
+  Check,
+  Star,
+  Images
 } from 'lucide-react';
+
+export interface AdminGalleryPhoto {
+  id: string;
+  url: string;
+  fileName?: string;
+  storagePath?: string;
+  isCover?: boolean;
+}
 
 export const AdminModal: React.FC = () => {
   const {
@@ -57,6 +71,10 @@ export const AdminModal: React.FC = () => {
     updateNotice,
     deleteNotice,
     gallery,
+    galleryCategories,
+    addGalleryCategory,
+    updateGalleryCategory,
+    deleteGalleryCategory,
     addGallery,
     updateGallery,
     deleteGallery,
@@ -134,17 +152,28 @@ export const AdminModal: React.FC = () => {
   const [newNoticeImportant, setNewNoticeImportant] = useState(false);
   const [newNoticeAttachments, setNewNoticeAttachments] = useState<NoticeAttachment[]>([]);
 
-  // New Gallery Form State
+  // New Gallery Form State (Multi-Photo Support)
   const [newGalTitle, setNewGalTitle] = useState('');
   const [newGalCategory, setNewGalCategory] = useState('명절 나눔');
   const [newGalDate, setNewGalDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
-  const [newGalUrl, setNewGalUrl] = useState('');
+  const [newGalPhotos, setNewGalPhotos] = useState<AdminGalleryPhoto[]>([]);
+  const [newGalUrlInput, setNewGalUrlInput] = useState('');
   const [newGalDesc, setNewGalDesc] = useState('');
   const [newGalLocation, setNewGalLocation] = useState('홍천군 관내');
   const [uploadMode, setUploadMode] = useState<'file' | 'url'>('file');
   const [dragActive, setDragActive] = useState(false);
-  const [newGalFileName, setNewGalFileName] = useState('');
-  const [newGalStoragePath, setNewGalStoragePath] = useState('');
+
+  // Edit Gallery Photos State
+  const [editGalleryPhotos, setEditGalleryPhotos] = useState<AdminGalleryPhoto[]>([]);
+  const [editGalUrlInput, setEditGalUrlInput] = useState('');
+  const [editUploadMode, setEditUploadMode] = useState<'file' | 'url'>('file');
+  const [editDragActive, setEditDragActive] = useState(false);
+
+  // Gallery Category Management State in Admin Modal
+  const [newAdminCatInput, setNewAdminCatInput] = useState('');
+  const [editingAdminCatName, setEditingAdminCatName] = useState<string | null>(null);
+  const [editAdminCatInput, setEditAdminCatInput] = useState('');
+  const [deletingAdminCatName, setDeletingAdminCatName] = useState<string | null>(null);
 
   // Editable Settings state
   const [editSettings, setEditSettings] = useState(settings);
@@ -527,65 +556,187 @@ export const AdminModal: React.FC = () => {
     return { imageUrl, storagePath };
   };
 
-  const handleFileUpload = (
+  const handleGalleryMultipleFileUpload = (
     e: React.ChangeEvent<HTMLInputElement>,
     isEdit = false
   ) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files: File[] = e.target.files ? Array.from(e.target.files) : [];
+    if (files.length === 0) return;
 
-    processGalleryImageFile(file, (dataUrl, fileName) => {
-      if (isEdit) {
-        setEditGalleryData(prev => ({
-          ...prev,
-          imageUrl: dataUrl
-          // 기존 storagePath는 유지합니다.
-          // 새 사진이 Firebase Storage에 성공적으로 업로드된 후
-          // handleSaveGalleryEdit에서 새 storagePath로 교체합니다.
-        }));
-      } else {
-        setNewGalUrl(dataUrl);
-        setNewGalFileName(fileName);
-        setNewGalStoragePath('');
-      }
+    let loadedCount = 0;
+    const newItems: AdminGalleryPhoto[] = [];
+
+    files.forEach((file: File, index: number) => {
+      processGalleryImageFile(file, (dataUrl, fileName) => {
+        newItems.push({
+          id: `photo-${Date.now()}-${Math.random().toString(36).slice(2, 7)}-${index}`,
+          url: dataUrl,
+          fileName: fileName,
+          isCover: false
+        });
+
+        loadedCount++;
+        if (loadedCount === files.length) {
+          if (isEdit) {
+            setEditGalleryPhotos((prev) => {
+              const combined = [...prev, ...newItems];
+              if (!combined.some((p) => p.isCover) && combined.length > 0) {
+                combined[0].isCover = true;
+              }
+              return combined;
+            });
+          } else {
+            setNewGalPhotos((prev) => {
+              const combined = [...prev, ...newItems];
+              if (!combined.some((p) => p.isCover) && combined.length > 0) {
+                combined[0].isCover = true;
+              }
+              return combined;
+            });
+          }
+        }
+      });
+    });
+
+    e.target.value = '';
+  };
+
+  const handleGalleryDragOver = (e: React.DragEvent, isEdit = false) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isEdit) {
+      setEditDragActive(true);
+    } else {
+      setDragActive(true);
+    }
+  };
+
+  const handleGalleryDragLeave = (e: React.DragEvent, isEdit = false) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isEdit) {
+      setEditDragActive(false);
+    } else {
+      setDragActive(false);
+    }
+  };
+
+  const handleGalleryDrop = (e: React.DragEvent, isEdit = false) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isEdit) {
+      setEditDragActive(false);
+    } else {
+      setDragActive(false);
+    }
+
+    const rawFiles: File[] = e.dataTransfer.files ? Array.from(e.dataTransfer.files) : [];
+    const files: File[] = rawFiles.filter(f => f.type.startsWith('image/'));
+    if (files.length === 0) return;
+
+    let loadedCount = 0;
+    const newItems: AdminGalleryPhoto[] = [];
+
+    files.forEach((file: File, index: number) => {
+      processGalleryImageFile(file, (dataUrl, fileName) => {
+        newItems.push({
+          id: `photo-${Date.now()}-${Math.random().toString(36).slice(2, 7)}-${index}`,
+          url: dataUrl,
+          fileName: fileName,
+          isCover: false
+        });
+
+        loadedCount++;
+        if (loadedCount === files.length) {
+          if (isEdit) {
+            setEditGalleryPhotos((prev) => {
+              const combined = [...prev, ...newItems];
+              if (!combined.some((p) => p.isCover) && combined.length > 0) {
+                combined[0].isCover = true;
+              }
+              return combined;
+            });
+          } else {
+            setNewGalPhotos((prev) => {
+              const combined = [...prev, ...newItems];
+              if (!combined.some((p) => p.isCover) && combined.length > 0) {
+                combined[0].isCover = true;
+              }
+              return combined;
+            });
+          }
+        }
+      });
     });
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(true);
+  const handleAddGalUrlPhoto = (isEdit = false) => {
+    const url = (isEdit ? editGalUrlInput : newGalUrlInput).trim();
+    if (!url) return;
+    const newPhoto: AdminGalleryPhoto = {
+      id: `photo-url-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      url,
+      fileName: '웹 이미지 주소',
+      isCover: false
+    };
+
+    if (isEdit) {
+      setEditGalleryPhotos(prev => {
+        const combined = [...prev, newPhoto];
+        if (!combined.some(p => p.isCover) && combined.length > 0) {
+          combined[0].isCover = true;
+        }
+        return combined;
+      });
+      setEditGalUrlInput('');
+    } else {
+      setNewGalPhotos(prev => {
+        const combined = [...prev, newPhoto];
+        if (!combined.some(p => p.isCover) && combined.length > 0) {
+          combined[0].isCover = true;
+        }
+        return combined;
+      });
+      setNewGalUrlInput('');
+    }
   };
 
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
+  const handleSetCoverPhoto = (photoId: string, isEdit = false) => {
+    if (isEdit) {
+      setEditGalleryPhotos(prev =>
+        prev.map(p => ({
+          ...p,
+          isCover: p.id === photoId
+        }))
+      );
+    } else {
+      setNewGalPhotos(prev =>
+        prev.map(p => ({
+          ...p,
+          isCover: p.id === photoId
+        }))
+      );
+    }
   };
 
-  const handleDrop = (e: React.DragEvent, isEdit = false) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-
-    const file = e.dataTransfer.files?.[0];
-    if (!file) return;
-
-    processGalleryImageFile(file, (dataUrl, fileName) => {
-      if (isEdit) {
-        setEditGalleryData(prev => ({
-          ...prev,
-          imageUrl: dataUrl
-          // 기존 storagePath는 유지합니다.
-          // 새 사진이 Firebase Storage에 성공적으로 업로드된 후
-          // handleSaveGalleryEdit에서 새 storagePath로 교체합니다.
-        }));
-      } else {
-        setNewGalUrl(dataUrl);
-        setNewGalFileName(fileName);
-        setNewGalStoragePath('');
-      }
-    });
+  const handleRemoveGalPhoto = (photoId: string, isEdit = false) => {
+    if (isEdit) {
+      setEditGalleryPhotos(prev => {
+        const filtered = prev.filter(p => p.id !== photoId);
+        if (filtered.length > 0 && !filtered.some(p => p.isCover)) {
+          filtered[0].isCover = true;
+        }
+        return filtered;
+      });
+    } else {
+      setNewGalPhotos(prev => {
+        const filtered = prev.filter(p => p.id !== photoId);
+        if (filtered.length > 0 && !filtered.some(p => p.isCover)) {
+          filtered[0].isCover = true;
+        }
+        return filtered;
+      });
+    }
   };
 
   // Gallery Handlers
@@ -597,35 +748,59 @@ export const AdminModal: React.FC = () => {
       return;
     }
 
-    if (!newGalUrl.trim()) {
-      alert('PC에서 사진 파일을 선택하거나 이미지 URL을 입력해 주세요.');
+    if (newGalPhotos.length === 0) {
+      alert('최소 1장 이상의 활동 사진을 선택하거나 이미지 URL을 추가해 주세요.');
       return;
     }
 
     try {
-      let finalImageUrl = newGalUrl.trim();
-      let storagePath = newGalStoragePath;
+      showToast(`사진 ${newGalPhotos.length}장을 Firebase Storage에 안전하게 저장하는 중입니다...`);
 
-      // Only local file selections are data URLs.
-      // URL-mode entries are kept as external URLs and are NOT uploaded.
-      if (finalImageUrl.startsWith('data:image/')) {
-        showToast('사진을 Firebase Storage에 안전하게 저장하는 중입니다...');
+      const uploadedPhotos: Array<{ url: string; storagePath?: string; isCover?: boolean }> = [];
 
-        const uploaded = await uploadGalleryImageToFirebase(
-          finalImageUrl,
-          newGalFileName || 'gallery.jpg'
-        );
-
-        finalImageUrl = uploaded.imageUrl;
-        storagePath = uploaded.storagePath;
+      for (let i = 0; i < newGalPhotos.length; i++) {
+        const photo = newGalPhotos[i];
+        if (photo.url.startsWith('data:image/')) {
+          const uploaded = await uploadGalleryImageToFirebase(
+            photo.url,
+            photo.fileName || `gallery_${i + 1}.jpg`
+          );
+          uploadedPhotos.push({
+            url: uploaded.imageUrl,
+            storagePath: uploaded.storagePath,
+            isCover: photo.isCover
+          });
+        } else {
+          uploadedPhotos.push({
+            url: photo.url,
+            storagePath: photo.storagePath,
+            isCover: photo.isCover
+          });
+        }
       }
+
+      // Reorder photos so cover photo is always first in the images list
+      const coverIdx = uploadedPhotos.findIndex(p => p.isCover);
+      const orderedPhotos = [...uploadedPhotos];
+      if (coverIdx > 0) {
+        const [coverItem] = orderedPhotos.splice(coverIdx, 1);
+        orderedPhotos.unshift(coverItem);
+      }
+
+      const coverPhoto = orderedPhotos[0];
+      const finalImageUrl = coverPhoto.url;
+      const finalStoragePath = coverPhoto.storagePath;
+      const allImages = orderedPhotos.map(p => p.url);
+      const allStoragePaths = orderedPhotos.map(p => p.storagePath).filter(Boolean) as string[];
 
       addGallery({
         title: newGalTitle.trim(),
         category: newGalCategory,
         date: newGalDate || new Date().toISOString().split('T')[0],
         imageUrl: finalImageUrl,
-        storagePath: storagePath || undefined,
+        images: allImages,
+        storagePath: finalStoragePath || undefined,
+        storagePaths: allStoragePaths.length > 0 ? allStoragePaths : undefined,
         description: newGalDesc.trim() || newGalTitle.trim(),
         location: newGalLocation,
         author: '재단 관리자',
@@ -634,16 +809,11 @@ export const AdminModal: React.FC = () => {
 
       setNewGalTitle('');
       setNewGalDesc('');
-      setNewGalUrl('');
-      setNewGalFileName('');
-      setNewGalStoragePath('');
+      setNewGalPhotos([]);
+      setNewGalUrlInput('');
       setNewGalDate(new Date().toISOString().split('T')[0]);
 
-      showToast(
-        finalImageUrl.startsWith('https://firebasestorage.googleapis.com/')
-          ? '사진이 Firebase Storage에 영구 저장되었습니다.'
-          : '활동 사진이 등록되었습니다.'
-      );
+      showToast(`활동 사진 ${allImages.length}장이 안전하게 등록되었습니다.`);
     } catch (error) {
       console.error('Firebase Storage gallery upload failed:', error);
       alert(
@@ -656,39 +826,67 @@ export const AdminModal: React.FC = () => {
     }
   };
 
-
   const handleSaveGalleryEdit = async (id: string) => {
     try {
-      let updatedData: Partial<GalleryItem> = {
+      if (editGalleryPhotos.length === 0) {
+        alert('최소 1장 이상의 사진이 필요합니다.');
+        return;
+      }
+
+      showToast(`수정 사진 ${editGalleryPhotos.length}장을 안전하게 저장하는 중입니다...`);
+
+      const uploadedPhotos: Array<{ url: string; storagePath?: string; isCover?: boolean }> = [];
+
+      for (let i = 0; i < editGalleryPhotos.length; i++) {
+        const photo = editGalleryPhotos[i];
+        if (photo.url.startsWith('data:image/')) {
+          const uploaded = await uploadGalleryImageToFirebase(
+            photo.url,
+            photo.fileName || `gallery-edit-${id}-${i + 1}.jpg`
+          );
+          uploadedPhotos.push({
+            url: uploaded.imageUrl,
+            storagePath: uploaded.storagePath,
+            isCover: photo.isCover
+          });
+        } else {
+          uploadedPhotos.push({
+            url: photo.url,
+            storagePath: photo.storagePath,
+            isCover: photo.isCover
+          });
+        }
+      }
+
+      // Reorder photos so cover photo is always first
+      const coverIdx = uploadedPhotos.findIndex(p => p.isCover);
+      const orderedPhotos = [...uploadedPhotos];
+      if (coverIdx > 0) {
+        const [coverItem] = orderedPhotos.splice(coverIdx, 1);
+        orderedPhotos.unshift(coverItem);
+      }
+
+      const coverPhoto = orderedPhotos[0];
+      const finalImageUrl = coverPhoto.url;
+      const finalStoragePath = coverPhoto.storagePath;
+      const allImages = orderedPhotos.map(p => p.url);
+      const allStoragePaths = orderedPhotos.map(p => p.storagePath).filter(Boolean) as string[];
+
+      const updatedData: Partial<GalleryItem> = {
         ...editGalleryData,
+        imageUrl: finalImageUrl,
+        images: allImages,
+        storagePath: finalStoragePath || undefined,
+        storagePaths: allStoragePaths.length > 0 ? allStoragePaths : undefined,
         author: '재단 관리자',
         isProtected: true
       };
 
-      // If the administrator selected a new local image, move that image
-      // directly into Firebase Storage before updating Firestore metadata.
-      if (
-        typeof updatedData.imageUrl === 'string' &&
-        updatedData.imageUrl.startsWith('data:image/')
-      ) {
-        showToast('수정 사진을 Firebase Storage에 저장하는 중입니다...');
-
-        const uploaded = await uploadGalleryImageToFirebase(
-          updatedData.imageUrl,
-          `gallery-edit-${id}.jpg`
-        );
-
-        updatedData = {
-          ...updatedData,
-          imageUrl: uploaded.imageUrl,
-          storagePath: uploaded.storagePath
-        };
-      }
-
       await updateGallery(id, updatedData);
       setEditingGalleryId(null);
       setEditGalleryData({});
-      showToast('갤러리 정보가 안전하게 저장되었습니다.');
+      setEditGalleryPhotos([]);
+      showToast(`갤러리 정보(사진 ${allImages.length}장)가 안전하게 수정되었습니다.`);
     } catch (error) {
       console.error('Firebase Storage gallery edit failed:', error);
       alert(
@@ -1932,7 +2130,7 @@ export const AdminModal: React.FC = () => {
                 </div>
               )}
 
-              {/* 4. Gallery Tab (활동사진 작성/수정/삭제) */}
+              {/* 4. Gallery Tab (활동사진 작성/수정/삭제 & 카테고리 관리) */}
               {activeTab === 'gallery' && (
                 <div className="space-y-6">
                   <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-200 flex items-center justify-between">
@@ -1942,7 +2140,7 @@ export const AdminModal: React.FC = () => {
                         <span>활동 사진 갤러리 통합 관리</span>
                       </h4>
                       <p className="text-xs text-emerald-700 mt-0.5">
-                        내 PC의 나눔 활동 사진을 직접 등록하거나 수정 및 삭제할 수 있습니다.
+                        내 PC의 나눔 활동 사진을 직접 등록하거나 수정 및 삭제하고, 분류 카테고리 항목을 관리할 수 있습니다.
                       </p>
                     </div>
                     <span className="text-xs font-bold text-emerald-800 bg-white px-3 py-1 rounded-full border border-emerald-300">
@@ -1950,12 +2148,188 @@ export const AdminModal: React.FC = () => {
                     </span>
                   </div>
 
+                  {/* Gallery Category (항목) Management Section */}
+                  <div className="bg-white p-5 rounded-2xl border border-slate-200 space-y-4 shadow-2xs">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                      <div>
+                        <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                          <Tag className="w-4 h-4 text-emerald-600" />
+                          <span>활동 갤러리 카테고리(분류 항목) 관리</span>
+                        </h4>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          카테고리 항목을 추가, 수정, 삭제할 수 있으며 기존 사진 데이터와 저장 구조는 안전하게 보존됩니다.
+                        </p>
+                      </div>
+                      <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                        {galleryCategories.length}개 항목
+                      </span>
+                    </div>
+
+                    {/* Add Category Form */}
+                    <form
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        const trimmed = newAdminCatInput.trim();
+                        if (!trimmed) return;
+                        if (galleryCategories.includes(trimmed)) {
+                          showToast(`'${trimmed}' 항목은 이미 등록되어 있습니다.`);
+                          return;
+                        }
+                        await addGalleryCategory(trimmed);
+                        setNewAdminCatInput('');
+                        showToast(`'${trimmed}' 카테고리 항목이 등록되었습니다.`);
+                      }}
+                      className="flex gap-2"
+                    >
+                      <input
+                        type="text"
+                        placeholder="새 카테고리명 입력 (예: 다문화지원, 어르신돌봄)"
+                        value={newAdminCatInput}
+                        onChange={(e) => setNewAdminCatInput(e.target.value)}
+                        className="flex-1 px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:bg-white focus:outline-none focus:border-emerald-500"
+                      />
+                      <button
+                        type="submit"
+                        disabled={!newAdminCatInput.trim()}
+                        className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 shrink-0 cursor-pointer shadow-2xs"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>항목 추가</span>
+                      </button>
+                    </form>
+
+                    {/* Category List */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-1">
+                      {galleryCategories.map((cat) => {
+                        const count = gallery.filter((g) => g.category === cat).length;
+                        const isEditing = editingAdminCatName === cat;
+                        const isDeleting = deletingAdminCatName === cat;
+
+                        return (
+                          <div
+                            key={cat}
+                            className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 flex items-center justify-between gap-2"
+                          >
+                            {isEditing ? (
+                              <div className="flex items-center gap-1.5 w-full animate-in fade-in">
+                                <input
+                                  type="text"
+                                  value={editAdminCatInput}
+                                  onChange={(e) => setEditAdminCatInput(e.target.value)}
+                                  onKeyDown={async (e) => {
+                                    if (e.key === 'Enter') {
+                                      const trimmed = editAdminCatInput.trim();
+                                      if (trimmed && trimmed !== cat) {
+                                        await updateGalleryCategory(cat, trimmed);
+                                        showToast(`'${cat}' → '${trimmed}' 항목명이 수정되었습니다.`);
+                                      }
+                                      setEditingAdminCatName(null);
+                                    }
+                                    if (e.key === 'Escape') setEditingAdminCatName(null);
+                                  }}
+                                  className="flex-1 p-1 bg-white border border-emerald-400 rounded-lg text-xs font-bold text-slate-900 focus:outline-none"
+                                  autoFocus
+                                />
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    const trimmed = editAdminCatInput.trim();
+                                    if (trimmed && trimmed !== cat) {
+                                      await updateGalleryCategory(cat, trimmed);
+                                      showToast(`'${cat}' → '${trimmed}' 항목명이 수정되었습니다.`);
+                                    }
+                                    setEditingAdminCatName(null);
+                                  }}
+                                  className="p-1 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 cursor-pointer"
+                                  title="저장"
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingAdminCatName(null)}
+                                  className="p-1 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 cursor-pointer"
+                                  title="취소"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ) : isDeleting ? (
+                              <div className="flex items-center justify-between w-full bg-red-50 p-1.5 rounded-lg border border-red-200 animate-in fade-in">
+                                <span className="text-[11px] font-bold text-red-700 truncate">삭제할까요?</span>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      await deleteGalleryCategory(cat);
+                                      setDeletingAdminCatName(null);
+                                      showToast(`'${cat}' 항목이 삭제되었습니다.`);
+                                    }}
+                                    className="bg-red-600 hover:bg-red-700 text-white font-bold text-[10px] px-2 py-0.5 rounded cursor-pointer"
+                                  >
+                                    삭제
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setDeletingAdminCatName(null)}
+                                    className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-[10px] px-1.5 py-0.5 rounded cursor-pointer"
+                                  >
+                                    취소
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className="font-bold text-slate-800 text-xs truncate">{cat}</span>
+                                  <span className="text-[10px] text-slate-400 bg-white border border-slate-200 px-1.5 py-0.2 rounded-md shrink-0">
+                                    {count}장
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingAdminCatName(cat);
+                                      setEditAdminCatInput(cat);
+                                      setDeletingAdminCatName(null);
+                                    }}
+                                    className="p-1 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded transition-colors cursor-pointer"
+                                    title="이름 수정"
+                                  >
+                                    <Edit2 className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setDeletingAdminCatName(cat);
+                                      setEditingAdminCatName(null);
+                                    }}
+                                    className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors cursor-pointer"
+                                    title="항목 삭제"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                   <form onSubmit={handleCreateGallery} className="bg-white p-5 rounded-2xl border border-slate-200 space-y-4 shadow-2xs">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                      <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                        <Plus className="w-4 h-4 text-emerald-600" />
-                        <span>새 활동 사진 파일 등록</span>
-                      </h4>
+                      <div>
+                        <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                          <Plus className="w-4 h-4 text-emerald-600" />
+                          <span>새 활동 사진 등록 (복수 사진 지원)</span>
+                        </h4>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          한 번에 여러 장의 사진을 선택하여 업로드할 수 있습니다.
+                        </p>
+                      </div>
 
                       {/* Mode Toggle Buttons */}
                       <div className="inline-flex bg-slate-100 p-1 rounded-xl text-xs font-bold text-slate-600">
@@ -2014,113 +2388,168 @@ export const AdminModal: React.FC = () => {
                           onChange={(e) => setNewGalCategory(e.target.value)}
                           className="w-full p-2.5 bg-slate-50 border rounded-xl text-xs font-bold"
                         >
-                          <option value="명절 나눔">명절 나눔</option>
-                          <option value="장학금 전달">장학금 전달</option>
-                          <option value="삼계탕 나눔">삼계탕 나눔</option>
-                          <option value="교육지원">교육지원</option>
-                          <option value="주거환경 개선">주거환경 개선</option>
-                          <option value="복지시설 지원">복지시설 지원</option>
-                          <option value="가족센터 활동">가족센터 활동</option>
+                          {galleryCategories.map((c) => (
+                            <option key={c} value={c}>
+                              {c}
+                            </option>
+                          ))}
                         </select>
                       </div>
                     </div>
 
-                    {/* PC File Upload Zone */}
+                    {/* PC Multiple File Upload Zone */}
                     {uploadMode === 'file' ? (
                       <div className="space-y-2">
-                        <label className="block text-xs font-bold text-slate-700">활동 사진 파일 선택 (내 컴퓨터)</label>
-                        
-                        {!newGalUrl ? (
-                          <label
-                            onDragOver={handleDragOver}
-                            onDragLeave={handleDragLeave}
-                            onDrop={(e) => handleDrop(e)}
-                            className={`border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all ${
-                              dragActive
-                                ? 'border-emerald-500 bg-emerald-50/50 scale-[1.01]'
-                                : 'border-slate-300 hover:border-emerald-400 bg-slate-50/50 hover:bg-emerald-50/20'
-                            }`}
-                          >
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => handleFileUpload(e)}
-                              className="hidden"
-                            />
-                            <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-2 shadow-inner">
-                              <UploadCloud className="w-6 h-6 stroke-[2.2]" />
-                            </div>
-                            <p className="text-xs font-bold text-slate-800">
-                              클릭하여 PC에서 이미지 파일 선택
-                            </p>
-                            <p className="text-[11px] text-slate-500 mt-1">
-                              또는 여기에 사진 파일을 드래그하여 놓으세요 (JPG, PNG, WEBP)
-                            </p>
+                        <div className="flex items-center justify-between">
+                          <label className="block text-xs font-bold text-slate-700">
+                            활동 사진 파일 선택 (내 컴퓨터 · 다중 선택 가능)
                           </label>
-                        ) : (
-                          <div className="p-3 bg-emerald-50/60 border border-emerald-200 rounded-2xl flex items-center gap-4">
-                            <img
-                              src={newGalUrl}
-                              alt="업로드 미리보기"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=800&q=80';
-                              }}
-                              className="w-20 h-20 rounded-xl object-cover border border-emerald-300 shrink-0 shadow-2xs"
-                            />
-                            <div className="flex-1 min-w-0 text-xs">
-                              <div className="inline-flex items-center gap-1 text-emerald-700 font-bold bg-emerald-100 px-2 py-0.5 rounded text-[10px] mb-1">
-                                <CheckCircle2 className="w-3 h-3" />
-                                <span>사진 업로드 완료</span>
-                              </div>
-                              <p className="font-bold text-slate-800 truncate">
-                                {newGalFileName || '내 PC 선택 이미지'}
-                              </p>
-                              <p className="text-[11px] text-slate-500 pt-0.5">
-                                선택된 이미지 등록 준비 완료
-                              </p>
-                            </div>
-                            <label className="px-3 py-1.5 bg-white border border-slate-300 hover:border-emerald-500 text-slate-700 hover:text-emerald-700 rounded-xl text-xs font-bold cursor-pointer transition-colors shrink-0">
-                              <input
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => handleFileUpload(e)}
-                                className="hidden"
-                              />
-                              사진 변경
-                            </label>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setNewGalUrl('');
-                                setNewGalFileName('');
-                              }}
-                              className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
-                              title="삭제"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
+                          {newGalPhotos.length > 0 && (
+                            <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                              선택된 사진: {newGalPhotos.length}장
+                            </span>
+                          )}
+                        </div>
+                        
+                        <label
+                          onDragOver={(e) => handleGalleryDragOver(e, false)}
+                          onDragLeave={(e) => handleGalleryDragLeave(e, false)}
+                          onDrop={(e) => handleGalleryDrop(e, false)}
+                          className={`border-2 border-dashed rounded-2xl p-5 flex flex-col items-center justify-center cursor-pointer transition-all ${
+                            dragActive
+                              ? 'border-emerald-500 bg-emerald-50 scale-[1.01]'
+                              : 'border-slate-300 hover:border-emerald-400 bg-slate-50/50 hover:bg-emerald-50/20'
+                          }`}
+                        >
+                          <input
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            onChange={(e) => handleGalleryMultipleFileUpload(e, false)}
+                            className="hidden"
+                          />
+                          <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-1.5 shadow-inner">
+                            <UploadCloud className="w-5 h-5 stroke-[2.2]" />
                           </div>
-                        )}
+                          <p className="text-xs font-bold text-slate-800">
+                            클릭하여 사진 파일 선택 (Ctrl / Shift 키로 여러 장 동시 선택 가능)
+                          </p>
+                          <p className="text-[11px] text-slate-500 mt-0.5">
+                            또는 여기에 사진 파일들을 드래그하여 놓으세요 (JPG, PNG, WEBP)
+                          </p>
+                        </label>
                       </div>
                     ) : (
                       /* Web URL Mode */
                       <div className="space-y-2">
-                        <label className="block text-xs font-bold text-slate-700">웹 이미지 URL 입력</label>
+                        <div className="flex items-center justify-between">
+                          <label className="block text-xs font-bold text-slate-700">웹 이미지 URL 추가</label>
+                          {newGalPhotos.length > 0 && (
+                            <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                              추가된 사진: {newGalPhotos.length}장
+                            </span>
+                          )}
+                        </div>
                         <div className="flex gap-2">
                           <input
                             type="url"
-                            placeholder="이미지 웹 주소 (https://...)"
-                            value={newGalUrl}
-                            onChange={(e) => setNewGalUrl(e.target.value)}
+                            placeholder="이미지 웹 주소 입력 (https://...)"
+                            value={newGalUrlInput}
+                            onChange={(e) => setNewGalUrlInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleAddGalUrlPhoto(false);
+                              }
+                            }}
                             className="flex-1 p-2.5 bg-slate-50 border rounded-xl text-xs"
                           />
+                          <button
+                            type="button"
+                            onClick={() => handleAddGalUrlPhoto(false)}
+                            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer shrink-0"
+                          >
+                            사진 추가
+                          </button>
                         </div>
-                        {newGalUrl && (
-                          <div className="p-2 bg-slate-50 border rounded-xl flex items-center gap-3">
-                            <img src={newGalUrl} alt="URL 미리보기" className="w-12 h-12 rounded-lg object-cover" />
-                            <span className="text-xs text-slate-500 font-medium">이미지 미리보기</span>
+                      </div>
+                    )}
+
+                    {/* Pending Photos Preview Grid */}
+                    {newGalPhotos.length > 0 && (
+                      <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-2.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <div className="font-bold text-slate-800 flex items-center gap-1.5">
+                            <Images className="w-4 h-4 text-emerald-600" />
+                            <span>등록 대기 사진 목록 ({newGalPhotos.length}장)</span>
                           </div>
-                        )}
+                          <span className="text-[11px] text-slate-500">
+                            ★ 대표 사진으로 지정된 사진이 목록 썸네일로 표시됩니다
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2.5">
+                          {newGalPhotos.map((photo, idx) => (
+                            <div
+                              key={photo.id}
+                              className={`relative group rounded-xl overflow-hidden border-2 transition-all bg-white flex flex-col ${
+                                photo.isCover
+                                  ? 'border-emerald-500 ring-2 ring-emerald-400/30'
+                                  : 'border-slate-200 hover:border-slate-300'
+                              }`}
+                            >
+                              <div className="relative aspect-4/3 overflow-hidden bg-slate-100">
+                                <img
+                                  src={photo.url}
+                                  alt={`대기 사진 ${idx + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                                {photo.isCover && (
+                                  <div className="absolute top-1 left-1 bg-emerald-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow flex items-center gap-0.5">
+                                    <Star className="w-2.5 h-2.5 fill-current" />
+                                    <span>대표 사진</span>
+                                  </div>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveGalPhoto(photo.id, false)}
+                                  className="absolute top-1 right-1 bg-black/60 hover:bg-red-600 text-white p-1 rounded-md transition-colors cursor-pointer"
+                                  title="사진 삭제"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+
+                              <div className="p-1.5 flex flex-col justify-between flex-1 bg-white">
+                                <p className="text-[10px] text-slate-600 truncate font-medium">
+                                  {photo.fileName || `사진 ${idx + 1}`}
+                                </p>
+                                {!photo.isCover && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSetCoverPhoto(photo.id, false)}
+                                    className="mt-1 text-[10px] font-bold text-slate-600 hover:text-emerald-700 bg-slate-100 hover:bg-emerald-50 py-0.5 rounded transition-colors text-center cursor-pointer"
+                                  >
+                                    대표로 설정
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+
+                          {/* Quick Add More Card */}
+                          <label className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-xl flex flex-col items-center justify-center p-3 cursor-pointer bg-white/60 hover:bg-emerald-50/30 transition-all text-center min-h-[90px]">
+                            <input
+                              type="file"
+                              multiple
+                              accept="image/*"
+                              onChange={(e) => handleGalleryMultipleFileUpload(e, false)}
+                              className="hidden"
+                            />
+                            <Plus className="w-5 h-5 text-slate-400 mb-1" />
+                            <span className="text-[10px] font-bold text-slate-600">+ 사진 추가</span>
+                          </label>
+                        </div>
                       </div>
                     )}
 
@@ -2153,11 +2582,17 @@ export const AdminModal: React.FC = () => {
                       {gallery.map((g) => (
                         <div key={g.id} className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between">
                           {editingGalleryId === g.id ? (
-                            <div className="w-full space-y-2.5 p-3.5 bg-emerald-50/70 rounded-xl border border-emerald-200">
-                              <div className="text-xs font-bold text-emerald-800 flex items-center gap-1">
-                                <Edit className="w-3.5 h-3.5" />
-                                <span>갤러리 항목 수정</span>
+                            <div className="w-full space-y-3 p-3.5 bg-emerald-50/70 rounded-xl border border-emerald-200">
+                              <div className="text-xs font-bold text-emerald-800 flex items-center justify-between">
+                                <div className="flex items-center gap-1">
+                                  <Edit className="w-3.5 h-3.5" />
+                                  <span>갤러리 항목 수정 (복수 사진 지원)</span>
+                                </div>
+                                <span className="text-[11px] text-emerald-700 font-bold bg-white px-2 py-0.5 rounded-full border border-emerald-200">
+                                  총 {editGalleryPhotos.length}장
+                                </span>
                               </div>
+
                               <input
                                 type="text"
                                 value={editGalleryData.title ?? g.title}
@@ -2178,13 +2613,17 @@ export const AdminModal: React.FC = () => {
                                 </div>
                                 <div>
                                   <label className="block text-[10px] font-bold text-slate-700 mb-0.5">카테고리</label>
-                                  <input
-                                    type="text"
+                                  <select
                                     value={editGalleryData.category ?? g.category}
                                     onChange={(e) => setEditGalleryData({ ...editGalleryData, category: e.target.value })}
-                                    className="p-2 bg-white border border-slate-300 rounded-lg text-xs w-full"
-                                    placeholder="카테고리"
-                                  />
+                                    className="p-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800 w-full"
+                                  >
+                                    {Array.from(new Set([...galleryCategories, g.category])).map((c) => (
+                                      <option key={c} value={c}>
+                                        {c}
+                                      </option>
+                                    ))}
+                                  </select>
                                 </div>
                                 <div>
                                   <label className="block text-[10px] font-bold text-slate-700 mb-0.5">장소</label>
@@ -2198,25 +2637,99 @@ export const AdminModal: React.FC = () => {
                                 </div>
                               </div>
 
-                              {/* Image preview & PC upload button in edit mode */}
-                              <div className="flex items-center gap-2">
-                                {editGalleryData.imageUrl && (
-                                  <img
-                                    src={editGalleryData.imageUrl}
-                                    alt="수정 미리보기"
-                                    className="w-12 h-12 rounded-lg object-cover border border-slate-200 shrink-0"
-                                  />
-                                )}
-                                <label className="flex-1 px-3 py-2 bg-white border border-slate-300 hover:border-emerald-500 rounded-lg text-xs font-bold text-slate-700 hover:text-emerald-700 cursor-pointer flex items-center justify-center gap-1.5 transition-colors">
+                              {/* Multi-Photo Grid in Edit Mode */}
+                              <div className="space-y-2 bg-white p-3 rounded-xl border border-slate-200">
+                                <div className="flex items-center justify-between text-[11px]">
+                                  <span className="font-bold text-slate-700">등록된 사진 목록</span>
+                                  <span className="text-slate-500">★ 대표 사진이 대표 썸네일로 표시됩니다</span>
+                                </div>
+
+                                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                  {editGalleryPhotos.map((photo, idx) => (
+                                    <div
+                                      key={photo.id}
+                                      className={`relative group rounded-lg overflow-hidden border-2 bg-slate-50 flex flex-col ${
+                                        photo.isCover
+                                          ? 'border-emerald-500 ring-2 ring-emerald-300'
+                                          : 'border-slate-200'
+                                      }`}
+                                    >
+                                      <div className="relative aspect-4/3 overflow-hidden">
+                                        <img
+                                          src={photo.url}
+                                          alt={`사진 ${idx + 1}`}
+                                          className="w-full h-full object-cover"
+                                        />
+                                        {photo.isCover && (
+                                          <div className="absolute top-1 left-1 bg-emerald-600 text-white text-[8px] font-black px-1 py-0.5 rounded flex items-center gap-0.5">
+                                            <Star className="w-2 h-2 fill-current" />
+                                            <span>대표</span>
+                                          </div>
+                                        )}
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRemoveGalPhoto(photo.id, true)}
+                                          className="absolute top-1 right-1 bg-black/60 hover:bg-red-600 text-white p-1 rounded transition-colors cursor-pointer"
+                                          title="사진 삭제"
+                                        >
+                                          <X className="w-2.5 h-2.5" />
+                                        </button>
+                                      </div>
+                                      <div className="p-1 flex flex-col bg-white">
+                                        {!photo.isCover ? (
+                                          <button
+                                            type="button"
+                                            onClick={() => handleSetCoverPhoto(photo.id, true)}
+                                            className="text-[9px] font-bold text-slate-600 hover:text-emerald-700 bg-slate-100 hover:bg-emerald-50 py-0.5 rounded text-center cursor-pointer"
+                                          >
+                                            대표로 설정
+                                          </button>
+                                        ) : (
+                                          <span className="text-[9px] font-bold text-emerald-700 text-center py-0.5">
+                                            대표 사진
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+
+                                  {/* Add photos to existing in edit mode */}
+                                  <label className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-lg flex flex-col items-center justify-center p-2 cursor-pointer bg-slate-50 hover:bg-emerald-50/40 transition-colors text-center min-h-[70px]">
+                                    <input
+                                      type="file"
+                                      multiple
+                                      accept="image/*"
+                                      onChange={(e) => handleGalleryMultipleFileUpload(e, true)}
+                                      className="hidden"
+                                    />
+                                    <Plus className="w-4 h-4 text-slate-400 mb-0.5" />
+                                    <span className="text-[9px] font-bold text-slate-600">+ 사진 추가</span>
+                                  </label>
+                                </div>
+
+                                {/* URL Add row in edit mode */}
+                                <div className="flex gap-1.5 pt-1">
                                   <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={(e) => handleFileUpload(e, true)}
-                                    className="hidden"
+                                    type="url"
+                                    placeholder="웹 이미지 URL로 추가 (https://...)"
+                                    value={editGalUrlInput}
+                                    onChange={(e) => setEditGalUrlInput(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        handleAddGalUrlPhoto(true);
+                                      }
+                                    }}
+                                    className="flex-1 p-1.5 bg-slate-50 border rounded-lg text-[11px]"
                                   />
-                                  <Upload className="w-3.5 h-3.5" />
-                                  <span>PC 사진 파일 변경</span>
-                                </label>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleAddGalUrlPhoto(true)}
+                                    className="px-2.5 py-1 bg-slate-800 hover:bg-slate-900 text-white text-[11px] font-bold rounded-lg transition-colors cursor-pointer shrink-0"
+                                  >
+                                    추가
+                                  </button>
+                                </div>
                               </div>
 
                               <textarea
@@ -2230,7 +2743,10 @@ export const AdminModal: React.FC = () => {
                               <div className="flex justify-end gap-2 pt-1">
                                 <button
                                   type="button"
-                                  onClick={() => setEditingGalleryId(null)}
+                                  onClick={() => {
+                                    setEditingGalleryId(null);
+                                    setEditGalleryPhotos([]);
+                                  }}
                                   className="px-3 py-1.5 bg-slate-200 text-slate-700 font-bold rounded-lg text-xs cursor-pointer"
                                 >
                                   취소
@@ -2246,14 +2762,22 @@ export const AdminModal: React.FC = () => {
                             </div>
                           ) : (
                             <div className="flex gap-3 items-center">
-                              <img
-                                src={getImageUrl(g.imageUrl)}
-                                alt={g.title}
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=800&q=80';
-                                }}
-                                className="w-16 h-16 rounded-xl object-cover shrink-0 border border-slate-200"
-                              />
+                              <div className="relative w-16 h-16 shrink-0 rounded-xl overflow-hidden border border-slate-200">
+                                <img
+                                  src={getImageUrl(g.imageUrl)}
+                                  alt={g.title}
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=800&q=80';
+                                  }}
+                                  className="w-full h-full object-cover"
+                                />
+                                {(g.images && g.images.length > 1) && (
+                                  <div className="absolute bottom-0 right-0 left-0 bg-black/70 text-white text-[9px] font-bold text-center py-0.5 flex items-center justify-center gap-0.5">
+                                    <Images className="w-2.5 h-2.5" />
+                                    <span>{g.images.length}장</span>
+                                  </div>
+                                )}
+                              </div>
                               <div className="flex-1 min-w-0 text-xs space-y-0.5">
                                 <div className="font-bold text-slate-900 truncate flex items-center gap-1.5">
                                   <span className="truncate">{g.title}</span>
@@ -2267,6 +2791,11 @@ export const AdminModal: React.FC = () => {
                                   <span className="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded">
                                     {g.category}
                                   </span>
+                                  {(g.images && g.images.length > 1) && (
+                                    <span className="text-slate-600 font-bold bg-slate-100 px-1.5 py-0.5 rounded">
+                                      📷 {g.images.length}장의 사진
+                                    </span>
+                                  )}
                                   <span>📅 {g.date}</span>
                                   <span className="text-slate-400">({g.author || '재단 관리자'})</span>
                                 </div>
@@ -2278,6 +2807,16 @@ export const AdminModal: React.FC = () => {
                                   onClick={() => {
                                     setEditingGalleryId(g.id);
                                     setEditGalleryData(g);
+                                    const existingImages = (g.images && g.images.length > 0) ? g.images : (g.imageUrl ? [g.imageUrl] : []);
+                                    const existingPaths = (g.storagePaths && g.storagePaths.length > 0) ? g.storagePaths : (g.storagePath ? [g.storagePath] : []);
+                                    const initialPhotos: AdminGalleryPhoto[] = existingImages.map((url, idx) => ({
+                                      id: `existing-${idx}-${Date.now()}`,
+                                      url: url,
+                                      storagePath: existingPaths[idx],
+                                      fileName: `사진 ${idx + 1}`,
+                                      isCover: idx === 0
+                                    }));
+                                    setEditGalleryPhotos(initialPhotos);
                                   }}
                                   className="p-1.5 text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg cursor-pointer"
                                   title="수정"

@@ -23,9 +23,12 @@ export interface GalleryItem {
   title: string;
   category: string; // e.g. '장학금 전달', '교육지원', '명절 나눔', '삼계탕 나눔', '생활용품 지원', '주거환경 개선', '복지시설 지원', '다문화가족 활동', '가족센터 활동', '지역사회 봉사'
   date: string;
-  imageUrl: string;
-  /** Firebase Storage path for files uploaded by the gallery manager. */
+  imageUrl: string; // 대표 사진 (커버 이미지) - 기존 단일 사진 데이터 100% 호환
+  images?: string[]; // 항목 내 여러 장의 사진 목록 (다중 사진 지원)
+  /** Firebase Storage path for primary file uploaded by the gallery manager. */
   storagePath?: string;
+  /** Firebase Storage paths for all uploaded files in this gallery post. */
+  storagePaths?: string[];
   description: string;
   location?: string;
   author?: string;
@@ -144,6 +147,7 @@ export interface FoundationSettings {
     instagram?: string;
     youtube?: string;
   };
+  galleryCategories?: string[];
 }
 
 export type ActiveTab =

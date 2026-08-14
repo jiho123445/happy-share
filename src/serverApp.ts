@@ -157,10 +157,20 @@ export function createExpressApp() {
       }
     }
     if (Array.isArray(payload.gallery)) {
-      payload.gallery = payload.gallery.map((g: any) => ({
-        ...g,
-        imageUrl: g.imageUrl ? saveBase64Image(g.imageUrl, `gallery_${g.id || "item"}`) : g.imageUrl,
-      }));
+      payload.gallery = payload.gallery.map((g: any) => {
+        const processedImageUrl = g.imageUrl ? saveBase64Image(g.imageUrl, `gallery_${g.id || "item"}`) : g.imageUrl;
+        let processedImages: string[] | undefined = undefined;
+        if (Array.isArray(g.images)) {
+          processedImages = g.images.map((img: string, idx: number) =>
+            img ? saveBase64Image(img, `gallery_${g.id || "item"}_${idx}`) : img
+          );
+        }
+        return {
+          ...g,
+          imageUrl: processedImageUrl || (processedImages && processedImages[0]) || "",
+          images: processedImages || (processedImageUrl ? [processedImageUrl] : [])
+        };
+      });
     }
     if (Array.isArray(payload.popups)) {
       payload.popups = payload.popups.map((p: any) => ({
@@ -294,10 +304,20 @@ export function createExpressApp() {
     let rawGallery = req.body?.gallery || req.body || [];
     if (!Array.isArray(rawGallery)) rawGallery = [];
 
-    const processedGallery = rawGallery.map((g: any) => ({
-      ...g,
-      imageUrl: g.imageUrl ? saveBase64Image(g.imageUrl, `gallery_${g.id || "item"}`) : g.imageUrl,
-    }));
+    const processedGallery = rawGallery.map((g: any) => {
+      const processedImageUrl = g.imageUrl ? saveBase64Image(g.imageUrl, `gallery_${g.id || "item"}`) : g.imageUrl;
+      let processedImages: string[] | undefined = undefined;
+      if (Array.isArray(g.images)) {
+        processedImages = g.images.map((img: string, idx: number) =>
+          img ? saveBase64Image(img, `gallery_${g.id || "item"}_${idx}`) : img
+        );
+      }
+      return {
+        ...g,
+        imageUrl: processedImageUrl || (processedImages && processedImages[0]) || "",
+        images: processedImages || (processedImageUrl ? [processedImageUrl] : [])
+      };
+    });
 
     const updated = {
       ...current,

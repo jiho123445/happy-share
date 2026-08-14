@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useFoundation } from '../context/FoundationContext';
 import {
   Calendar,
@@ -9,7 +9,12 @@ import {
   ImageIcon,
   Settings,
   Lock,
-  ShieldCheck
+  ShieldCheck,
+  ChevronLeft,
+  ChevronRight,
+  Maximize2,
+  X,
+  Layers
 } from 'lucide-react';
 
 export const GalleryDetailPage: React.FC = () => {
@@ -23,15 +28,56 @@ export const GalleryDetailPage: React.FC = () => {
     getImageUrl
   } = useFoundation();
 
+  const [activePhotoIdx, setActivePhotoIdx] = useState(0);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+
   useEffect(() => {
     if (!selectedGallery) {
       goBackFromDetail('gallery');
+    } else {
+      setActivePhotoIdx(0);
     }
   }, [selectedGallery]);
 
   if (!selectedGallery) {
     return null;
   }
+
+  // Multi-image list with fallback to single imageUrl (100% backward compatible)
+  const allImages =
+    selectedGallery.images && selectedGallery.images.length > 0
+      ? selectedGallery.images
+      : selectedGallery.imageUrl
+      ? [selectedGallery.imageUrl]
+      : [];
+
+  const currentPhoto = allImages[activePhotoIdx] || selectedGallery.imageUrl;
+
+  const handlePrevPhoto = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setActivePhotoIdx((prev) => (prev > 0 ? prev - 1 : allImages.length - 1));
+  };
+
+  const handleNextPhoto = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setActivePhotoIdx((prev) => (prev < allImages.length - 1 ? prev + 1 : 0));
+  };
+
+  // Keyboard arrow navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (allImages.length <= 1) return;
+      if (e.key === 'ArrowLeft') {
+        setActivePhotoIdx((prev) => (prev > 0 ? prev - 1 : allImages.length - 1));
+      } else if (e.key === 'ArrowRight') {
+        setActivePhotoIdx((prev) => (prev < allImages.length - 1 ? prev + 1 : 0));
+      } else if (e.key === 'Escape' && isLightboxOpen) {
+        setIsLightboxOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [allImages.length, isLightboxOpen]);
 
   // Related gallery items
   const relatedGallery = gallery.filter((g) => g.id !== selectedGallery.id).slice(0, 3);
@@ -57,7 +103,7 @@ export const GalleryDetailPage: React.FC = () => {
             <button
               onClick={() => setAdminOpen(true)}
               className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-700 hover:text-emerald-700 bg-white hover:bg-emerald-50 border border-slate-300 hover:border-emerald-300 px-3.5 py-2 rounded-xl shadow-xs transition-all cursor-pointer"
-              title="관리자 모드에서 추가/수정/삭제"
+              title="관리자 모드에서 사진 추가/수정/삭제"
             >
               <Settings className="w-3.5 h-3.5 text-emerald-600" />
               <span>관리자 모드 (추가/수정/삭제)</span>
@@ -82,6 +128,12 @@ export const GalleryDetailPage: React.FC = () => {
               </span>
               <span className="text-xs text-slate-400 font-medium">|</span>
               <span className="text-xs text-slate-500 font-semibold">사단법인 너브내행복나눔재단 나눔기록</span>
+              {allImages.length > 1 && (
+                <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                  <Layers className="w-3 h-3 text-emerald-600" />
+                  <span>총 {allImages.length}장의 사진 수록</span>
+                </span>
+              )}
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-tight">
@@ -105,24 +157,148 @@ export const GalleryDetailPage: React.FC = () => {
                   navigator.clipboard?.writeText(window.location.href);
                   alert('페이지 링크가 복사되었습니다!');
                 }}
-                className="inline-flex items-center gap-1 text-slate-600 hover:text-emerald-600 font-bold"
+                className="inline-flex items-center gap-1 text-slate-600 hover:text-emerald-600 font-bold cursor-pointer"
               >
                 <Share2 className="w-3.5 h-3.5" /> 공유하기
               </button>
             </div>
           </div>
 
-          {/* Photo Display */}
-          <div className="bg-slate-900 p-4 sm:p-8 flex items-center justify-center min-h-[320px]">
-            <img
-              src={getImageUrl(selectedGallery.imageUrl)}
-              alt={selectedGallery.title}
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=800&q=80';
-              }}
-              className="max-h-[550px] w-auto max-w-full object-contain rounded-xl shadow-2xl"
-            />
+          {/* Interactive Multi-Photo Viewer Display */}
+          <div className="bg-slate-950 p-4 sm:p-8 flex flex-col items-center justify-center relative select-none">
+            {/* Top Bar inside Viewer (Counter & Fullscreen) */}
+            <div className="w-full flex items-center justify-between text-white/90 text-xs font-bold mb-3 px-2">
+              <div className="flex items-center gap-2">
+                <span className="bg-white/15 px-2.5 py-1 rounded-full backdrop-blur-xs flex items-center gap-1.5">
+                  <ImageIcon className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>
+                    사진 {activePhotoIdx + 1} / {allImages.length}
+                  </span>
+                </span>
+                {activePhotoIdx === 0 && (
+                  <span className="bg-emerald-500/80 text-white text-[11px] font-bold px-2 py-0.5 rounded">
+                    대표 사진
+                  </span>
+                )}
+              </div>
+
+              <button
+                onClick={() => setIsLightboxOpen(true)}
+                className="bg-white/15 hover:bg-white/30 text-white px-3 py-1 rounded-lg backdrop-blur-xs flex items-center gap-1.5 transition-colors cursor-pointer text-xs"
+                title="원본 전체화면 확대보기"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+                <span>크게보기</span>
+              </button>
+            </div>
+
+            {/* Main Stage Image */}
+            <div
+              onClick={() => setIsLightboxOpen(true)}
+              className="relative w-full flex items-center justify-center min-h-[320px] max-h-[560px] cursor-zoom-in group"
+            >
+              <img
+                src={getImageUrl(currentPhoto)}
+                alt={`${selectedGallery.title} - ${activePhotoIdx + 1}`}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src =
+                    'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=800&q=80';
+                }}
+                className="max-h-[520px] w-auto max-w-full object-contain rounded-xl shadow-2xl transition-transform duration-300"
+              />
+
+              {/* Prev / Next Slide Arrows */}
+              {allImages.length > 1 && (
+                <>
+                  <button
+                    onClick={handlePrevPhoto}
+                    className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 bg-slate-900/70 hover:bg-emerald-600 text-white p-2.5 sm:p-3 rounded-full backdrop-blur-xs shadow-lg transition-all cursor-pointer opacity-80 hover:opacity-100 hover:scale-110 active:scale-95"
+                    title="이전 사진"
+                  >
+                    <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+                  </button>
+                  <button
+                    onClick={handleNextPhoto}
+                    className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 bg-slate-900/70 hover:bg-emerald-600 text-white p-2.5 sm:p-3 rounded-full backdrop-blur-xs shadow-lg transition-all cursor-pointer opacity-80 hover:opacity-100 hover:scale-110 active:scale-95"
+                    title="다음 사진"
+                  >
+                    <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Thumbnail Strip (when multiple photos exist) */}
+            {allImages.length > 1 && (
+              <div className="w-full mt-4 pt-3 border-t border-white/10 flex items-center gap-2.5 overflow-x-auto pb-1 px-1 scrollbar-thin">
+                {allImages.map((imgUrl, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActivePhotoIdx(idx)}
+                    className={`relative shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden transition-all cursor-pointer border-2 ${
+                      activePhotoIdx === idx
+                        ? 'border-emerald-400 scale-105 shadow-md shadow-emerald-500/20 opacity-100'
+                        : 'border-transparent opacity-60 hover:opacity-100'
+                    }`}
+                  >
+                    <img
+                      src={getImageUrl(imgUrl)}
+                      alt={`Thumbnail ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <span className="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] font-bold px-1.5 rounded">
+                      {idx + 1}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
+
+          {/* All Attached Photos Gallery Grid (when multiple photos exist) */}
+          {allImages.length > 1 && (
+            <div className="px-6 sm:px-10 pt-8 pb-4 border-b border-slate-100">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-emerald-600" />
+                  <span>수록된 전체 사진 목록 ({allImages.length}장)</span>
+                </h3>
+                <span className="text-xs text-slate-500">
+                  사진을 클릭하면 크게 확인할 수 있습니다.
+                </span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {allImages.map((imgUrl, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => {
+                      setActivePhotoIdx(idx);
+                      setIsLightboxOpen(true);
+                    }}
+                    className={`relative rounded-xl overflow-hidden bg-slate-100 aspect-4/3 cursor-pointer group border transition-all ${
+                      activePhotoIdx === idx
+                        ? 'border-emerald-500 ring-2 ring-emerald-400'
+                        : 'border-slate-200 hover:border-emerald-400 shadow-2xs'
+                    }`}
+                  >
+                    <img
+                      src={getImageUrl(imgUrl)}
+                      alt={`${selectedGallery.title} - ${idx + 1}`}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <span className="bg-white/90 text-slate-900 text-[11px] font-bold px-2 py-1 rounded-md flex items-center gap-1 shadow">
+                        <Eye className="w-3 h-3 text-emerald-600" /> 크게보기
+                      </span>
+                    </div>
+                    <span className="absolute top-2 left-2 bg-slate-900/80 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+                      {idx === 0 ? '대표' : idx + 1}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Description Content */}
           <div className="p-6 sm:p-10 space-y-6">
@@ -203,6 +379,97 @@ export const GalleryDetailPage: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Lightbox / Fullscreen Modal */}
+      {isLightboxOpen && (
+        <div
+          onClick={() => setIsLightboxOpen(false)}
+          className="fixed inset-0 z-50 bg-black/95 flex flex-col items-center justify-between p-4 backdrop-blur-md select-none animate-in fade-in duration-200"
+        >
+          {/* Lightbox Top Bar */}
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-6xl flex items-center justify-between text-white py-2 px-4"
+          >
+            <div className="flex items-center gap-3">
+              <span className="bg-emerald-600 text-white text-xs font-bold px-2.5 py-1 rounded">
+                {selectedGallery.category}
+              </span>
+              <span className="font-bold text-sm sm:text-base truncate max-w-xs sm:max-w-md">
+                {selectedGallery.title}
+              </span>
+              <span className="text-xs text-white/70">
+                ({activePhotoIdx + 1} / {allImages.length})
+              </span>
+            </div>
+
+            <button
+              onClick={() => setIsLightboxOpen(false)}
+              className="bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition-colors cursor-pointer"
+              title="닫기 (ESC)"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+
+          {/* Lightbox Main Image & Navigation */}
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative flex-1 w-full max-w-6xl flex items-center justify-center p-2 min-h-0"
+          >
+            <img
+              src={getImageUrl(currentPhoto)}
+              alt={`${selectedGallery.title} - ${activePhotoIdx + 1}`}
+              className="max-h-full max-w-full object-contain rounded-lg shadow-2xl"
+            />
+
+            {allImages.length > 1 && (
+              <>
+                <button
+                  onClick={handlePrevPhoto}
+                  className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-emerald-600 text-white p-3 rounded-full backdrop-blur-md shadow-xl transition-all cursor-pointer active:scale-90"
+                  title="이전 사진"
+                >
+                  <ChevronLeft className="w-7 h-7" />
+                </button>
+                <button
+                  onClick={handleNextPhoto}
+                  className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-emerald-600 text-white p-3 rounded-full backdrop-blur-md shadow-xl transition-all cursor-pointer active:scale-90"
+                  title="다음 사진"
+                >
+                  <ChevronRight className="w-7 h-7" />
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Lightbox Bottom Thumbnail Carousel */}
+          {allImages.length > 1 && (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-3xl flex items-center justify-center gap-2 overflow-x-auto py-2 px-4"
+            >
+              {allImages.map((imgUrl, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setActivePhotoIdx(idx)}
+                  className={`w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${
+                    activePhotoIdx === idx
+                      ? 'border-emerald-400 scale-105'
+                      : 'border-white/20 opacity-50 hover:opacity-90'
+                  }`}
+                >
+                  <img
+                    src={getImageUrl(imgUrl)}
+                    alt={`Thumb ${idx + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
