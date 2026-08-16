@@ -245,7 +245,7 @@ export const ExcelManager: React.FC<ExcelManagerProps> = ({
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-md transition-colors cursor-pointer"
             >
               <Trash2 className="w-3.5 h-3.5 text-red-600" />
-              <span>회원 명단 초기화</span>
+              <span>화면 명단 초기화</span>
             </button>
           </div>
         </div>
@@ -296,10 +296,10 @@ export const ExcelManager: React.FC<ExcelManagerProps> = ({
               <Trash2 className="w-6 h-6" />
             </div>
             <h3 className="text-base font-bold text-slate-900">
-              후원자료를 메모리에서 완전히 삭제하시겠습니까?
+              화면에 표시된 후원자료를 초기화하시겠습니까?
             </h3>
             <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-              현재 불러온 후원자 및 후원내역이 브라우저 메모리에서 모두 삭제됩니다. (기존에 발급된 영수증 발급대장 내역은 보존됩니다.)
+              현재 화면의 후원자 및 후원내역만 비웁니다. <strong>Firebase에 저장된 누적 후원자료는 삭제되지 않습니다.</strong> 이후 Excel을 다시 업로드하면 Firebase의 기존자료와 비교하여 없는 내역만 추가합니다.
             </p>
 
             <div className="mt-6 flex items-center justify-end gap-3">
@@ -317,7 +317,7 @@ export const ExcelManager: React.FC<ExcelManagerProps> = ({
                 }}
                 className="px-4 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-md shadow-xs cursor-pointer"
               >
-                삭제 확인
+                화면 초기화
               </button>
             </div>
           </div>
