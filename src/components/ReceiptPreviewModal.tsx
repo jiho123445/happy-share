@@ -1,9 +1,10 @@
 import React, { useState, useRef } from 'react';
-import { X, Printer, Download, ArrowLeft, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { X, Printer, Download, ArrowLeft, Loader2, CheckCircle2, AlertCircle, Share2 } from 'lucide-react';
 import { IssuedReceiptRecord, PrintSettings } from '../types/donation';
 import { OfficialReceiptA4 } from './OfficialReceiptA4';
 import { exportReceiptToPdf } from '../utils/pdfExport';
 import { printReceiptInIsolatedWindow } from '../utils/printHelper';
+import { ReceiptShareWizard } from './ReceiptShareWizard';
 
 interface ReceiptPreviewModalProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ export const ReceiptPreviewModal: React.FC<ReceiptPreviewModalProps> = ({
   printSettings = { offsetX: 0, offsetY: 0, scale: 100 },
 }) => {
   const [isSavingPdf, setIsSavingPdf] = useState(false);
+  const [isShareWizardOpen, setIsShareWizardOpen] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{
     type: 'success' | 'info' | 'error';
     text: string;
@@ -137,6 +139,17 @@ export const ReceiptPreviewModal: React.FC<ReceiptPreviewModalProps> = ({
               )}
             </button>
 
+            {/* [공유] Button */}
+            <button
+              onClick={() => setIsShareWizardOpen(true)}
+              disabled={isSavingPdf}
+              className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold bg-violet-600 hover:bg-violet-500 active:bg-violet-700 disabled:bg-slate-700 text-white rounded-lg shadow-lg hover:shadow-violet-500/25 transition-all cursor-pointer ring-2 ring-violet-400/40"
+              title="기부금영수증 PDF를 카카오톡/이메일 등으로 공유"
+            >
+              <Share2 className="w-4 h-4 text-violet-100" />
+              <span>공유</span>
+            </button>
+
             {/* [인쇄] Button */}
             <button
               onClick={handlePrint}
@@ -194,6 +207,13 @@ export const ReceiptPreviewModal: React.FC<ReceiptPreviewModalProps> = ({
           />
         </div>
       </div>
+
+      <ReceiptShareWizard
+        isOpen={isShareWizardOpen}
+        onClose={() => setIsShareWizardOpen(false)}
+        receipt={receipt}
+        receiptElement={receiptContainerRef.current}
+      />
 
       {/* Dedicated Print Container for window.print() */}
       <div className="print-only-container hidden">

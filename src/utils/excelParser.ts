@@ -258,7 +258,7 @@ export async function parseDonationExcel(file: File): Promise<ParseResult> {
       id: `rec-${Date.now()}-${r}-${Math.random().toString(36).substring(2, 6)}`,
       paymentMethod: '',
       content: '',
-      period: inferredPeriod || undefined,
+      period: inferredPeriod || '',
       sourceKey: makeSourceKey(file.name, workbook.SheetNames[0], r, row),
       // donationType / donationCode는 선택 항목입니다.
       // 값이 비어 있으면 undefined로 유지하여 영수증 발급 시 단체 기본값을 사용할 수 있게 합니다.
@@ -342,7 +342,7 @@ export async function parseDonationExcel(file: File): Promise<ParseResult> {
           idNumber: '',
           address: '',
           date: '',
-          period: inferredPeriod || undefined,
+          period: inferredPeriod || '',
           sourceKey: makeSourceKey(file.name, workbook.SheetNames[0], r, row),
           amount,
           paymentMethod: '계좌이체',
@@ -366,7 +366,7 @@ export async function parseDonationExcel(file: File): Promise<ParseResult> {
         idNumber: String(row[1] ?? '').trim(),
         address: String(row[2] ?? '').trim(),
         date: parseExcelDate(row[3]),
-        period: inferredPeriod || undefined,
+        period: inferredPeriod || '',
         sourceKey: makeSourceKey(file.name, workbook.SheetNames[0], r, row),
         amount,
         paymentMethod: String(row[5] ?? '').trim() || '계좌이체',

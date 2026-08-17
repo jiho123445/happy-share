@@ -12,11 +12,22 @@ export interface PdfExportResult {
   error?: string;
 }
 
+export interface ReceiptPdfFile {
+  file: File;
+  fileName: string;
+  blob: Blob;
+}
+
+export function getReceiptPdfFileName(receipt: IssuedReceiptRecord): string {
+  const sanitizedDonorName = (receipt.donorName || '기부자').replace(/[\\/:*?"<>|]/g, '_').trim();
+  const sanitizedReceiptNo = (receipt.receiptNo || '영수증').replace(/[\\/:*?"<>|]/g, '_').trim();
+  return `기부금영수증_${sanitizedDonorName}_${sanitizedReceiptNo}.pdf`;
+}
+
 /**
  * Generate A4 PDF Blob (210mm x 297mm, high-speed optimized rendering)
  */
 export async function generateReceiptPdfBlob(receiptElement: HTMLElement): Promise<Blob> {
-  // Ensure fonts are ready before rasterizing
   if (typeof document !== 'undefined' && 'fonts' in document) {
     try {
       await document.fonts.ready;
@@ -25,8 +36,6 @@ export async function generateReceiptPdfBlob(receiptElement: HTMLElement): Promi
     }
   }
 
-  // PDF export must not inherit the preview's zoom, print offset, centering margin,
-  // or transform. Capture a dedicated A4-sized clone instead.
   const exportHost = document.createElement('div');
   exportHost.style.position = 'fixed';
   exportHost.style.left = '0';
@@ -61,8 +70,6 @@ export async function generateReceiptPdfBlob(receiptElement: HTMLElement): Promi
   document.body.appendChild(exportHost);
 
   try {
-    // html-to-image with fontEmbedCSS: '' renders instantaneously (<200ms) by avoiding
-    // network crawls of remote webfont chunks, while natively supporting Tailwind v4's modern oklch colors and SVG seals
     const canvas = await toCanvas(clone, {
       pixelRatio: 2,
       fontEmbedCSS: '',
@@ -97,20 +104,37 @@ export async function generateReceiptPdfBlob(receiptElement: HTMLElement): Promi
   }
 }
 
+/** Create a real PDF File object suitable for Web Share API file attachments. */
+export async function generateReceiptPdfFile(
+  receiptElement: HTMLElement,
+  receipt: IssuedReceiptRecord,
+): Promise<ReceiptPdfFile> {
+  const blob = await generateReceiptPdfBlob(receiptElement);
+  const fileName = getReceiptPdfFileName(receipt);
+  const file = new File([blob], fileName, { type: 'application/pdf' });
+  return { file, fileName, blob };
+}
+
+/** Download an already generated PDF blob without regenerating the document. */
+export function downloadPdfBlob(blob: Blob, fileName: string): void {
+  const blobUrl = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = blobUrl;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+}
+
 /**
- * Export receipt to PDF.
- * Starts generating the PDF blob in parallel with the user opening and confirming showSaveFilePicker().
- * This allows the file to be saved instantaneously (<0.2s) once the user selects the destination.
+ * Export receipt to PDF. Existing save behavior is intentionally preserved.
  */
 export async function exportReceiptToPdf(
   receiptElement: HTMLElement,
   receipt: IssuedReceiptRecord
 ): Promise<PdfExportResult> {
-  const sanitizedDonorName = (receipt.donorName || '기부자').replace(/[\\/:*?"<>|]/g, '_').trim();
-  const sanitizedReceiptNo = (receipt.receiptNo || '영수증').replace(/[\\/:*?"<>|]/g, '_').trim();
-  const fileName = `기부금영수증_${sanitizedDonorName}_${sanitizedReceiptNo}.pdf`;
-
-  // Start PDF Blob generation concurrently in the background so it's ready when user picks the path
+  const fileName = getReceiptPdfFileName(receipt);
   const blobPromise = generateReceiptPdfBlob(receiptElement);
 
   const hasSaveFilePicker =
@@ -118,12 +142,10 @@ export async function exportReceiptToPdf(
     'showSaveFilePicker' in window &&
     typeof (window as any).showSaveFilePicker === 'function';
 
-  // 1. Direct File System Access API (Chromium Chrome/Edge HTTPS)
   if (hasSaveFilePicker) {
     let fileHandle: any = null;
 
     try {
-      // Direct call on user gesture: user chooses folder & filename
       fileHandle = await (window as any).showSaveFilePicker({
         suggestedName: fileName,
         types: [
@@ -137,7 +159,6 @@ export async function exportReceiptToPdf(
       });
     } catch (err: any) {
       if (err.name === 'AbortError') {
-        // User canceled dialog - exit quietly
         return {
           success: false,
           canceled: true,
@@ -147,24 +168,13 @@ export async function exportReceiptToPdf(
       }
 
       if (err.name === 'SecurityError') {
-        console.warn('SecurityError on showSaveFilePicker (iframe sandbox restriction):', err);
-        // Fallback to standard PDF download for restricted preview iframe
         try {
           const pdfBlob = await blobPromise;
-          const blobUrl = URL.createObjectURL(pdfBlob);
-          const link = document.createElement('a');
-          link.href = blobUrl;
-          link.download = fileName;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-
+          downloadPdfBlob(pdfBlob, fileName);
           return {
             success: true,
             isSecurityRestricted: true,
             fileName,
-            blobUrl,
             method: 'download',
           };
         } catch (genErr: any) {
@@ -180,7 +190,6 @@ export async function exportReceiptToPdf(
       console.warn('File System Access API failed, falling back to download:', err);
     }
 
-    // User confirmed location; write the PDF blob (which was already generated concurrently)
     if (fileHandle) {
       try {
         const pdfBlob = await blobPromise;
@@ -205,23 +214,12 @@ export async function exportReceiptToPdf(
     }
   }
 
-  // 2. Standard fallback for Safari / Firefox / non-supporting browsers
   try {
     const pdfBlob = await blobPromise;
-    const blobUrl = URL.createObjectURL(pdfBlob);
-    const link = document.createElement('a');
-    link.href = blobUrl;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    // Release the Blob URL after handing it to the browser.
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-
+    downloadPdfBlob(pdfBlob, fileName);
     return {
       success: true,
       fileName,
-      blobUrl,
       method: 'download',
     };
   } catch (err: any) {
@@ -234,6 +232,3 @@ export async function exportReceiptToPdf(
     };
   }
 }
-
-
-

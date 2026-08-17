@@ -1,6 +1,6 @@
 {
-  "name": "사단법인 너브내행복나눔재단",
-  "description": "2009년부터 이어온 나눔의 역사, 홍천군민 모두의 행복을 만드는 사단법인 너브내행복나눔재단 공식 홈페이지",
+  "name": "너브내행복나눔재단 기부금영수증 발급시스템",
+  "description": "사단법인 너브내행복나눔재단 전용 공식 기부금영수증(소득세법/법인세법) 자동 발급 및 A4 인쇄 관리 시스템",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
