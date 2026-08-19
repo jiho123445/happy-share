@@ -28,6 +28,7 @@ import {
   INITIAL_GALLERY_CATEGORIES
 } from '../data/initialData';
 import { formatImageUrl } from '../utils/imageUrl';
+import { sanitizeForFirestore } from '../utils/sanitizeForFirestore';
 
 interface FoundationContextType {
   settings: FoundationSettings;
@@ -1006,10 +1007,14 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const postMutationToServer = useCallback((endpoint: string, payload: any, actionName: string) => {
     // 1. Immediately write to Cloud Firestore for instant 1s cross-device synchronization
     const globalDocRef = doc(db, 'foundation', 'global');
-    const firestoreUpdate: any = {
+    // Strip any `undefined` field values (e.g. `attachmentName: undefined`
+    // when a notice has no attachment) — Firestore's setDoc() throws
+    // synchronously on these, which silently skips our own .catch() error
+    // handling entirely. See sanitizeForFirestore.ts for the full story.
+    const firestoreUpdate: any = sanitizeForFirestore({
       ...payload,
       updatedAt: new Date().toISOString()
-    };
+    });
 
     // Firestore caps a single document at 1MB. This app keeps every field
     // (settings, programs, notices, gallery, popups...) in one shared
@@ -1035,22 +1040,33 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       return;
     }
 
-    setDoc(globalDocRef, firestoreUpdate, { merge: true })
-      .then(() => {
-        addDebugLog('success', `[⚡ Firestore 클라우드 즉시 저장 완료] ${actionName}`);
-        setSyncTimestamp(Date.now());
-        setSyncStatus('success');
-        setSyncError(null);
-      })
-      .catch((err) => {
-        handleFirestoreError(err, OperationType.WRITE, 'foundation/global');
-        // Surface the failure instead of only logging it — a silent catch here
-        // is exactly what made past writes (e.g. notices with attachments that
-        // pushed the shared foundation/global document past Firestore's 1MB
-        // limit) disappear without any visible error for the admin.
-        setSyncStatus('error');
-        setSyncError(`${actionName} 저장에 실패했습니다. (${err instanceof Error ? err.message : String(err)})`);
-      });
+    try {
+      setDoc(globalDocRef, firestoreUpdate, { merge: true })
+        .then(() => {
+          addDebugLog('success', `[⚡ Firestore 클라우드 즉시 저장 완료] ${actionName}`);
+          setSyncTimestamp(Date.now());
+          setSyncStatus('success');
+          setSyncError(null);
+        })
+        .catch((err) => {
+          handleFirestoreError(err, OperationType.WRITE, 'foundation/global');
+          // Surface the failure instead of only logging it — a silent catch here
+          // is exactly what made past writes (e.g. notices with attachments that
+          // pushed the shared foundation/global document past Firestore's 1MB
+          // limit) disappear without any visible error for the admin.
+          setSyncStatus('error');
+          setSyncError(`${actionName} 저장에 실패했습니다. (${err instanceof Error ? err.message : String(err)})`);
+        });
+    } catch (err) {
+      // setDoc() can throw SYNCHRONOUSLY (e.g. invalid field values), in
+      // which case the .then()/.catch() chain above never even attaches.
+      // Without this try/catch that failure would be completely invisible:
+      // local state already looks saved, but Firestore never receives the
+      // write, and the change quietly reverts on the next refresh.
+      handleFirestoreError(err, OperationType.WRITE, 'foundation/global');
+      setSyncStatus('error');
+      setSyncError(`${actionName} 저장에 실패했습니다. (${err instanceof Error ? err.message : String(err)})`);
+    }
 
     // 2. Also send to Express /api/ endpoint if available
     fetch(endpoint, {
