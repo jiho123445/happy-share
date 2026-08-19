@@ -309,11 +309,85 @@ export const AdminModal: React.FC = () => {
   };
 
   // Notice Handlers
+  //
+  // ⚠️ IMPORTANT: Notice attachments must NEVER be embedded as base64 data URLs.
+  // They are uploaded as real files to Firebase Cloud Storage (path: notices/...)
+  // and only the small download URL string is stored on the NoticeItem.
+  // Firestore documents are capped at 1MB, and this app keeps all foundation
+  // data in a single 'foundation/global' document — a single base64-embedded
+  // PDF/HWP/image attachment can push that document over the limit, which makes
+  // setDoc() fail silently (see firestoreService.ts -> handleFirestoreError,
+  // which only console.warns). The symptom looks exactly like "공지가 저장되지
+  // 않음": the notice appears locally, then reverts/disappears once Firestore's
+  // realtime listener re-syncs the (unchanged) old document.
+  const uploadNoticeFileToFirebase = async (file: File): Promise<string> => {
+    const safeBaseName = file.name
+      .replace(/\.[^/.]+$/, '')
+      .replace(/[^a-zA-Z0-9가-힣_-]/g, '_')
+      .slice(0, 60) || 'file';
+    const ext = file.name.includes('.') ? file.name.split('.').pop() : 'bin';
+    const uniqueName = `${Date.now()}_${crypto.randomUUID()}_${safeBaseName}.${ext}`;
+
+    if (file.type.startsWith('image/')) {
+      // Compress via canvas first (max 1200px, JPEG q0.85), then upload the
+      // resulting Blob directly to Storage — never toDataURL() into Firestore.
+      const compressedBlob = await new Promise<Blob>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const rawDataUrl = e.target?.result as string;
+          if (!rawDataUrl) return reject(new Error('파일을 읽을 수 없습니다.'));
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            const MAX_SIZE = 1200;
+            if (width > MAX_SIZE || height > MAX_SIZE) {
+              if (width > height) {
+                height = Math.round((height * MAX_SIZE) / width);
+                width = MAX_SIZE;
+              } else {
+                width = Math.round((width * MAX_SIZE) / height);
+                height = MAX_SIZE;
+              }
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return reject(new Error('이미지 처리에 실패했습니다.'));
+            ctx.drawImage(img, 0, 0, width, height);
+            canvas.toBlob((blob) => {
+              if (blob) resolve(blob); else reject(new Error('이미지 압축에 실패했습니다.'));
+            }, 'image/jpeg', 0.85);
+          };
+          img.onerror = () => reject(new Error('이미지를 불러올 수 없습니다.'));
+          img.src = rawDataUrl;
+        };
+        reader.onerror = () => reject(new Error('파일을 읽을 수 없습니다.'));
+        reader.readAsDataURL(file);
+      });
+
+      const storageRef = ref(storage, `notices/${uniqueName}.jpg`);
+      const snapshot = await uploadBytes(storageRef, compressedBlob, {
+        contentType: 'image/jpeg',
+        cacheControl: 'public,max-age=31536000,immutable'
+      });
+      return getDownloadURL(snapshot.ref);
+    }
+
+    // Non-image attachments (PDF, HWP, DOCX 등): upload the raw file as-is.
+    const storageRef = ref(storage, `notices/${uniqueName}`);
+    const snapshot = await uploadBytes(storageRef, file, {
+      contentType: file.type || 'application/octet-stream'
+    });
+    return getDownloadURL(snapshot.ref);
+  };
+
   const handleNoticeFileUpload = (files: FileList | null, isEdit = false) => {
     if (!files || files.length === 0) return;
 
     Array.from(files).forEach((file) => {
-      const addAttachment = (dataUrl: string) => {
+      const addAttachment = (downloadUrl: string) => {
         const formattedSize = file.size > 1024 * 1024
           ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
           : Math.round(file.size / 1024) + ' KB';
@@ -321,7 +395,7 @@ export const AdminModal: React.FC = () => {
         const fileExt = file.name.split('.').pop()?.toUpperCase() || 'FILE';
         const attachmentObj: NoticeAttachment = {
           name: file.name,
-          url: dataUrl,
+          url: downloadUrl,
           size: formattedSize,
           type: fileExt
         };
@@ -341,16 +415,12 @@ export const AdminModal: React.FC = () => {
         }
       };
 
-      if (file.type.startsWith('image/')) {
-        processImageFile(file, (dataUrl) => addAttachment(dataUrl));
-      } else {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const dataUrl = e.target?.result as string;
-          if (dataUrl) addAttachment(dataUrl);
-        };
-        reader.readAsDataURL(file);
-      }
+      uploadNoticeFileToFirebase(file)
+        .then(addAttachment)
+        .catch((err) => {
+          console.error('공지 첨부파일 업로드 실패', err);
+          alert(`"${file.name}" 파일 업로드에 실패했습니다. 잠시 후 다시 시도해주세요.`);
+        });
     });
   };
 

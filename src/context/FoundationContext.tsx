@@ -970,9 +970,17 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       .then(() => {
         addDebugLog('success', `[⚡ Firestore 클라우드 즉시 저장 완료] ${actionName}`);
         setSyncTimestamp(Date.now());
+        setSyncStatus('success');
+        setSyncError(null);
       })
       .catch((err) => {
         handleFirestoreError(err, OperationType.WRITE, 'foundation/global');
+        // Surface the failure instead of only logging it — a silent catch here
+        // is exactly what made past writes (e.g. notices with attachments that
+        // pushed the shared foundation/global document past Firestore's 1MB
+        // limit) disappear without any visible error for the admin.
+        setSyncStatus('error');
+        setSyncError(`${actionName} 저장에 실패했습니다. (${err instanceof Error ? err.message : String(err)})`);
       });
 
     // 2. Also send to Express /api/ endpoint if available
