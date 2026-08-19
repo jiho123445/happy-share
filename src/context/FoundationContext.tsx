@@ -209,6 +209,41 @@ const parseHash = (hashStr: string) => {
   return res;
 };
 
+// ── Notice view-count de-duplication ────────────────────────────────────
+// Prevents a single visitor from inflating a notice's view count every time
+// they reopen it (refresh, prev/next navigation, revisiting the list).
+// Tracked per-browser via localStorage with a 24h cooldown per notice id.
+const VIEWED_NOTICES_STORAGE_KEY = 'nerve_nae_viewed_notices';
+const VIEW_DEDUP_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+const hasRecentlyViewedNotice = (id: string): boolean => {
+  try {
+    const raw = localStorage.getItem(VIEWED_NOTICES_STORAGE_KEY);
+    if (!raw) return false;
+    const map: Record<string, number> = JSON.parse(raw);
+    const viewedAt = map[id];
+    return typeof viewedAt === 'number' && (Date.now() - viewedAt) < VIEW_DEDUP_WINDOW_MS;
+  } catch (e) {
+    return false;
+  }
+};
+
+const markNoticeAsViewed = (id: string) => {
+  try {
+    const raw = localStorage.getItem(VIEWED_NOTICES_STORAGE_KEY);
+    const map: Record<string, number> = raw ? JSON.parse(raw) : {};
+    map[id] = Date.now();
+    // Prune stale entries so this key doesn't grow forever.
+    const cutoff = Date.now() - VIEW_DEDUP_WINDOW_MS;
+    Object.keys(map).forEach((key) => {
+      if (map[key] < cutoff) delete map[key];
+    });
+    localStorage.setItem(VIEWED_NOTICES_STORAGE_KEY, JSON.stringify(map));
+  } catch (e) {
+    // localStorage unavailable (private browsing, quota, etc.) — dedup just won't persist.
+  }
+};
+
 export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<FoundationSettings>(() => {
     const saved = localStorage.getItem('nerve_nae_settings');
@@ -335,6 +370,16 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
     return INITIAL_NOTICES;
   });
+  // Always-fresh mirror of `notices`, kept in sync on every commit.
+  // CRUD handlers below read from this ref (not the `notices` closure
+  // variable) so they never build `next` from a stale pre-render value —
+  // without ever calling side effects (Firestore writes, setState) from
+  // inside a setState updater, which is unsafe and can crash the app under
+  // React 18 StrictMode's double-invoke behavior.
+  const noticesRef = useRef<NoticeItem[]>(notices);
+  useEffect(() => {
+    noticesRef.current = notices;
+  }, [notices]);
 
   const [gallery, setGallery] = useState<GalleryItem[]>(() => {
     try {
@@ -1051,15 +1096,26 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     postMutationToServer('/api/sync', { programs: next }, `사업 삭제 (ID: ${id})`);
   };
 
+  // Applies a new notices array to both React state and the ref in one
+  // synchronous step, so any CRUD call made immediately afterward always
+  // sees the freshest array — no dependency on waiting for a re-render.
+  const applyNotices = (next: NoticeItem[]) => {
+    noticesRef.current = next;
+    setNotices(next);
+  };
+
   // Notice CRUD
   //
-  // NOTE: these use the functional setState form (`setNotices(prev => ...)`)
-  // instead of the `notices` variable captured in this render's closure.
-  // Building `next` from a stale closure is what caused "add the 2nd notice
-  // right after the 1st and it silently vanishes": if the second call read
-  // `notices` before React had committed the first notice into state, `next`
-  // would be built from the array WITHOUT notice #1, and the resulting
-  // Firestore write would overwrite the first notice as if it never existed.
+  // IMPORTANT: `next` is computed from `noticesRef.current` (always up to
+  // date) rather than the `notices` closure variable, and `postMutationToServer`
+  // (a real side effect — Firestore write + network fetch) is called as a
+  // normal statement here, NOT from inside a setState updater callback.
+  // A previous version called it inside `setNotices(prev => { ...; return next })`,
+  // which is unsafe: React may invoke updater functions more than once
+  // (guaranteed in dev under StrictMode) without ever committing the result,
+  // so a side effect placed there can fire redundantly or interleave with
+  // React's render phase and crash the app to a blank screen — exactly the
+  // "공지를 올리면 진행이 안 되고 빈 문서만 나온다" symptom.
   const addNotice = (item: Omit<NoticeItem, 'id' | 'views' | 'date'> & { date?: string }) => {
     const newNotice: NoticeItem = {
       ...item,
@@ -1067,27 +1123,21 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       date: item.date || new Date().toISOString().split('T')[0],
       views: 1
     };
-    setNotices(prev => {
-      const next = [newNotice, ...prev];
-      postMutationToServer('/api/sync', { notices: next }, `공지 추가: ${newNotice.title}`);
-      return next;
-    });
+    const next = [newNotice, ...noticesRef.current];
+    applyNotices(next);
+    postMutationToServer('/api/sync', { notices: next }, `공지 추가: ${newNotice.title}`);
   };
 
   const updateNotice = (id: string, updated: Partial<NoticeItem>) => {
-    setNotices(prev => {
-      const next = prev.map(n => n.id === id ? { ...n, ...updated } : n);
-      postMutationToServer('/api/sync', { notices: next }, `공지 수정 (ID: ${id})`);
-      return next;
-    });
+    const next = noticesRef.current.map(n => n.id === id ? { ...n, ...updated } : n);
+    applyNotices(next);
+    postMutationToServer('/api/sync', { notices: next }, `공지 수정 (ID: ${id})`);
   };
 
   const deleteNotice = (id: string) => {
-    setNotices(prev => {
-      const next = prev.filter(n => n.id !== id);
-      postMutationToServer('/api/sync', { notices: next }, `공지 삭제 (ID: ${id})`);
-      return next;
-    });
+    const next = noticesRef.current.filter(n => n.id !== id);
+    applyNotices(next);
+    postMutationToServer('/api/sync', { notices: next }, `공지 삭제 (ID: ${id})`);
   };
 
   // Gallery CRUD
@@ -1623,7 +1673,15 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const incrementNoticeViews = (id: string) => {
-    setNotices(prev => prev.map(n => n.id === id ? { ...n, views: n.views + 1 } : n));
+    // Same visitor reopening the same notice within 24h no longer re-counts.
+    if (hasRecentlyViewedNotice(id)) return;
+    markNoticeAsViewed(id);
+
+    const next = noticesRef.current.map(n => n.id === id ? { ...n, views: n.views + 1 } : n);
+    applyNotices(next);
+    // Persist the increment to Firestore so the count is shared across
+    // devices/visitors instead of only living in this browser's state.
+    postMutationToServer('/api/sync', { notices: next }, `공지 조회수 증가 (ID: ${id})`);
   };
 
   const goBackFromDetail = (fallbackTab: ActiveTab = 'news') => {
