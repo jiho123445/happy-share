@@ -183,7 +183,7 @@ export const Header: React.FC = () => {
               <button
                 onClick={() => handleNavClick('news')}
                 className={`flex items-center gap-1 px-2.5 xl:px-3 py-2 rounded-xl transition-all ${
-                  activeTab === 'news' || activeTab === 'gallery' ? 'text-orange-700 bg-orange-100/90 font-black' : 'hover:text-orange-700 hover:bg-amber-100/60'
+                  activeTab === 'news' || activeTab === 'gallery' || activeTab === 'press' ? 'text-orange-700 bg-orange-100/90 font-black' : 'hover:text-orange-700 hover:bg-amber-100/60'
                 }`}
               >
                 <span>활동소식</span>
@@ -196,6 +196,9 @@ export const Header: React.FC = () => {
                   </button>
                   <button onClick={() => handleNavClick('gallery')} className="w-full text-left px-5 py-3 text-base sm:text-lg font-extrabold text-slate-800 hover:bg-orange-50 hover:text-orange-600 flex items-center gap-2.5 transition-colors">
                     <ImageIcon className="w-5 h-5 text-emerald-500 shrink-0" /> 활동 갤러리
+                  </button>
+                  <button onClick={() => handleNavClick('press')} className="w-full text-left px-5 py-3 text-base sm:text-lg font-extrabold text-slate-800 hover:bg-orange-50 hover:text-orange-600 flex items-center gap-2.5 transition-colors">
+                    <ExternalLink className="w-5 h-5 text-sky-500 shrink-0" /> 보도자료
                   </button>
                 </div>
               )}
@@ -357,6 +360,16 @@ export const Header: React.FC = () => {
             >
               <span>활동 갤러리</span>
               <ImageIcon className="w-5 h-5 text-emerald-500" />
+            </button>
+
+            <button
+              onClick={() => handleNavClick('press')}
+              className={`w-full text-left py-2.5 px-3 rounded-lg text-lg font-extrabold flex items-center justify-between ${
+                activeTab === 'press' ? 'bg-orange-50 text-orange-600' : 'text-slate-800 hover:bg-slate-50'
+              }`}
+            >
+              <span>보도자료</span>
+              <ExternalLink className="w-5 h-5 text-sky-500" />
             </button>
 
             <button

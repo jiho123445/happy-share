@@ -156,6 +156,7 @@ export type ActiveTab =
   | 'programs'
   | 'news'
   | 'gallery'
+  | 'press'
   | 'donate'
   | 'family-center'
   | 'contact'
@@ -165,3 +166,13 @@ export type ActiveTab =
   | 'family-center-detail';
 
 export type AboutSubTab = 'greeting' | 'purpose' | 'history' | 'organization';
+
+export interface PressCoverageItem {
+  id: string;
+  title: string;
+  outlet: string; // 언론사명 (e.g. '강원일보', '신아일보')
+  date: string; // YYYY-MM-DD
+  summary: string;
+  url: string; // 원문 기사 링크 (외부 사이트)
+}
+

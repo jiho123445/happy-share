@@ -203,6 +203,7 @@ export const Footer: React.FC = () => {
                       <button onClick={() => handleSitemapNav('family-center')} className="block hover:underline">• 홍천군가족센터</button>
                       <button onClick={() => handleSitemapNav('news')} className="block hover:underline">• 알림마당 / 공지사항</button>
                       <button onClick={() => handleSitemapNav('gallery')} className="block hover:underline">• 현장 활동 갤러리</button>
+                      <button onClick={() => handleSitemapNav('press')} className="block hover:underline">• 보도자료</button>
                     </div>
                   </div>
 

@@ -182,6 +182,7 @@ const parseHash = (hashStr: string) => {
     'programs',
     'news',
     'gallery',
+    'press',
     'family-center',
     'donate',
     'contact',

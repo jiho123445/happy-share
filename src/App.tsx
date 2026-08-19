@@ -9,6 +9,7 @@ import { TimelineSection } from './components/TimelineSection';
 import { ProgramsSection } from './components/ProgramsSection';
 import { AIFeatureShowcase } from './components/AIFeatureShowcase';
 import { GallerySection } from './components/GallerySection';
+import { PressSection } from './components/PressSection';
 import { NoticeSection } from './components/NoticeSection';
 import { FamilyCenterSection } from './components/FamilyCenterSection';
 import { DonateSection } from './components/DonateSection';
@@ -60,6 +61,12 @@ const MainContent: React.FC = () => {
       {activeTab === 'gallery' && (
         <div className="pt-4">
           <GallerySection />
+        </div>
+      )}
+
+      {activeTab === 'press' && (
+        <div className="pt-4">
+          <PressSection />
         </div>
       )}
 
