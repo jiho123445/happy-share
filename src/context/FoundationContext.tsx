@@ -15,7 +15,8 @@ import {
   ActiveTab,
   AboutSubTab,
   PopupItem,
-  DebugLog
+  DebugLog,
+  PressCoverageItem
 } from '../types';
 import {
   INITIAL_SETTINGS,
@@ -27,6 +28,7 @@ import {
   INITIAL_POPUPS,
   INITIAL_GALLERY_CATEGORIES
 } from '../data/initialData';
+import { INITIAL_PRESS_COVERAGE } from '../data/pressCoverage';
 import { formatImageUrl } from '../utils/imageUrl';
 import { sanitizeForFirestore } from '../utils/sanitizeForFirestore';
 
@@ -36,6 +38,7 @@ interface FoundationContextType {
   programs: ProgramItem[];
   notices: NoticeItem[];
   gallery: GalleryItem[];
+  pressItems: PressCoverageItem[];
   galleryCategories: string[];
   donations: DonationApplication[];
   inquiries: ContactInquiry[];
@@ -91,6 +94,11 @@ interface FoundationContextType {
   addNotice: (notice: Omit<NoticeItem, 'id' | 'views' | 'date'> & { date?: string }) => void;
   updateNotice: (id: string, notice: Partial<NoticeItem>) => void;
   deleteNotice: (id: string) => void;
+
+  // Press Coverage CRUD (보도자료)
+  addPress: (item: Omit<PressCoverageItem, 'id'>) => void;
+  updatePress: (id: string, item: Partial<PressCoverageItem>) => void;
+  deletePress: (id: string) => void;
 
   // Gallery CRUD
   addGallery: (item: Omit<GalleryItem, 'id' | 'date'> & { date?: string; author?: string; isProtected?: boolean }) => void;
@@ -382,6 +390,23 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   useEffect(() => {
     noticesRef.current = notices;
   }, [notices]);
+
+  const [pressItems, setPressItems] = useState<PressCoverageItem[]>(() => {
+    const saved = localStorage.getItem('nerve_nae_press');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse saved press coverage', e);
+      }
+    }
+    return INITIAL_PRESS_COVERAGE;
+  });
+  // Same always-fresh-ref pattern as `noticesRef` — see the comment above.
+  const pressItemsRef = useRef<PressCoverageItem[]>(pressItems);
+  useEffect(() => {
+    pressItemsRef.current = pressItems;
+  }, [pressItems]);
 
   const [gallery, setGallery] = useState<GalleryItem[]>(() => {
     try {
@@ -713,6 +738,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             }
             if (Array.isArray(d.programs) && d.programs.length > 0) setPrograms([...d.programs]);
             if (Array.isArray(d.notices) && d.notices.length > 0) setNotices([...d.notices]);
+            if (Array.isArray(d.pressItems) && d.pressItems.length > 0) setPressItems([...d.pressItems]);
             // Firestore is the authoritative source for gallery data.
             // An empty gallery is also meaningful and must clear stale local cache.
             if (Array.isArray(d.gallery)) {
@@ -762,6 +788,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             settings,
             programs,
             notices,
+            pressItems,
             gallery,
             popups,
             donations,
@@ -802,6 +829,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         }
         if (Array.isArray(d.programs) && d.programs.length > 0) setPrograms([...d.programs]);
         if (Array.isArray(d.notices) && d.notices.length > 0) setNotices([...d.notices]);
+        if (Array.isArray(d.pressItems) && d.pressItems.length > 0) setPressItems([...d.pressItems]);
         if (Array.isArray(d.gallery) && d.gallery.length > 0) setGallery([...d.gallery]);
         if (Array.isArray(d.popups) && d.popups.length > 0) setPopups([...d.popups]);
         if (Array.isArray(d.donations)) setDonations([...d.donations]);
@@ -856,6 +884,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           }
           if (Array.isArray(d.programs) && d.programs.length > 0) setPrograms([...d.programs]);
           if (Array.isArray(d.notices) && d.notices.length > 0) setNotices([...d.notices]);
+          if (Array.isArray(d.pressItems) && d.pressItems.length > 0) setPressItems([...d.pressItems]);
           if (Array.isArray(d.gallery) && d.gallery.length > 0) {
             const normalizedGallery = d.gallery.map((g: any) => ({
               ...g,
@@ -973,6 +1002,12 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       localStorage.setItem('nerve_nae_notices', JSON.stringify(notices));
     } catch (e) {}
   }, [notices]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('nerve_nae_press', JSON.stringify(pressItems));
+    } catch (e) {}
+  }, [pressItems]);
 
   useEffect(() => {
     try {
@@ -1155,6 +1190,35 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const next = noticesRef.current.filter(n => n.id !== id);
     applyNotices(next);
     postMutationToServer('/api/sync', { notices: next }, `공지 삭제 (ID: ${id})`);
+  };
+
+  // Press Coverage CRUD (보도자료) — same ref-based, side-effect-outside-updater
+  // pattern as Notice CRUD above.
+  const applyPressItems = (next: PressCoverageItem[]) => {
+    pressItemsRef.current = next;
+    setPressItems(next);
+  };
+
+  const addPress = (item: Omit<PressCoverageItem, 'id'>) => {
+    const newItem: PressCoverageItem = {
+      ...item,
+      id: `press-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+    };
+    const next = [newItem, ...pressItemsRef.current];
+    applyPressItems(next);
+    postMutationToServer('/api/sync', { pressItems: next }, `보도자료 추가: ${newItem.title}`);
+  };
+
+  const updatePress = (id: string, updated: Partial<PressCoverageItem>) => {
+    const next = pressItemsRef.current.map(p => p.id === id ? { ...p, ...updated } : p);
+    applyPressItems(next);
+    postMutationToServer('/api/sync', { pressItems: next }, `보도자료 수정 (ID: ${id})`);
+  };
+
+  const deletePress = (id: string) => {
+    const next = pressItemsRef.current.filter(p => p.id !== id);
+    applyPressItems(next);
+    postMutationToServer('/api/sync', { pressItems: next }, `보도자료 삭제 (ID: ${id})`);
   };
 
   // Gallery CRUD
@@ -1752,6 +1816,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         programs,
         notices,
         gallery,
+        pressItems,
         donations,
         inquiries,
         hasNewDonation,
@@ -1800,6 +1865,11 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         addNotice,
         updateNotice,
         deleteNotice,
+
+        // Press Coverage CRUD
+        addPress,
+        updatePress,
+        deletePress,
 
         // Gallery CRUD
         galleryCategories,

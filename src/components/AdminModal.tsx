@@ -6,7 +6,7 @@ import { doc, setDoc, deleteField } from 'firebase/firestore';
 import { auth, db, storage } from '../lib/firebase';
 import { INITIAL_SETTINGS } from '../data/initialData';
 import { Logo } from './Logo';
-import { ProgramItem, NoticeItem, GalleryItem, NoticeAttachment, PopupItem } from '../types';
+import { ProgramItem, NoticeItem, GalleryItem, NoticeAttachment, PopupItem, PressCoverageItem } from '../types';
 import { downloadNoticeFile, exportDonationsToExcel, exportInquiriesToExcel, exportSubscribersToExcel } from '../utils/download';
 import { isAttachmentPreviewable } from '../utils/attachmentPreview';
 import { AttachmentPreviewModal } from './AttachmentPreviewModal';
@@ -49,7 +49,8 @@ import {
   Edit2,
   Check,
   Star,
-  Images
+  Images,
+  ExternalLink
 } from 'lucide-react';
 
 export interface AdminGalleryPhoto {
@@ -72,6 +73,10 @@ export const AdminModal: React.FC = () => {
     addNotice,
     updateNotice,
     deleteNotice,
+    pressItems,
+    addPress,
+    updatePress,
+    deletePress,
     gallery,
     galleryCategories,
     addGalleryCategory,
@@ -114,7 +119,7 @@ export const AdminModal: React.FC = () => {
   const [loginError, setLoginError] = useState<string | null>(null);
 
   // Tab State
-  const [activeTab, setActiveTab] = useState<'settings' | 'programs' | 'notices' | 'gallery' | 'donations' | 'inquiries' | 'subscribers' | 'popups'>('settings');
+  const [activeTab, setActiveTab] = useState<'settings' | 'programs' | 'notices' | 'press' | 'gallery' | 'donations' | 'inquiries' | 'subscribers' | 'popups'>('settings');
   const [subscriberSearch, setSubscriberSearch] = useState<string>('');
 
   // Editing States
@@ -124,6 +129,9 @@ export const AdminModal: React.FC = () => {
 
   const [editingNoticeId, setEditingNoticeId] = useState<string | null>(null);
   const [editNoticeData, setEditNoticeData] = useState<Partial<NoticeItem>>({});
+
+  const [editingPressId, setEditingPressId] = useState<string | null>(null);
+  const [editPressData, setEditPressData] = useState<Partial<PressCoverageItem>>({});
 
   const [editingGalleryId, setEditingGalleryId] = useState<string | null>(null);
   const [editGalleryData, setEditGalleryData] = useState<Partial<GalleryItem>>({});
@@ -154,6 +162,13 @@ export const AdminModal: React.FC = () => {
   const [newNoticeImportant, setNewNoticeImportant] = useState(false);
   const [newNoticeAttachments, setNewNoticeAttachments] = useState<NoticeAttachment[]>([]);
   const [previewAttachment, setPreviewAttachment] = useState<NoticeAttachment | null>(null);
+
+  // New Press Coverage Form State
+  const [newPressTitle, setNewPressTitle] = useState('');
+  const [newPressOutlet, setNewPressOutlet] = useState('');
+  const [newPressDate, setNewPressDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
+  const [newPressSummary, setNewPressSummary] = useState('');
+  const [newPressUrl, setNewPressUrl] = useState('');
 
   // New Gallery Form State (Multi-Photo Support)
   const [newGalTitle, setNewGalTitle] = useState('');
@@ -459,6 +474,31 @@ export const AdminModal: React.FC = () => {
     setEditingNoticeId(null);
     setEditNoticeData({});
     showToast('공지사항 내용이 수정되었습니다.');
+  };
+
+  const handleCreatePress = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPressTitle || !newPressOutlet || !newPressUrl) return;
+    addPress({
+      title: newPressTitle,
+      outlet: newPressOutlet,
+      date: newPressDate || new Date().toISOString().split('T')[0],
+      summary: newPressSummary,
+      url: newPressUrl
+    });
+    setNewPressTitle('');
+    setNewPressOutlet('');
+    setNewPressSummary('');
+    setNewPressUrl('');
+    setNewPressDate(new Date().toISOString().split('T')[0]);
+    showToast('새로운 보도자료가 등록되었습니다.');
+  };
+
+  const handleSavePressEdit = (id: string) => {
+    updatePress(id, editPressData);
+    setEditingPressId(null);
+    setEditPressData({});
+    showToast('보도자료 내용이 수정되었습니다.');
   };
 
   // Gallery File Upload Handlers (with HTML5 Canvas compression + server static upload)
@@ -1172,6 +1212,15 @@ export const AdminModal: React.FC = () => {
                 }`}
               >
                 <Newspaper className="w-3.5 h-3.5" /> 공지사항 관리 ({notices.length})
+              </button>
+
+              <button
+                onClick={() => setActiveTab('press')}
+                className={`px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-colors shrink-0 ${
+                  activeTab === 'press' ? 'bg-white text-orange-600 shadow-2xs' : 'hover:bg-slate-200'
+                }`}
+              >
+                <ExternalLink className="w-3.5 h-3.5 text-sky-600" /> 보도자료 관리 ({pressItems.length})
               </button>
 
               <button
@@ -2223,6 +2272,217 @@ export const AdminModal: React.FC = () => {
                         )}
                       </div>
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Press Coverage Tab (보도자료 등록/수정/삭제) */}
+              {activeTab === 'press' && (
+                <div className="space-y-6">
+                  <div className="bg-sky-50 p-4 rounded-2xl border border-sky-200 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ExternalLink className="w-5 h-5 text-sky-600" />
+                      <span className="font-bold text-sky-800 text-sm">
+                        재단 관련 언론 보도를 등록/수정/삭제합니다. 각 항목은 원문 기사 링크로 연결됩니다.
+                      </span>
+                    </div>
+                  </div>
+
+                  <form onSubmit={handleCreatePress} className="bg-white p-5 rounded-2xl border border-slate-200 space-y-4">
+                    <h3 className="font-black text-slate-800 flex items-center gap-1.5">
+                      <Plus className="w-4 h-4 text-orange-500" /> 새 보도자료 등록
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="sm:col-span-2">
+                        <label className="text-xs font-bold text-slate-500 block mb-1">기사 제목</label>
+                        <input
+                          type="text"
+                          value={newPressTitle}
+                          onChange={(e) => setNewPressTitle(e.target.value)}
+                          placeholder="예: 너브내행복나눔재단, 꿈나무 장학금 전달"
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-orange-400 focus:border-orange-400 outline-none"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-500 block mb-1">언론사</label>
+                        <input
+                          type="text"
+                          value={newPressOutlet}
+                          onChange={(e) => setNewPressOutlet(e.target.value)}
+                          placeholder="예: 강원일보"
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-orange-400 focus:border-orange-400 outline-none"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-500 block mb-1">보도일</label>
+                        <input
+                          type="date"
+                          value={newPressDate}
+                          onChange={(e) => setNewPressDate(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-orange-400 focus:border-orange-400 outline-none"
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="text-xs font-bold text-slate-500 block mb-1">기사 요약 (1~2문장)</label>
+                        <textarea
+                          value={newPressSummary}
+                          onChange={(e) => setNewPressSummary(e.target.value)}
+                          rows={2}
+                          placeholder="기사 내용을 간단히 요약해주세요."
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-orange-400 focus:border-orange-400 outline-none resize-none"
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="text-xs font-bold text-slate-500 block mb-1">원문 기사 링크 (URL)</label>
+                        <input
+                          type="url"
+                          value={newPressUrl}
+                          onChange={(e) => setNewPressUrl(e.target.value)}
+                          placeholder="https://..."
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-orange-400 focus:border-orange-400 outline-none"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <button
+                      type="submit"
+                      className="w-full bg-orange-600 hover:bg-orange-700 active:scale-95 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all"
+                    >
+                      <Plus className="w-4 h-4" /> 보도자료 등록
+                    </button>
+                  </form>
+
+                  <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                    <div className="px-5 py-3 border-b border-slate-100 bg-slate-50 font-black text-slate-700 text-sm">
+                      등록된 보도자료 ({pressItems.length})
+                    </div>
+                    <div className="divide-y divide-slate-100">
+                      {[...pressItems].sort((a, b) => (a.date < b.date ? 1 : -1)).map((p) => (
+                        <div key={p.id} className="p-4">
+                          {editingPressId === p.id ? (
+                            <div className="space-y-2">
+                              <input
+                                type="text"
+                                value={editPressData.title ?? p.title}
+                                onChange={(e) => setEditPressData({ ...editPressData, title: e.target.value })}
+                                className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-bold"
+                                placeholder="기사 제목"
+                              />
+                              <div className="grid grid-cols-2 gap-2">
+                                <input
+                                  type="text"
+                                  value={editPressData.outlet ?? p.outlet}
+                                  onChange={(e) => setEditPressData({ ...editPressData, outlet: e.target.value })}
+                                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
+                                  placeholder="언론사"
+                                />
+                                <input
+                                  type="date"
+                                  value={editPressData.date ?? p.date}
+                                  onChange={(e) => setEditPressData({ ...editPressData, date: e.target.value })}
+                                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
+                                />
+                              </div>
+                              <textarea
+                                value={editPressData.summary ?? p.summary}
+                                onChange={(e) => setEditPressData({ ...editPressData, summary: e.target.value })}
+                                rows={2}
+                                className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm resize-none"
+                                placeholder="요약"
+                              />
+                              <input
+                                type="url"
+                                value={editPressData.url ?? p.url}
+                                onChange={(e) => setEditPressData({ ...editPressData, url: e.target.value })}
+                                className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
+                                placeholder="원문 링크"
+                              />
+                              <div className="flex items-center gap-2 pt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => handleSavePressEdit(p.id)}
+                                  className="px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold rounded-lg flex items-center gap-1"
+                                >
+                                  <CheckCircle2 className="w-3.5 h-3.5" /> 저장
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => { setEditingPressId(null); setEditPressData({}); }}
+                                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-lg"
+                                >
+                                  취소
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-[11px] font-bold text-orange-700 bg-orange-100/80 px-2 py-0.5 rounded border border-orange-200">
+                                    {p.outlet}
+                                  </span>
+                                  <span className="text-[11px] text-slate-400">{p.date}</span>
+                                </div>
+                                <p className="font-bold text-slate-800 text-sm truncate">{p.title}</p>
+                                {p.summary && (
+                                  <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{p.summary}</p>
+                                )}
+                                <a
+                                  href={p.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-[11px] text-sky-600 hover:underline mt-1"
+                                >
+                                  <ExternalLink className="w-3 h-3" /> 원문 보기
+                                </a>
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => { setEditingPressId(p.id); setEditPressData({}); }}
+                                  className="p-1.5 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded"
+                                  title="수정"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+                                {deleteConfirmId === p.id ? (
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => { deletePress(p.id); setDeleteConfirmId(null); }}
+                                      className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold rounded"
+                                    >
+                                      확인
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setDeleteConfirmId(null)}
+                                      className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold rounded"
+                                    >
+                                      취소
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => setDeleteConfirmId(p.id)}
+                                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded"
+                                    title="삭제"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {pressItems.length === 0 && (
+                        <div className="p-8 text-center text-sm text-slate-400">등록된 보도자료가 없습니다.</div>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}

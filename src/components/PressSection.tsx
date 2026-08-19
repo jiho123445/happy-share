@@ -1,9 +1,10 @@
 import React from 'react';
-import { INITIAL_PRESS_COVERAGE } from '../data/pressCoverage';
+import { useFoundation } from '../context/FoundationContext';
 import { Newspaper, Calendar, ExternalLink } from 'lucide-react';
 
 export const PressSection: React.FC = () => {
-  const items = [...INITIAL_PRESS_COVERAGE].sort((a, b) => (a.date < b.date ? 1 : -1));
+  const { pressItems } = useFoundation();
+  const items = [...pressItems].sort((a, b) => (a.date < b.date ? 1 : -1));
 
   return (
     <section id="press-section" className="py-16 md:py-24 bg-[#FFFDF8] relative">
