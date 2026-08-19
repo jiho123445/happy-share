@@ -1,6 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useFoundation } from '../context/FoundationContext';
 import { downloadNoticeFile } from '../utils/download';
+import { isAttachmentPreviewable } from '../utils/attachmentPreview';
+import { AttachmentPreviewModal } from './AttachmentPreviewModal';
+import { NoticeAttachment } from '../types';
 import {
   Calendar,
   Eye,
@@ -30,6 +33,8 @@ export const NoticeDetailPage: React.FC = () => {
     previousTab,
     viewNoticeDetail
   } = useFoundation();
+
+  const [previewFile, setPreviewFile] = useState<NoticeAttachment | null>(null);
 
   useEffect(() => {
     if (!selectedNotice) {
@@ -162,7 +167,7 @@ export const NoticeDetailPage: React.FC = () => {
                     <span>첨부파일 목록 ({attachmentsList.length}개)</span>
                   </div>
                   <span className="text-[11px] font-bold text-orange-700 bg-orange-100/90 px-2.5 py-0.5 rounded-full border border-orange-200">
-                    클릭 시 바로 다운로드
+                    미리보기 · 다운로드 가능
                   </span>
                 </div>
 
@@ -186,19 +191,34 @@ export const NoticeDetailPage: React.FC = () => {
                         </div>
                       </div>
 
-                      <button
-                        onClick={() => downloadNoticeFile(file)}
-                        className="inline-flex items-center gap-1.5 bg-orange-600 hover:bg-orange-700 active:scale-95 text-white font-bold text-xs px-3 py-2 rounded-xl shadow-xs transition-all shrink-0"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        <span>다운로드</span>
-                      </button>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {isAttachmentPreviewable(file) && (
+                          <button
+                            onClick={() => setPreviewFile(file)}
+                            className="inline-flex items-center gap-1.5 bg-white border border-orange-300 hover:bg-orange-50 text-orange-700 font-bold text-xs px-3 py-2 rounded-xl transition-all"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>미리보기</span>
+                          </button>
+                        )}
+                        <button
+                          onClick={() => downloadNoticeFile(file)}
+                          className="inline-flex items-center gap-1.5 bg-orange-600 hover:bg-orange-700 active:scale-95 text-white font-bold text-xs px-3 py-2 rounded-xl shadow-xs transition-all"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>다운로드</span>
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
             );
           })()}
+
+          {previewFile && (
+            <AttachmentPreviewModal file={previewFile} onClose={() => setPreviewFile(null)} />
+          )}
 
           {/* Article Body Content */}
           <div className="text-slate-800 text-sm sm:text-base leading-relaxed space-y-4 whitespace-pre-line min-h-[160px] py-2">

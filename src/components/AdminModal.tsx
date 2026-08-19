@@ -8,6 +8,8 @@ import { INITIAL_SETTINGS } from '../data/initialData';
 import { Logo } from './Logo';
 import { ProgramItem, NoticeItem, GalleryItem, NoticeAttachment, PopupItem } from '../types';
 import { downloadNoticeFile, exportDonationsToExcel, exportInquiriesToExcel, exportSubscribersToExcel } from '../utils/download';
+import { isAttachmentPreviewable } from '../utils/attachmentPreview';
+import { AttachmentPreviewModal } from './AttachmentPreviewModal';
 import {
   X,
   Settings,
@@ -151,6 +153,7 @@ export const AdminModal: React.FC = () => {
   const [newNoticeContent, setNewNoticeContent] = useState('');
   const [newNoticeImportant, setNewNoticeImportant] = useState(false);
   const [newNoticeAttachments, setNewNoticeAttachments] = useState<NoticeAttachment[]>([]);
+  const [previewAttachment, setPreviewAttachment] = useState<NoticeAttachment | null>(null);
 
   // New Gallery Form State (Multi-Photo Support)
   const [newGalTitle, setNewGalTitle] = useState('');
@@ -1987,14 +1990,26 @@ export const AdminModal: React.FC = () => {
                                 <span className="font-bold truncate">{att.name}</span>
                                 <span className="text-[10px] text-slate-500">({att.size})</span>
                               </div>
-                              <button
-                                type="button"
-                                onClick={() => setNewNoticeAttachments(prev => prev.filter((_, i) => i !== idx))}
-                                className="text-slate-400 hover:text-red-600 p-0.5 rounded transition-colors"
-                                title="첨부 삭제"
-                              >
-                                <X className="w-3.5 h-3.5" />
-                              </button>
+                              <div className="flex items-center gap-1 shrink-0">
+                                {isAttachmentPreviewable(att) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setPreviewAttachment(att)}
+                                    className="text-slate-400 hover:text-orange-600 p-0.5 rounded transition-colors"
+                                    title="미리보기"
+                                  >
+                                    <Eye className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => setNewNoticeAttachments(prev => prev.filter((_, i) => i !== idx))}
+                                  className="text-slate-400 hover:text-red-600 p-0.5 rounded transition-colors"
+                                  title="첨부 삭제"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -2079,23 +2094,35 @@ export const AdminModal: React.FC = () => {
                                         <span className="font-bold truncate">{att.name}</span>
                                         <span className="text-[10px] text-slate-500">({att.size || '첨부'})</span>
                                       </div>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          const currentAtts = editNoticeData.attachments || [];
-                                          const updatedAtts = currentAtts.filter((_, i) => i !== idx);
-                                          setEditNoticeData({
-                                            ...editNoticeData,
-                                            attachments: updatedAtts,
-                                            attachmentName: updatedAtts.length > 0 ? updatedAtts[0].name : undefined,
-                                            attachmentUrl: updatedAtts.length > 0 ? updatedAtts[0].url : undefined
-                                          });
-                                        }}
-                                        className="text-slate-400 hover:text-red-600 p-0.5"
-                                        title="삭제"
-                                      >
-                                        <X className="w-3.5 h-3.5" />
-                                      </button>
+                                      <div className="flex items-center gap-1 shrink-0">
+                                        {isAttachmentPreviewable(att) && (
+                                          <button
+                                            type="button"
+                                            onClick={() => setPreviewAttachment(att)}
+                                            className="text-slate-400 hover:text-orange-600 p-0.5"
+                                            title="미리보기"
+                                          >
+                                            <Eye className="w-3.5 h-3.5" />
+                                          </button>
+                                        )}
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const currentAtts = editNoticeData.attachments || [];
+                                            const updatedAtts = currentAtts.filter((_, i) => i !== idx);
+                                            setEditNoticeData({
+                                              ...editNoticeData,
+                                              attachments: updatedAtts,
+                                              attachmentName: updatedAtts.length > 0 ? updatedAtts[0].name : undefined,
+                                              attachmentUrl: updatedAtts.length > 0 ? updatedAtts[0].url : undefined
+                                            });
+                                          }}
+                                          className="text-slate-400 hover:text-red-600 p-0.5"
+                                          title="삭제"
+                                        >
+                                          <X className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
                                     </div>
                                   ))}
                                 </div>
@@ -3645,6 +3672,10 @@ export const AdminModal: React.FC = () => {
         )}
 
       </div>
+
+      {previewAttachment && (
+        <AttachmentPreviewModal file={previewAttachment} onClose={() => setPreviewAttachment(null)} />
+      )}
     </div>
   );
 };

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useFoundation } from '../context/FoundationContext';
 import { downloadNoticeFile } from '../utils/download';
-import { GalleryItem } from '../types';
+import { isAttachmentPreviewable } from '../utils/attachmentPreview';
+import { AttachmentPreviewModal } from './AttachmentPreviewModal';
+import { GalleryItem, NoticeAttachment } from '../types';
 import {
   X,
   Calendar,
@@ -190,6 +192,8 @@ export const ModalViewer: React.FC = () => {
     getImageUrl
   } = useFoundation();
 
+  const [previewFile, setPreviewFile] = useState<NoticeAttachment | null>(null);
+
   // If we are currently on a dedicated detail page, do not render duplicate modal popups
   if (['notice-detail', 'gallery-detail', 'program-detail'].includes(activeTab)) {
     return null;
@@ -252,18 +256,33 @@ export const ModalViewer: React.FC = () => {
                         </span>
                       )}
                     </div>
-                    <button
-                      onClick={() => downloadNoticeFile(file)}
-                      className="bg-orange-600 hover:bg-orange-700 active:scale-95 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-md transition-all shrink-0 cursor-pointer"
-                    >
-                      <Download className="w-4 h-4" />
-                      <span>다운로드</span>
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {isAttachmentPreviewable(file) && (
+                        <button
+                          onClick={() => setPreviewFile(file)}
+                          className="bg-white border border-orange-300 hover:bg-orange-50 text-orange-700 font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer"
+                        >
+                          <Eye className="w-4 h-4" />
+                          <span>미리보기</span>
+                        </button>
+                      )}
+                      <button
+                        onClick={() => downloadNoticeFile(file)}
+                        className="bg-orange-600 hover:bg-orange-700 active:scale-95 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-md transition-all cursor-pointer"
+                      >
+                        <Download className="w-4 h-4" />
+                        <span>다운로드</span>
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
             );
           })()}
+
+          {previewFile && (
+            <AttachmentPreviewModal file={previewFile} onClose={() => setPreviewFile(null)} />
+          )}
 
           <div className="pt-2 text-right">
             <button
