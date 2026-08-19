@@ -966,6 +966,30 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       updatedAt: new Date().toISOString()
     };
 
+    // Firestore caps a single document at 1MB. This app keeps every field
+    // (settings, programs, notices, gallery, popups...) in one shared
+    // 'foundation/global' document, so a write that only changes `notices`
+    // can still fail once other fields already occupy most of that budget.
+    // Fail fast with a clear Korean message instead of a silent/confusing
+    // setDoc rejection — this is what previously made a later notice/program
+    // save appear to just do nothing.
+    const approxSizeBytes = new Blob([JSON.stringify(firestoreUpdate)]).size;
+    const FIRESTORE_DOC_SOFT_LIMIT_BYTES = 900 * 1024; // 900KB safety margin under the 1MB hard cap
+    if (approxSizeBytes > FIRESTORE_DOC_SOFT_LIMIT_BYTES) {
+      const sizeKb = Math.round(approxSizeBytes / 1024);
+      handleFirestoreError(
+        new Error(`Payload too large for a single Firestore document: ~${sizeKb}KB`),
+        OperationType.WRITE,
+        'foundation/global'
+      );
+      setSyncStatus('error');
+      setSyncError(
+        `${actionName} 저장에 실패했습니다. 저장하려는 데이터 용량(약 ${sizeKb}KB)이 너무 큽니다. ` +
+        `이미지·첨부파일이 base64로 직접 포함되어 있지 않은지 확인해주세요. (Firestore 문서 1개당 최대 1MB)`
+      );
+      return;
+    }
+
     setDoc(globalDocRef, firestoreUpdate, { merge: true })
       .then(() => {
         addDebugLog('success', `[⚡ Firestore 클라우드 즉시 저장 완료] ${actionName}`);
@@ -1028,28 +1052,42 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   // Notice CRUD
+  //
+  // NOTE: these use the functional setState form (`setNotices(prev => ...)`)
+  // instead of the `notices` variable captured in this render's closure.
+  // Building `next` from a stale closure is what caused "add the 2nd notice
+  // right after the 1st and it silently vanishes": if the second call read
+  // `notices` before React had committed the first notice into state, `next`
+  // would be built from the array WITHOUT notice #1, and the resulting
+  // Firestore write would overwrite the first notice as if it never existed.
   const addNotice = (item: Omit<NoticeItem, 'id' | 'views' | 'date'> & { date?: string }) => {
     const newNotice: NoticeItem = {
       ...item,
-      id: `not-${Date.now()}`,
+      id: `not-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       date: item.date || new Date().toISOString().split('T')[0],
       views: 1
     };
-    const next = [newNotice, ...notices];
-    setNotices(next);
-    postMutationToServer('/api/sync', { notices: next }, `공지 추가: ${newNotice.title}`);
+    setNotices(prev => {
+      const next = [newNotice, ...prev];
+      postMutationToServer('/api/sync', { notices: next }, `공지 추가: ${newNotice.title}`);
+      return next;
+    });
   };
 
   const updateNotice = (id: string, updated: Partial<NoticeItem>) => {
-    const next = notices.map(n => n.id === id ? { ...n, ...updated } : n);
-    setNotices(next);
-    postMutationToServer('/api/sync', { notices: next }, `공지 수정 (ID: ${id})`);
+    setNotices(prev => {
+      const next = prev.map(n => n.id === id ? { ...n, ...updated } : n);
+      postMutationToServer('/api/sync', { notices: next }, `공지 수정 (ID: ${id})`);
+      return next;
+    });
   };
 
   const deleteNotice = (id: string) => {
-    const next = notices.filter(n => n.id !== id);
-    setNotices(next);
-    postMutationToServer('/api/sync', { notices: next }, `공지 삭제 (ID: ${id})`);
+    setNotices(prev => {
+      const next = prev.filter(n => n.id !== id);
+      postMutationToServer('/api/sync', { notices: next }, `공지 삭제 (ID: ${id})`);
+      return next;
+    });
   };
 
   // Gallery CRUD
