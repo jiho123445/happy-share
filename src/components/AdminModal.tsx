@@ -388,9 +388,16 @@ export const AdminModal: React.FC = () => {
     }
 
     // Non-image attachments (PDF, HWP, DOCX 등): upload the raw file as-is.
+    const extension = (file.name.split('.').pop() || '').toLowerCase();
+    const normalizedContentType = extension === 'hwp'
+      ? 'application/vnd.hancom.hwp'
+      : extension === 'hwpx'
+        ? 'application/vnd.hancom.hwpx'
+        : file.type || 'application/octet-stream';
+
     const storageRef = ref(storage, `notices/${uniqueName}`);
     const snapshot = await uploadBytes(storageRef, file, {
-      contentType: file.type || 'application/octet-stream'
+      contentType: normalizedContentType
     });
     return getDownloadURL(snapshot.ref);
   };

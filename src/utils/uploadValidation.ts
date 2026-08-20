@@ -15,8 +15,11 @@ const NOTICE_MIME_TYPES = new Set([
   'application/pdf',
   'application/haansofthwp',
   'application/vnd.hancom.hwp',
+  'application/x-hwp',
   'application/vnd.hancom.hwpx',
+  'application/x-hwpx',
   'application/octet-stream',
+  'application/zip',
   'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'application/vnd.ms-excel',
@@ -49,7 +52,12 @@ export function validateNoticeFile(file: File, maxBytes = MAX_NOTICE_FILE_BYTES)
   if (!NOTICE_EXTENSIONS.has(ext)) {
     throw new Error('허용되지 않는 첨부파일 형식입니다. PDF, HWP, HWPX, DOC/DOCX, XLS/XLSX, PPT/PPTX, JPG/PNG/WEBP/GIF만 사용할 수 있습니다.');
   }
-  if (!NOTICE_MIME_TYPES.has(file.type)) {
+  const isHwpFamily = ext === 'hwp' || ext === 'hwpx';
+  // Windows browsers can report HWP/HWPX as an empty/opaque MIME type.
+  // The upload layer normalizes these two extensions to a canonical MIME type
+  // before sending them to Storage, while Storage Rules still validate both
+  // the normalized MIME type and the filename extension.
+  if (!NOTICE_MIME_TYPES.has(file.type) && !isHwpFamily) {
     throw new Error('허용되지 않는 파일 형식(MIME Type)입니다. 파일 확장자와 실제 파일 형식을 확인해 주세요.');
   }
   if (file.size > maxBytes) {
