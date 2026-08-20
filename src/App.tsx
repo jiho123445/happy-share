@@ -23,6 +23,7 @@ import { FloatingQuickMenu } from './components/FloatingQuickMenu';
 import { ModalViewer } from './components/ModalViewer';
 import { PopupModal } from './components/PopupModal';
 import { SyncErrorBanner } from './components/SyncErrorBanner';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 // BUNDLE SIZE (2026 audit follow-up): AdminModal.tsx pulls in the exceljs
 // export library and a large amount of admin-only UI/logic that ordinary
@@ -117,19 +118,21 @@ const MainContent: React.FC = () => {
 
 export default function App() {
   return (
-    <FoundationProvider>
-      <div className="min-h-screen flex flex-col bg-[#FFFDF8] text-slate-800 selection:bg-orange-500 selection:text-white">
-        <Header />
-        <MainContent />
-        <NewsletterSection />
-        <Footer />
-        <FloatingQuickMenu />
-        <ModalViewer />
-        <AdminModalGate />
-        <PopupModal />
-        <SyncErrorBanner />
-      </div>
-    </FoundationProvider>
+    <ErrorBoundary>
+      <FoundationProvider>
+        <div className="min-h-screen flex flex-col bg-[#FFFDF8] text-slate-800 selection:bg-orange-500 selection:text-white">
+          <Header />
+          <MainContent />
+          <NewsletterSection />
+          <Footer />
+          <FloatingQuickMenu />
+          <ModalViewer />
+          <AdminModalGate />
+          <PopupModal />
+          <SyncErrorBanner />
+        </div>
+      </FoundationProvider>
+    </ErrorBoundary>
   );
 }
 

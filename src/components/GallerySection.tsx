@@ -153,6 +153,7 @@ const GalleryCard: React.FC<GalleryCardProps> = ({ item, onViewDetail, onAdminEd
                 <img
                   src={getImageUrl(imgUrl)}
                   alt={`썸네일 ${idx + 1}`}
+                  loading="lazy"
                   className="w-full h-full object-cover"
                 />
                 <span className="absolute bottom-0 right-0 bg-slate-900/80 text-white text-[8px] font-bold px-1 rounded-tl">

@@ -134,6 +134,7 @@ export const AboutSection: React.FC = () => {
                       <img
                         src={getImageUrl(settings.chairmanImageUrl || INITIAL_SETTINGS.chairmanImageUrl)}
                         alt={`${settings.chairmanName} 이사장`}
+                        loading="lazy"
                         className="w-full h-full object-cover object-top"
                         onError={(e) => {
                           const target = e.currentTarget;
@@ -366,7 +367,7 @@ export const AboutSection: React.FC = () => {
 
               <div className="relative pl-6 sm:pl-8 border-l-2 border-orange-200 space-y-8">
                 {timeline.map((item) => (
-                  <div key={item.id} className="relative group">
+                  <div key={item.year} className="relative group">
                     {/* Timeline Node */}
                     <div className="absolute -left-[31px] sm:-left-[39px] top-0 w-5 h-5 rounded-full bg-white border-4 border-orange-500 group-hover:scale-125 transition-transform" />
 

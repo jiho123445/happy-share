@@ -189,6 +189,7 @@ export const ProgramDetailPage: React.FC = () => {
                   <img
                     src={getImageUrl(item.imageUrl)}
                     alt={item.title}
+                    loading="lazy"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=800&q=80';
                     }}

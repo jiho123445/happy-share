@@ -103,6 +103,7 @@ export const FamilyCenterSection: React.FC = () => {
                 <img
                   src="https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=800&q=80"
                   alt="홍천군가족센터 수강 현장"
+                  loading="lazy"
                   className="w-full h-72 object-cover"
                 />
               </div>

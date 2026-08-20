@@ -258,6 +258,7 @@ export const GalleryDetailPage: React.FC = () => {
                     <img
                       src={getImageUrl(imgUrl)}
                       alt={`Thumbnail ${idx + 1}`}
+                      loading="lazy"
                       className="w-full h-full object-cover"
                     />
                     <span className="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] font-bold px-1.5 rounded">
@@ -298,6 +299,7 @@ export const GalleryDetailPage: React.FC = () => {
                     <img
                       src={getImageUrl(imgUrl)}
                       alt={`${selectedGallery.title} - ${idx + 1}`}
+                      loading="lazy"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                     <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -365,6 +367,7 @@ export const GalleryDetailPage: React.FC = () => {
                   <img
                     src={getImageUrl(item.imageUrl)}
                     alt={item.title}
+                    loading="lazy"
                     className="w-16 h-16 rounded-xl object-cover shrink-0 border border-slate-200"
                   />
                   <div className="min-w-0 flex-1 space-y-1">
@@ -476,6 +479,7 @@ export const GalleryDetailPage: React.FC = () => {
                   <img
                     src={getImageUrl(imgUrl)}
                     alt={`Thumb ${idx + 1}`}
+                    loading="lazy"
                     className="w-full h-full object-cover"
                   />
                 </button>

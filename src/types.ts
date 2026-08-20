@@ -15,6 +15,10 @@ export interface NoticeItem {
   isImportant?: boolean;
   author: string;
   attachmentName?: string;
+  /** @deprecated Legacy single-attachment URL, kept in sync alongside
+   * `attachments` for backward compatibility with older documents/readers.
+   * New code should read/write `attachments` instead. */
+  attachmentUrl?: string;
   attachments?: NoticeAttachment[];
 }
 
@@ -43,6 +47,10 @@ export interface TimelineItem {
   category?: '출범' | '수상' | '사업확대' | '법인전환';
   imageUrl?: string;
   awardBadge?: string;
+  /** Shows the "주요 도약 시점" badge in the timeline. Not currently set
+   * on any entry in initialData.ts — set to true on specific entries to
+   * use this. */
+  isMilestone?: boolean;
 }
 
 export interface ProgramItem {

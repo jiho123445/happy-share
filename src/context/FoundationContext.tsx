@@ -1720,7 +1720,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const updateSettings = (newSettings: Partial<FoundationSettings>) => {
     setSettings(prev => {
-      const { adminPassword: _legacyPassword, ...safePrev } = prev;
+      const { adminPassword: _legacyPassword, ...safePrev } = prev as any;
       const { adminPassword: _incomingPassword, ...safeNewSettings } = newSettings as any;
       const next = { ...safePrev, ...safeNewSettings } as FoundationSettings;
       try {
