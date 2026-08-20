@@ -1,40 +1,59 @@
 rules_version = '2';
 
-// ⚠️ DUPLICATE FILE — NOT USED FOR DEPLOYMENT.
-// This repo has no firebase.json wiring this file to `firebase deploy`;
-// rules are pasted manually into the Firebase Console. The actual live
-// rules should match the ones in the top-level `storage.rules`, not this
-// file. It's kept here to avoid breaking anything that might reference
-// it, but this copy previously had a WEAKER isAdmin() check (any signed-in
-// user, not just the specific admin UID) — now fixed to match. Please
-// delete this file once you've confirmed nothing imports/reads it, to
-// avoid someone accidentally deploying the wrong (weaker) version later.
 service firebase.storage {
   match /b/{bucket}/o {
     
     // 헬퍼 함수: 관리자 로그인 여부 확인
     function isAdmin() {
-      return request.auth != null
+    return request.auth != null
         && request.auth.uid == 'a1MQmdMGkgdorEl6V3FAptCAYo52';
-    }
+}
 
     // 1. 활동사진 파일 Storage 경로 ('activities/')
-    // 누구나 이미지 조회(read) 가능, 관리자만 업로드 및 삭제(write) 가능
+    // 누구나 이미지 조회 가능. 업로드/삭제는 관리자만 가능하며,
+    // 이미지 MIME type과 파일 크기를 서버 규칙에서 강제한다.
     match /activities/{allPaths=**} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create, update: if isAdmin()
+        && request.resource.size <= 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+      allow delete: if isAdmin();
     }
 
     // 2. 공지사항 첨부 파일 Storage 경로 ('notices/')
+    // 문서/이미지 첨부를 허용하되 관리자만 쓰기 가능하고,
+    // 최대 25MB 및 허용 MIME type을 서버 규칙에서 강제한다.
     match /notices/{allPaths=**} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create, update: if isAdmin()
+        && request.resource.size <= 25 * 1024 * 1024
+        && request.resource.contentType in [
+          'application/pdf',
+          'application/haansofthwp',
+          'application/vnd.hancom.hwp',
+          'application/octet-stream',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'application/vnd.ms-excel',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'application/vnd.ms-powerpoint',
+          'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+          'image/jpeg',
+          'image/png',
+          'image/webp',
+          'image/gif'
+        ];
+      allow delete: if isAdmin();
     }
 
     // 3. 재단 설정 이미지 Storage 경로 ('settings/') - 이사장 사진, 메인 배너, 팝업 이미지 등
+    // 누구나 조회 가능. 업로드/삭제는 관리자만 가능하며 이미지만 허용한다.
     match /settings/{allPaths=**} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create, update: if isAdmin()
+        && request.resource.size <= 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+      allow delete: if isAdmin();
     }
 
   }

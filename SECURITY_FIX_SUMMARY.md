@@ -80,3 +80,13 @@
 
 - `npx tsc --noEmit` — 오류 없음
 - `npm run build` — 정상 빌드 성공 (청크 분리 확인: index 132KB / firebase 178KB / AdminModal 22KB(지연 로딩) / exceljs 271KB(지연 로딩) — 전부 gzip 기준)
+
+
+## Additional hardening applied (2026-08-20)
+
+- Removed all persistent localStorage writes for `donations`, `inquiries`, and `subscribers`.
+- Added one-time cleanup of those three legacy personal-data cache keys.
+- Replaced `localStorage.clear()` during admin reset with scoped key removal so unrelated browser storage is not destroyed.
+- Strengthened Firebase Storage Rules: admin-only writes remain mandatory, with server-enforced size and MIME-type limits for `activities/`, `settings/`, and `notices/`.
+- Added baseline Vercel security headers: `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `X-Frame-Options`, and HSTS.
+- Existing Firebase Authentication, Firestore rules, public-content structure, UI, routes, and data collection paths were left unchanged.

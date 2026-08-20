@@ -256,6 +256,19 @@ const markNoticeAsViewed = (id: string) => {
 };
 
 export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // SECURITY: remove only legacy personal-data caches created by older builds.
+  // Do not call localStorage.clear() because that would also erase harmless
+  // visitor preferences such as popup/notice state and could affect UX.
+  useEffect(() => {
+    try {
+      ['nerve_nae_donations', 'nerve_nae_inquiries', 'nerve_nae_subscribers'].forEach((key) => {
+        localStorage.removeItem(key);
+      });
+    } catch (e) {
+      console.warn('Legacy personal-data cache cleanup skipped', e);
+    }
+  }, []);
+
   const [settings, setSettings] = useState<FoundationSettings>(() => {
     const saved = localStorage.getItem('nerve_nae_settings');
     if (saved) {
@@ -1027,24 +1040,6 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     } catch (e) {}
   }, [popups]);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem('nerve_nae_donations', JSON.stringify(donations));
-    } catch (e) {}
-  }, [donations]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('nerve_nae_inquiries', JSON.stringify(inquiries));
-    } catch (e) {}
-  }, [inquiries]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('nerve_nae_subscribers', JSON.stringify(subscribers));
-    } catch (e) {}
-  }, [subscribers]);
-
   // Firestore & Server dual-write mutation helper
   const postMutationToServer = useCallback((docName: string, payload: any, actionName: string) => {
     // Writes to one of the split `foundation/{docName}` documents
@@ -1756,7 +1751,24 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setNotices(INITIAL_NOTICES);
     setGallery(INITIAL_GALLERY);
     setPopups(INITIAL_POPUPS);
-    localStorage.clear();
+    try {
+      // Clear only this app's non-sensitive content caches. Never clear the
+      // entire browser storage: doing so can erase unrelated site settings.
+      [
+        'nerve_nae_settings',
+        'nerve_nae_programs',
+        'nerve_nae_notices',
+        'nerve_nae_press',
+        'nerve_nae_gallery',
+        'nerve_nae_gallery_categories',
+        'nerve_nae_popups',
+        'nerve_nae_donations',
+        'nerve_nae_inquiries',
+        'nerve_nae_subscribers'
+      ].forEach((key) => localStorage.removeItem(key));
+    } catch (e) {
+      console.warn('Scoped cache cleanup failed during reset', e);
+    }
 
     const nowIso = new Date().toISOString();
     const batch = writeBatch(db);
