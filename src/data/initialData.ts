@@ -11,7 +11,6 @@ export const INITIAL_GALLERY_CATEGORIES: string[] = [
 ];
 
 export const INITIAL_SETTINGS: FoundationSettings = {
-  adminPassword: '1026',
   name: '사단법인 너브내행복나눔재단',
   englishName: 'Nerve-Nae Happiness Sharing Foundation',
   chairmanName: '윤성일',

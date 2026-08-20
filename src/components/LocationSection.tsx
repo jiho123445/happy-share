@@ -14,23 +14,30 @@ export const LocationSection: React.FC = () => {
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inquiryData.name || !inquiryData.phone || !inquiryData.message) {
       alert('필수 입력항목(성함, 연락처, 문의내용)을 작성해 주세요.');
       return;
     }
 
-    addInquiry({
-      name: inquiryData.name,
-      phone: inquiryData.phone,
-      email: inquiryData.email,
-      subject: inquiryData.subject || '일반 사업 및 후원 문의',
-      message: inquiryData.message
-    });
-
-    setSubmitted(true);
+    setSubmitting(true);
+    try {
+      await addInquiry({
+        name: inquiryData.name,
+        phone: inquiryData.phone,
+        email: inquiryData.email,
+        subject: inquiryData.subject || '일반 사업 및 후원 문의',
+        message: inquiryData.message
+      });
+      setSubmitted(true);
+    } catch (err) {
+      alert('문의 접수 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -240,10 +247,11 @@ export const LocationSection: React.FC = () => {
 
               <button
                 type="submit"
-                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-3 rounded-xl transition-colors flex items-center justify-center gap-1.5"
+                disabled={submitting}
+                className="w-full bg-slate-900 hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-xs py-3 rounded-xl transition-colors flex items-center justify-center gap-1.5"
               >
                 <Send className="w-3.5 h-3.5" />
-                <span>문의사항 전송</span>
+                <span>{submitting ? '전송 중...' : '문의사항 전송'}</span>
               </button>
             </form>
           )}

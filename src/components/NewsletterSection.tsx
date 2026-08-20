@@ -6,16 +6,24 @@ export const NewsletterSection: React.FC = () => {
   const { addSubscriber } = useFoundation();
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !email.includes('@')) {
       alert('올바른 이메일 주소를 입력해 주세요.');
       return;
     }
-    addSubscriber(email);
-    setSubscribed(true);
-    setEmail('');
+    setSubmitting(true);
+    try {
+      await addSubscriber(email);
+      setSubscribed(true);
+      setEmail('');
+    } catch (err) {
+      alert('구독 신청 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

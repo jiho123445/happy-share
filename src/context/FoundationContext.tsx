@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
-import { doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, query, orderBy, writeBatch } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { auth, db, storage } from '../lib/firebase';
 import { testFirestoreConnection, GLOBAL_FOUNDATION_DOC, handleFirestoreError, OperationType } from '../lib/firestoreService';
@@ -46,7 +46,7 @@ interface FoundationContextType {
   popups: PopupItem[];
   hasNewDonation: boolean;
   pendingDonationsCount: number;
-  markDonationsAsRead: () => void;
+  markDonationsAsRead: () => Promise<void>;
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
   aboutSubTab: AboutSubTab;
@@ -112,19 +112,19 @@ interface FoundationContextType {
   setGalleryCategories: (categories: string[]) => Promise<void>;
 
   // Donations CRUD
-  addDonation: (donation: Omit<DonationApplication, 'id' | 'createdAt' | 'status'>) => void;
-  updateDonationStatus: (id: string, status: '접수완료' | '확인중' | '처리완료') => void;
-  deleteDonation: (id: string) => void;
+  addDonation: (donation: Omit<DonationApplication, 'id' | 'createdAt' | 'status'>) => Promise<void>;
+  updateDonationStatus: (id: string, status: '접수완료' | '확인중' | '처리완료') => Promise<void>;
+  deleteDonation: (id: string) => Promise<void>;
 
   // Inquiries CRUD
-  addInquiry: (inquiry: Omit<ContactInquiry, 'id' | 'createdAt' | 'status'>) => void;
-  updateInquiryStatus: (id: string, status: '대기중' | '답변완료') => void;
-  deleteInquiry: (id: string) => void;
+  addInquiry: (inquiry: Omit<ContactInquiry, 'id' | 'createdAt' | 'status'>) => Promise<void>;
+  updateInquiryStatus: (id: string, status: '대기중' | '답변완료') => Promise<void>;
+  deleteInquiry: (id: string) => Promise<void>;
 
   // Subscribers CRUD
-  addSubscriber: (email: string) => void;
-  updateSubscriberStatus: (id: string, status: '구독중' | '해지') => void;
-  deleteSubscriber: (id: string) => void;
+  addSubscriber: (email: string) => Promise<void>;
+  updateSubscriberStatus: (id: string, status: '구독중' | '해지') => Promise<void>;
+  deleteSubscriber: (id: string) => Promise<void>;
 
   // Popups CRUD
   addPopup: (popup: Omit<PopupItem, 'id' | 'createdAt'>) => void;
@@ -446,37 +446,38 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return INITIAL_GALLERY_CATEGORIES;
   });
 
-  const [donations, setDonations] = useState<DonationApplication[]>(() => {
-    const saved = localStorage.getItem('nerve_nae_donations');
-    return saved ? JSON.parse(saved) : INITIAL_DONATIONS;
-  });
+  // SECURITY (2026 audit): donations / inquiries / subscribers contain
+  // personal information (name, phone, email, message). They used to be
+  // embedded as arrays inside the `foundation/global` document, which is
+  // publicly readable (`allow read: if true` — required so the homepage
+  // content loads for visitors without logging in). That meant anyone
+  // could read every donor's and inquirer's personal details without any
+  // login. They now live in their own top-level Firestore collections
+  // (`donations`, `inquiries`, `subscribers`) whose rules only allow the
+  // public to *create* a new entry (submit a form) — reading, updating,
+  // and deleting requires the admin Firebase Auth account. See
+  // firestore.rules. They are also no longer cached in localStorage.
+  const [donations, setDonations] = useState<DonationApplication[]>([]);
+  const [inquiries, setInquiries] = useState<ContactInquiry[]>([]);
+  const [subscribers, setSubscribers] = useState<NewsletterSubscriber[]>([]);
 
   const pendingDonationsCount = donations.filter(d => d.status === '접수완료').length;
   const hasNewDonation = pendingDonationsCount > 0;
 
-  const markDonationsAsRead = () => {
+  const markDonationsAsRead = async () => {
+    const targets = donations.filter(d => d.status === '접수완료');
+    if (targets.length === 0) return;
     setDonations(prev => prev.map(d => d.status === '접수완료' ? { ...d, status: '확인중' } : d));
-  };
-
-  const [inquiries, setInquiries] = useState<ContactInquiry[]>(() => {
-    const saved = localStorage.getItem('nerve_nae_inquiries');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [subscribers, setSubscribers] = useState<NewsletterSubscriber[]>(() => {
-    const saved = localStorage.getItem('nerve_nae_subscribers');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return [];
-      }
+    try {
+      const batch = writeBatch(db);
+      targets.forEach(d => {
+        batch.update(doc(db, 'donations', d.id), { status: '확인중' });
+      });
+      await batch.commit();
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, 'donations');
     }
-    return [
-      { id: 'sub-1', email: 'nerve_nae_fan@naver.com', subscribedAt: '2026-08-01 10:30', status: '구독중' },
-      { id: 'sub-2', email: 'hongcheon_love@gmail.com', subscribedAt: '2026-08-05 14:15', status: '구독중' }
-    ];
-  });
+  };
 
   const [popups, setPopups] = useState<PopupItem[]>(() => {
     const saved = localStorage.getItem('nerve_nae_popups');
@@ -763,9 +764,9 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
               } catch (e) {}
             }
             if (Array.isArray(d.popups) && d.popups.length > 0) setPopups([...d.popups]);
-            if (Array.isArray(d.donations)) setDonations([...d.donations]);
-            if (Array.isArray(d.inquiries)) setInquiries([...d.inquiries]);
-            if (Array.isArray(d.subscribers)) setSubscribers([...d.subscribers]);
+            // donations / inquiries / subscribers now live in their own
+            // Firestore collections (see the isAdmin-gated listener below)
+            // and are intentionally no longer read from this public document.
 
             const now = Date.now();
             setSyncTimestamp(now);
@@ -791,9 +792,6 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             pressItems,
             gallery,
             popups,
-            donations,
-            inquiries,
-            subscribers,
             updatedAt: new Date().toISOString()
           };
           if (auth.currentUser) {
@@ -812,6 +810,42 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     return () => unsubscribe();
   }, [addDebugLog]);
+
+  // Donations / inquiries / subscribers live in their own collections and
+  // are only readable by the admin (firestore.rules). We only attach
+  // these listeners once actually signed in as admin — attempting to read
+  // them while logged out would just fail with a permission-denied error
+  // on every snapshot, which is expected (not a bug) but noisy.
+  useEffect(() => {
+    if (!isAdmin) {
+      setDonations([]);
+      setInquiries([]);
+      setSubscribers([]);
+      return;
+    }
+
+    const unsubDonations = onSnapshot(
+      query(collection(db, 'donations'), orderBy('createdAt', 'desc')),
+      (snap) => setDonations(snap.docs.map(d => ({ id: d.id, ...d.data() } as DonationApplication))),
+      (error) => handleFirestoreError(error, OperationType.GET, 'donations')
+    );
+    const unsubInquiries = onSnapshot(
+      query(collection(db, 'inquiries'), orderBy('createdAt', 'desc')),
+      (snap) => setInquiries(snap.docs.map(d => ({ id: d.id, ...d.data() } as ContactInquiry))),
+      (error) => handleFirestoreError(error, OperationType.GET, 'inquiries')
+    );
+    const unsubSubscribers = onSnapshot(
+      query(collection(db, 'subscribers'), orderBy('subscribedAt', 'desc')),
+      (snap) => setSubscribers(snap.docs.map(d => ({ id: d.id, ...d.data() } as NewsletterSubscriber))),
+      (error) => handleFirestoreError(error, OperationType.GET, 'subscribers')
+    );
+
+    return () => {
+      unsubDonations();
+      unsubInquiries();
+      unsubSubscribers();
+    };
+  }, [isAdmin]);
 
   const fetchServerData = async (isManual = false) => {
     setIsSyncing(true);
@@ -832,9 +866,8 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         if (Array.isArray(d.pressItems) && d.pressItems.length > 0) setPressItems([...d.pressItems]);
         if (Array.isArray(d.gallery) && d.gallery.length > 0) setGallery([...d.gallery]);
         if (Array.isArray(d.popups) && d.popups.length > 0) setPopups([...d.popups]);
-        if (Array.isArray(d.donations)) setDonations([...d.donations]);
-        if (Array.isArray(d.inquiries)) setInquiries([...d.inquiries]);
-        if (Array.isArray(d.subscribers)) setSubscribers([...d.subscribers]);
+        // donations / inquiries / subscribers: see the dedicated
+        // isAdmin-gated Firestore collection listener below.
 
         const now = Date.now();
         setSyncTimestamp(now);
@@ -849,92 +882,18 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         return;
       }
 
-      // 2. Fallback to API endpoint
-      const cacheBust = `?_t=${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-      const res = await fetch('/api/data' + cacheBust, {
-        method: 'GET',
-        headers: {
-          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0',
-          'Accept': 'application/json'
-        }
-      });
-
-      const contentType = res.headers.get('content-type') || '';
-      const isJson = contentType.includes('application/json');
-
-      if (res.ok && isJson) {
-        const json = await res.json();
-        isServerAvailableRef.current = true;
-
-        if (json && json.data) {
-          const d = json.data;
-          if (d.settings) {
-            const serverChairmanImg = (d.settings.chairmanImageUrl && !d.settings.chairmanImageUrl.includes('photo-1560250097-0b93528c311a'))
-              ? d.settings.chairmanImageUrl
-              : INITIAL_SETTINGS.chairmanImageUrl;
-
-            setSettings(prev => ({
-              ...prev,
-              ...d.settings,
-              heroImageUrl: d.settings.heroImageUrl || prev.heroImageUrl,
-              chairmanImageUrl: serverChairmanImg || prev.chairmanImageUrl || INITIAL_SETTINGS.chairmanImageUrl,
-            }));
-          }
-          if (Array.isArray(d.programs) && d.programs.length > 0) setPrograms([...d.programs]);
-          if (Array.isArray(d.notices) && d.notices.length > 0) setNotices([...d.notices]);
-          if (Array.isArray(d.pressItems) && d.pressItems.length > 0) setPressItems([...d.pressItems]);
-          if (Array.isArray(d.gallery) && d.gallery.length > 0) {
-            const normalizedGallery = d.gallery.map((g: any) => ({
-              ...g,
-              images: (Array.isArray(g.images) && g.images.length > 0) ? g.images : (g.imageUrl ? [g.imageUrl] : [])
-            }));
-            setGallery(normalizedGallery);
-            try {
-              localStorage.setItem('nerve_nae_gallery', JSON.stringify(normalizedGallery));
-            } catch (e) {
-              console.warn('Failed to cache gallery to localStorage', e);
-            }
-          }
-          if (Array.isArray(d.galleryCategories) && d.galleryCategories.length > 0) {
-            setGalleryCategoriesState([...d.galleryCategories]);
-            try {
-              localStorage.setItem('nerve_nae_gallery_categories', JSON.stringify(d.galleryCategories));
-            } catch (e) {}
-          } else if (Array.isArray(d.settings?.galleryCategories) && d.settings.galleryCategories.length > 0) {
-            setGalleryCategoriesState([...d.settings.galleryCategories]);
-          }
-          if (Array.isArray(d.popups) && d.popups.length > 0) setPopups([...d.popups]);
-          if (Array.isArray(d.donations)) setDonations([...d.donations]);
-          if (Array.isArray(d.inquiries)) setInquiries([...d.inquiries]);
-          if (Array.isArray(d.subscribers)) setSubscribers([...d.subscribers]);
-
-          const now = Date.now();
-          setSyncTimestamp(now);
-          lastSyncTimeRef.current = now;
-          const timeStr = new Date().toLocaleTimeString('ko-KR');
-          setLastSyncTime(timeStr);
-          setSyncStatus('success');
-          setSyncError(null);
-
-          addDebugLog(
-            'success',
-            `동기화 성공 (갤러리 ${d.gallery?.length || 0}개, 공지 ${d.notices?.length || 0}개, 사업 ${d.programs?.length || 0}개)`,
-            `소요시간: ${Date.now() - startTime}ms · ${isManual ? '수동 요청' : '자동 동기화'}`
-          );
-        } else {
-          setSyncStatus('success');
-          setSyncError(null);
-          setLastSyncTime(new Date().toLocaleTimeString('ko-KR'));
-        }
-      } else {
-        isServerAvailableRef.current = false;
-        setSyncStatus('success');
-        setSyncError(null);
-        const timeStr = new Date().toLocaleTimeString('ko-KR') + ' (보존 모드)';
-        setLastSyncTime(timeStr);
-      }
+      // Firestore is the only data source now. The old fallback to a
+      // separate unauthenticated `/api/data` endpoint was removed for
+      // security reasons (see src/serverApp.ts) — that endpoint let
+      // anyone read the site's full data, including donor/inquiry
+      // personal information, with no login required. If Firestore is
+      // unreachable we simply keep whatever was last loaded and surface
+      // the error below instead of silently falling back to it.
+      isServerAvailableRef.current = false;
+      setSyncStatus('success');
+      setSyncError(null);
+      const timeStr = new Date().toLocaleTimeString('ko-KR') + ' (보존 모드)';
+      setLastSyncTime(timeStr);
     } catch (err: any) {
       console.warn('Server sync notice:', err?.message);
       isServerAvailableRef.current = false;
@@ -1104,23 +1063,14 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       setSyncError(`${actionName} 저장에 실패했습니다. (${err instanceof Error ? err.message : String(err)})`);
     }
 
-    // 2. Also send to Express /api/ endpoint if available
-    fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      },
-      body: JSON.stringify(payload)
-    })
-      .then(res => {
-        if (res.ok) {
-          setSyncTimestamp(Date.now());
-        }
-      })
-      .catch(() => {});
+    // NOTE: This used to also POST the same payload to a legacy Express
+    // `/api/*` endpoint as a "fallback" data store. That endpoint had NO
+    // authentication on the server, so anyone who knew the URL could
+    // overwrite the site's content or read it back out — including donor
+    // and inquiry personal data. Firestore (gated by firestore.rules) is
+    // now the single source of truth; the `endpoint` parameter is kept
+    // only so call sites don't all need to change, but it is unused here.
+    void endpoint;
   }, [addDebugLog]);
 
   // Program CRUD
@@ -1601,91 +1551,114 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   };
 
-  // Donations CRUD
-  const addDonation = (item: Omit<DonationApplication, 'id' | 'createdAt' | 'status'>) => {
-    const newDonation: DonationApplication = {
+  // Donations CRUD — stored in their own Firestore collection (see
+  // firestore.rules): the public may only create a new document (submit a
+  // donation application); reading, updating, and deleting requires the
+  // admin Firebase Auth account. This keeps donor personal information out
+  // of the publicly-readable `foundation/global` document.
+  const addDonation = async (item: Omit<DonationApplication, 'id' | 'createdAt' | 'status'>) => {
+    const newDonation: Omit<DonationApplication, 'id'> = {
       ...item,
-      id: `don-${Date.now()}`,
       createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
       status: '접수완료'
     };
-    const next = [newDonation, ...donations];
-    setDonations(next);
-    postMutationToServer('/api/sync', { donations: next }, `후원 신청 접수: ${newDonation.name}`);
+    try {
+      await addDoc(collection(db, 'donations'), newDonation);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, 'donations');
+      throw err;
+    }
   };
 
-  const updateDonationStatus = (id: string, status: '접수완료' | '확인중' | '처리완료') => {
-    const next = donations.map(d => d.id === id ? { ...d, status } : d);
-    setDonations(next);
-    postMutationToServer('/api/sync', { donations: next }, `후원 상태 변경: ${status}`);
+  const updateDonationStatus = async (id: string, status: '접수완료' | '확인중' | '처리완료') => {
+    setDonations(prev => prev.map(d => d.id === id ? { ...d, status } : d));
+    try {
+      await updateDoc(doc(db, 'donations', id), { status });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `donations/${id}`);
+    }
   };
 
-  const deleteDonation = (id: string) => {
-    const next = donations.filter(d => d.id !== id);
-    setDonations(next);
-    postMutationToServer('/api/sync', { donations: next }, `후원 내역 삭제`);
+  const deleteDonation = async (id: string) => {
+    setDonations(prev => prev.filter(d => d.id !== id));
+    try {
+      await deleteDoc(doc(db, 'donations', id));
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `donations/${id}`);
+    }
   };
 
-  // Inquiries CRUD
-  const addInquiry = (item: Omit<ContactInquiry, 'id' | 'createdAt' | 'status'>) => {
-    const newInquiry: ContactInquiry = {
+  // Inquiries CRUD — same pattern as donations above.
+  const addInquiry = async (item: Omit<ContactInquiry, 'id' | 'createdAt' | 'status'>) => {
+    const newInquiry: Omit<ContactInquiry, 'id'> = {
       ...item,
-      id: `inq-${Date.now()}`,
       createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
       status: '대기중'
     };
-    const next = [newInquiry, ...inquiries];
-    setInquiries(next);
-    postMutationToServer('/api/sync', { inquiries: next }, `문의 접수: ${newInquiry.name}`);
+    try {
+      await addDoc(collection(db, 'inquiries'), newInquiry);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, 'inquiries');
+      throw err;
+    }
   };
 
-  const updateInquiryStatus = (id: string, status: '대기중' | '답변완료') => {
-    const next = inquiries.map(i => i.id === id ? { ...i, status } : i);
-    setInquiries(next);
-    postMutationToServer('/api/sync', { inquiries: next }, `문의 상태 변경: ${status}`);
+  const updateInquiryStatus = async (id: string, status: '대기중' | '답변완료') => {
+    setInquiries(prev => prev.map(i => i.id === id ? { ...i, status } : i));
+    try {
+      await updateDoc(doc(db, 'inquiries', id), { status });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `inquiries/${id}`);
+    }
   };
 
-  const deleteInquiry = (id: string) => {
-    const next = inquiries.filter(i => i.id !== id);
-    setInquiries(next);
-    postMutationToServer('/api/sync', { inquiries: next }, `문의 내역 삭제`);
+  const deleteInquiry = async (id: string) => {
+    setInquiries(prev => prev.filter(i => i.id !== id));
+    try {
+      await deleteDoc(doc(db, 'inquiries', id));
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `inquiries/${id}`);
+    }
   };
 
-  // Subscribers CRUD
-  const addSubscriber = (email: string) => {
+  // Subscribers CRUD — same pattern. Note: because a logged-out visitor
+  // cannot read this collection (only create), we cannot check here
+  // whether their email already exists before writing; a duplicate submit
+  // simply creates a second document, which the admin can merge/clean up
+  // from the admin panel. This trades a little admin housekeeping for not
+  // exposing the subscriber list to the public.
+  const addSubscriber = async (email: string) => {
     const trimmed = email.trim();
     if (!trimmed) return;
-    const existing = subscribers.find(s => s.email.toLowerCase() === trimmed.toLowerCase());
-    let next: NewsletterSubscriber[];
-    if (existing) {
-      if (existing.status === '해지') {
-        next = subscribers.map(s => s.id === existing.id ? { ...s, status: '구독중', subscribedAt: new Date().toISOString().replace('T', ' ').substring(0, 16) } : s);
-        setSubscribers(next);
-        postMutationToServer('/api/sync', { subscribers: next }, `뉴스레터 재구독: ${trimmed}`);
-      }
-      return;
-    }
-    const newSub: NewsletterSubscriber = {
-      id: `sub-${Date.now()}`,
+    const newSub: Omit<NewsletterSubscriber, 'id'> = {
       email: trimmed,
       subscribedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
       status: '구독중'
     };
-    next = [newSub, ...subscribers];
-    setSubscribers(next);
-    postMutationToServer('/api/sync', { subscribers: next }, `뉴스레터 신규 구독: ${trimmed}`);
+    try {
+      await addDoc(collection(db, 'subscribers'), newSub);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, 'subscribers');
+      throw err;
+    }
   };
 
-  const updateSubscriberStatus = (id: string, status: '구독중' | '해지') => {
-    const next = subscribers.map(s => s.id === id ? { ...s, status } : s);
-    setSubscribers(next);
-    postMutationToServer('/api/sync', { subscribers: next }, `뉴스레터 상태 변경: ${status}`);
+  const updateSubscriberStatus = async (id: string, status: '구독중' | '해지') => {
+    setSubscribers(prev => prev.map(s => s.id === id ? { ...s, status } : s));
+    try {
+      await updateDoc(doc(db, 'subscribers', id), { status });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `subscribers/${id}`);
+    }
   };
 
-  const deleteSubscriber = (id: string) => {
-    const next = subscribers.filter(s => s.id !== id);
-    setSubscribers(next);
-    postMutationToServer('/api/sync', { subscribers: next }, `뉴스레터 구독자 삭제`);
+  const deleteSubscriber = async (id: string) => {
+    setSubscribers(prev => prev.filter(s => s.id !== id));
+    try {
+      await deleteDoc(doc(db, 'subscribers', id));
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `subscribers/${id}`);
+    }
   };
 
   const addPopup = (popupData: Omit<PopupItem, 'id' | 'createdAt'>) => {
@@ -1732,24 +1705,24 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const resetToDefaults = () => {
+    // Only resets site content (settings/programs/notices/gallery/popups).
+    // Donations, inquiries, and subscribers now live in their own Firestore
+    // collections and are intentionally NOT touched here — a "reset to
+    // defaults" button should never be able to bulk-delete real donor or
+    // inquiry records. Delete those individually from the admin panel if
+    // truly needed.
     setSettings(INITIAL_SETTINGS);
     setPrograms(INITIAL_PROGRAMS);
     setNotices(INITIAL_NOTICES);
     setGallery(INITIAL_GALLERY);
     setPopups(INITIAL_POPUPS);
-    setDonations([]);
-    setInquiries([]);
-    setSubscribers([]);
     localStorage.clear();
     postMutationToServer('/api/sync', {
       settings: INITIAL_SETTINGS,
       programs: INITIAL_PROGRAMS,
       notices: INITIAL_NOTICES,
       gallery: INITIAL_GALLERY,
-      popups: INITIAL_POPUPS,
-      donations: [],
-      inquiries: [],
-      subscribers: []
+      popups: INITIAL_POPUPS
     }, '초기 기본값으로 초기화');
   };
 

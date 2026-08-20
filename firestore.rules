@@ -8,9 +8,52 @@ service cloud.firestore {
         && request.auth.uid == 'a1MQmdMGkgdorEl6V3FAptCAYo52';
     }
 
+    // Public website content (settings, programs, notices, gallery,
+    // popups...). Publicly readable so the homepage can load for visitors
+    // without logging in. Donor/inquiry/subscriber personal data must
+    // NEVER be stored inside this document — use the dedicated
+    // collections below instead, which are not publicly readable.
     match /foundation/{docId} {
       allow read: if true;
       allow write: if isAdmin();
+    }
+
+    // Donation applications: contain name/phone/email/message. The public
+    // may only submit a new application (create); they can never read,
+    // edit, or delete existing ones — only the admin can. The create rule
+    // also does a light shape check so a malformed/malicious payload can't
+    // slip in a pre-set "처리완료" status or missing required fields.
+    match /donations/{id} {
+      allow create: if request.resource.data.keys().hasAll(['name', 'phone', 'createdAt', 'status'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0 && request.resource.data.name.size() < 200
+        && request.resource.data.phone is string
+        && request.resource.data.phone.size() > 0 && request.resource.data.phone.size() < 50
+        && request.resource.data.status == '접수완료';
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Contact inquiries: contain name/phone/email/message. Same pattern.
+    match /inquiries/{id} {
+      allow create: if request.resource.data.keys().hasAll(['name', 'phone', 'message', 'createdAt', 'status'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0 && request.resource.data.name.size() < 200
+        && request.resource.data.phone is string
+        && request.resource.data.phone.size() > 0 && request.resource.data.phone.size() < 50
+        && request.resource.data.message is string
+        && request.resource.data.message.size() > 0 && request.resource.data.message.size() < 5000
+        && request.resource.data.status == '대기중';
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Newsletter subscribers: contain email only, but still not meant for
+    // public listing/scraping. Same create-only-for-public pattern.
+    match /subscribers/{id} {
+      allow create: if request.resource.data.keys().hasAll(['email', 'subscribedAt', 'status'])
+        && request.resource.data.email is string
+        && request.resource.data.email.size() > 0 && request.resource.data.email.size() < 200
+        && request.resource.data.status == '구독중';
+      allow read, update, delete: if isAdmin();
     }
 
     // Test collection is disabled in production.

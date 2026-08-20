@@ -118,7 +118,6 @@ export interface PopupItem {
 }
 
 export interface FoundationSettings {
-  adminPassword?: string;
   name: string;
   englishName: string;
   chairmanName: string;

@@ -11,7 +11,6 @@ import {
   Plus,
   Upload,
   Shield,
-  Lock,
   Save,
   Check,
   Image as ImageIcon,
@@ -29,7 +28,7 @@ export const PopupModal: React.FC = () => {
     updatePopup,
     deletePopup,
     addPopup,
-    settings,
+    isAdmin,
     setAdminOpen,
     navigateToNewsCategory,
     getImageUrl
@@ -38,11 +37,16 @@ export const PopupModal: React.FC = () => {
   const [closedPopupIds, setClosedPopupIds] = useState<string[]>([]);
   const [dontShowTodayMap, setDontShowTodayMap] = useState<Record<string, boolean>>({});
 
-  // Admin authentication state inside PopupModal
-  const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [passwordInput, setPasswordInput] = useState('');
-  const [passwordError, setPasswordError] = useState<string | null>(null);
+  // SECURITY (2026 audit): this used to have its own separate "admin"
+  // unlock, checked entirely in the browser against a plaintext password
+  // (`settings.adminPassword`, falling back to a hardcoded '1026' that was
+  // visible in the deployed JS bundle) — completely unrelated to real
+  // Firebase Authentication. Anyone who guessed or found that string could
+  // "unlock" popup editing without ever logging in. It now simply reuses
+  // the real `isAdmin` value from context, which is only true after a
+  // genuine Firebase Auth sign-in (see AdminModal.tsx). If someone who
+  // isn't logged in tries to edit a popup, we send them to the real admin
+  // login instead of asking for a second, weaker password here.
 
   // Editing state for specific popup
   const [editingPopupId, setEditingPopupId] = useState<string | null>(null);
@@ -79,8 +83,8 @@ export const PopupModal: React.FC = () => {
 
   // Filter active popups or ALL popups if admin is editing
   const visiblePopups = popups.filter(popup => {
-    // If admin unlocked and editing, show even if inactive/closed unless closed by user in this session
-    if (isAdminUnlocked) {
+    // If admin (real Firebase Auth login) is editing, show even if inactive/closed unless closed by user in this session
+    if (isAdmin) {
       if (closedPopupIds.includes(popup.id)) return false;
       return true;
     }
@@ -159,25 +163,13 @@ export const PopupModal: React.FC = () => {
     navigateToNewsCategory('전체');
   };
 
-  // Password Verification
-  const handleVerifyPassword = (e: React.FormEvent) => {
-    e.preventDefault();
-    const correctPassword = settings.adminPassword || '1026';
-    if (passwordInput === correctPassword) {
-      setIsAdminUnlocked(true);
-      setShowPasswordModal(false);
-      setPasswordInput('');
-      setPasswordError(null);
-      showToast('관리자 인증이 완료되었습니다. 팝업 수정 및 삭제가 가능합니다.');
-    } else {
-      setPasswordError('비밀번호가 올바르지 않습니다.');
-    }
-  };
-
-  // Start Editing a Popup
+  // Start Editing a Popup — requires the real Firebase Auth admin login.
+  // If not signed in, open the actual admin login panel instead of a
+  // separate local password prompt.
   const handleStartEdit = (popup: PopupItem) => {
-    if (!isAdminUnlocked) {
-      setShowPasswordModal(true);
+    if (!isAdmin) {
+      setAdminOpen(true);
+      showToast('팝업을 수정하려면 먼저 관리자 로그인이 필요합니다.');
       return;
     }
     setEditingPopupId(popup.id);
@@ -286,70 +278,11 @@ export const PopupModal: React.FC = () => {
           </div>
         )}
 
-        {/* Password Verification Modal Overlay */}
-        {showPasswordModal && (
-          <div className="absolute inset-0 z-50 bg-slate-900/85 backdrop-blur-xs flex items-center justify-center p-6 animate-in fade-in">
-            <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl space-y-4 border border-slate-200">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div className="flex items-center gap-2 font-extrabold text-slate-900 text-base">
-                  <Lock className="w-5 h-5 text-orange-500" />
-                  <span>관리자 비밀번호 확인</span>
-                </div>
-                <button
-                  onClick={() => setShowPasswordModal(false)}
-                  className="text-slate-400 hover:text-slate-600"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                팝업창의 이미지, 제목, 내용을 직접 수정하거나 삭제하려면 관리자 비밀번호를 입력해 주세요.
-              </p>
-
-              <form onSubmit={handleVerifyPassword} className="space-y-3">
-                <div>
-                  <input
-                    type="password"
-                    value={passwordInput}
-                    onChange={(e) => {
-                      setPasswordInput(e.target.value);
-                      setPasswordError(null);
-                    }}
-                    placeholder="비밀번호 입력 (기본: 1026)"
-                    className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl font-mono text-sm focus:outline-none focus:border-orange-500 focus:bg-white"
-                    autoFocus
-                  />
-                  {passwordError && (
-                    <p className="text-xs text-red-500 font-bold mt-1.5">{passwordError}</p>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2 pt-2">
-                  <button
-                    type="submit"
-                    className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer"
-                  >
-                    관리자 인증하기
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowPasswordModal(false)}
-                    className="py-2.5 px-4 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-xl transition-colors cursor-pointer"
-                  >
-                    취소
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
         {/* Modal Body Content - Scrollable */}
         <div className="p-6 overflow-y-auto space-y-6 flex-1">
           
           {/* Admin Header Action if Unlocked */}
-          {isAdminUnlocked && (
+          {isAdmin && (
             <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between text-xs font-bold text-amber-900">
               <div className="flex items-center gap-2">
                 <Shield className="w-4 h-4 text-orange-600 shrink-0" />
@@ -367,7 +300,7 @@ export const PopupModal: React.FC = () => {
           )}
 
           {/* New Popup Form Modal inside Admin */}
-          {isAdminUnlocked && isAddingNew && (
+          {isAdmin && isAddingNew && (
             <form onSubmit={handleCreateNewPopup} className="bg-orange-50/70 border-2 border-orange-400 p-5 rounded-2xl space-y-4 text-xs animate-in fade-in">
               <div className="flex items-center justify-between border-b border-orange-200 pb-2">
                 <h4 className="font-extrabold text-orange-900 text-sm flex items-center gap-1.5">
@@ -615,7 +548,7 @@ export const PopupModal: React.FC = () => {
                   </div>
 
                   {/* Admin Edit & Delete Trigger Buttons */}
-                  {isAdminUnlocked && (
+                  {isAdmin && (
                     <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => handleStartEdit(popup)}
@@ -667,7 +600,7 @@ export const PopupModal: React.FC = () => {
                       className="w-full h-full object-cover transition-transform duration-300 group-hover/img:scale-105"
                     />
                     {/* Admin Image Edit Button Hover Overlay */}
-                    {isAdminUnlocked && (
+                    {isAdmin && (
                       <button
                         onClick={() => handleStartEdit(popup)}
                         className="absolute top-2 right-2 px-2.5 py-1.5 bg-slate-900/80 hover:bg-orange-600 text-white font-extrabold text-[11px] rounded-lg opacity-0 group-hover/img:opacity-100 transition-opacity backdrop-blur-xs flex items-center gap-1 cursor-pointer shadow-md"

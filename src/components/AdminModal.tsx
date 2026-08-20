@@ -539,30 +539,27 @@ export const AdminModal: React.FC = () => {
           processedUrl = canvas.toDataURL('image/jpeg', 0.85);
         }
 
-        // Try direct server static upload for instant multi-device sync
+        // Upload directly to Firebase Cloud Storage under `settings/`, which
+        // (like `activities/` and `notices/`) only allows writes from the
+        // signed-in admin account (see storage.rules). This replaces the old
+        // `/api/upload` endpoint, which accepted uploads from anyone with no
+        // login check at all.
         try {
-          const res = await fetch('/api/upload', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-              'Pragma': 'no-cache',
-              'Expires': '0'
-            },
-            body: JSON.stringify({ image: processedUrl, prefix })
+          const blob = await (await fetch(processedUrl)).blob();
+          const safeExt = 'jpg';
+          const uniqueName = `${Date.now()}_${crypto.randomUUID()}_${prefix}.${safeExt}`;
+          const storageRef = ref(storage, `settings/${uniqueName}`);
+          const snapshot = await uploadBytes(storageRef, blob, {
+            contentType: 'image/jpeg',
+            cacheControl: 'public,max-age=31536000,immutable'
           });
-          if (res.ok) {
-            const json = await res.json();
-            if (json.url) {
-              callback(json.url, file.name);
-              return;
-            }
-          }
+          const downloadUrl = await getDownloadURL(snapshot.ref);
+          callback(downloadUrl, file.name);
+          return;
         } catch (uploadErr) {
-          console.warn('Server upload fallback to dataUrl', uploadErr);
+          console.error('Firebase Storage 이미지 업로드 실패', uploadErr);
+          alert('이미지 업로드에 실패했습니다. 관리자 로그인 상태와 네트워크 연결을 확인해 주세요.');
         }
-
-        callback(processedUrl, file.name);
       };
       img.onerror = () => {
         callback(rawDataUrl, file.name);

@@ -18,7 +18,9 @@ export const DonateSection: React.FC = () => {
 
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.phone) {
       alert('이름과 연락처를 작성해 주세요.');
@@ -29,18 +31,24 @@ export const DonateSection: React.FC = () => {
       return;
     }
 
-    addDonation({
-      name: formData.name,
-      phone: formData.phone,
-      email: formData.email,
-      donationType: formData.donationType,
-      targetCategory: formData.targetCategory,
-      amountOrItem: formData.amountOrItem,
-      message: formData.message,
-      privacyAgreed: formData.privacyAgreed
-    });
-
-    setSubmitted(true);
+    setSubmitting(true);
+    try {
+      await addDonation({
+        name: formData.name,
+        phone: formData.phone,
+        email: formData.email,
+        donationType: formData.donationType,
+        targetCategory: formData.targetCategory,
+        amountOrItem: formData.amountOrItem,
+        message: formData.message,
+        privacyAgreed: formData.privacyAgreed
+      });
+      setSubmitted(true);
+    } catch (err) {
+      alert('후원 신청 접수 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -321,10 +329,11 @@ export const DonateSection: React.FC = () => {
               {/* Submit Button */}
               <button
                 type="submit"
-                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-sm py-3.5 rounded-2xl shadow-md transition-all active:scale-[0.99]"
+                disabled={submitting}
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-sm py-3.5 rounded-2xl shadow-md transition-all active:scale-[0.99]"
               >
                 <Send className="w-4 h-4" />
-                <span>소중한 나눔 신청서 제출하기</span>
+                <span>{submitting ? '제출 중...' : '소중한 나눔 신청서 제출하기'}</span>
               </button>
 
             </form>

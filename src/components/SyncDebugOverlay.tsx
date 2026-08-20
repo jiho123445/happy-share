@@ -10,7 +10,6 @@ import {
   ChevronUp, 
   ChevronDown, 
   Trash2, 
-  Server, 
   Image as ImageIcon, 
   Layers, 
   Database,
@@ -36,28 +35,12 @@ export const SyncDebugOverlay: React.FC = () => {
   } = useFoundation();
 
   const [isOpen, setIsOpen] = useState(false);
-  const [serverDebugInfo, setServerDebugInfo] = useState<any>(null);
-  const [isCheckingServer, setIsCheckingServer] = useState(false);
 
-  const checkServerDebug = async () => {
-    setIsCheckingServer(true);
-    try {
-      const res = await fetch('/api/debug?_t=' + Date.now(), {
-        headers: {
-          'Cache-Control': 'no-store, no-cache, must-revalidate',
-          'Pragma': 'no-cache'
-        }
-      });
-      if (res.ok) {
-        const json = await res.json();
-        setServerDebugInfo(json);
-      }
-    } catch (e) {
-      console.warn('Failed to fetch /api/debug', e);
-    } finally {
-      setIsCheckingServer(false);
-    }
-  };
+  // NOTE: this used to also call `/api/debug`, a public endpoint (no
+  // login required) that dumped the server's internal file list and data
+  // counts. That endpoint has been removed for security reasons — see
+  // src/serverApp.ts — so the "서버 진단" button and its output panel
+  // were removed here too rather than pointing at a dead/insecure route.
 
   const getStatusIcon = () => {
     if (isSyncing) return <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-500" />;
@@ -223,14 +206,6 @@ export const SyncDebugOverlay: React.FC = () => {
               즉시 강제 동기화
             </button>
             <button
-              onClick={checkServerDebug}
-              disabled={isCheckingServer}
-              className="bg-slate-800 hover:bg-slate-700 text-slate-200 py-1.5 px-3 rounded-xl flex items-center gap-1.5 border border-slate-700 transition-colors text-xs"
-            >
-              <Server className="w-3.5 h-3.5 text-cyan-400" />
-              서버 진단
-            </button>
-            <button
               onClick={clearDebugLogs}
               className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-xl transition-colors"
               title="로그 지우기"
@@ -238,20 +213,6 @@ export const SyncDebugOverlay: React.FC = () => {
               <Trash2 className="w-4 h-4" />
             </button>
           </div>
-
-          {/* Server Diagnostic Modal / Dropdown info */}
-          {serverDebugInfo && (
-            <div className="p-2.5 bg-slate-900/90 border-b border-slate-800 text-[10px] font-mono text-slate-300 space-y-1 max-h-32 overflow-y-auto">
-              <div className="text-cyan-400 font-bold flex items-center justify-between">
-                <span>[서버 스토리지 세부 현황]</span>
-                <button onClick={() => setServerDebugInfo(null)} className="text-slate-400 hover:text-white">닫기</button>
-              </div>
-              <div>서버 시각: {serverDebugInfo.serverTime}</div>
-              <div>스토리지 영구 사진 목록: {serverDebugInfo.imageStoreKeys?.length || 0}개</div>
-              <div className="text-slate-400 truncate">사진 키: {serverDebugInfo.imageStoreKeys?.join(', ')}</div>
-              <div>디스크 파일: {serverDebugInfo.diskFiles?.length || 0}개</div>
-            </div>
-          )}
 
           {/* Real-time Log Stream */}
           <div className="flex-1 overflow-y-auto p-2 space-y-1.5 bg-slate-950 font-mono text-[10px] min-h-[140px] max-h-[220px]">
