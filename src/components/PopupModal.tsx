@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useFoundation } from '../context/FoundationContext';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../lib/firebase';
 import {
   X,
   ExternalLink,
@@ -200,21 +202,95 @@ export const PopupModal: React.FC = () => {
   };
 
   // Handle Image File Upload for Edit or New
+  //
+  // SECURITY / EFFICIENCY (2026 audit follow-up): this used to read the
+  // file with FileReader and store the raw base64 data: URL directly as
+  // `imageUrl` on the popup document. That embeds the whole image inside
+  // the Firestore `foundation/global` document, which is capped at 1MB
+  // total — a handful of popup images (or a couple of large ones) can
+  // silently push that shared document over the limit and break saving
+  // for every other part of the site (notices, gallery, settings...).
+  // It now compresses the image client-side and uploads it to Firebase
+  // Storage under `settings/` (admin-only write, same as the chairman/
+  // hero image uploader in AdminModal.tsx), storing only the short
+  // download URL on the popup instead.
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isEditMode: boolean) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showToast('이미지 파일만 업로드할 수 있습니다.');
+      return;
+    }
 
+    setIsUploadingImage(true);
     const reader = new FileReader();
     reader.onload = (event) => {
-      if (event.target?.result) {
-        const dataUrl = event.target.result as string;
-        if (isEditMode) {
-          setEditImageUrl(dataUrl);
-        } else {
-          setNewImageUrl(dataUrl);
-        }
-        showToast('이미지가 선택되었습니다.');
+      const rawDataUrl = event.target?.result as string;
+      if (!rawDataUrl) {
+        setIsUploadingImage(false);
+        return;
       }
+
+      const img = new Image();
+      img.onload = async () => {
+        // Compress to max 1200px on the longest side, JPEG quality 0.85 —
+        // same approach used for gallery/notice/settings images elsewhere.
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const MAX_SIZE = 1200;
+        if (width > MAX_SIZE || height > MAX_SIZE) {
+          if (width > height) {
+            height = Math.round((height * MAX_SIZE) / width);
+            width = MAX_SIZE;
+          } else {
+            width = Math.round((width * MAX_SIZE) / height);
+            height = MAX_SIZE;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        let processedUrl = rawDataUrl;
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          processedUrl = canvas.toDataURL('image/jpeg', 0.85);
+        }
+
+        try {
+          const blob = await (await fetch(processedUrl)).blob();
+          const uniqueName = `${Date.now()}_${crypto.randomUUID()}_popup.jpg`;
+          const storageRef = ref(storage, `settings/${uniqueName}`);
+          const snapshot = await uploadBytes(storageRef, blob, {
+            contentType: 'image/jpeg',
+            cacheControl: 'public,max-age=31536000,immutable'
+          });
+          const downloadUrl = await getDownloadURL(snapshot.ref);
+
+          if (isEditMode) {
+            setEditImageUrl(downloadUrl);
+          } else {
+            setNewImageUrl(downloadUrl);
+          }
+          showToast('이미지가 업로드되었습니다.');
+        } catch (uploadErr) {
+          console.error('팝업 이미지 업로드 실패', uploadErr);
+          showToast('이미지 업로드에 실패했습니다. 관리자 로그인 상태를 확인해 주세요.');
+        } finally {
+          setIsUploadingImage(false);
+        }
+      };
+      img.onerror = () => {
+        setIsUploadingImage(false);
+        showToast('이미지를 불러올 수 없습니다.');
+      };
+      img.src = rawDataUrl;
+    };
+    reader.onerror = () => {
+      setIsUploadingImage(false);
+      showToast('파일을 읽을 수 없습니다.');
     };
     reader.readAsDataURL(file);
   };
@@ -351,12 +427,13 @@ export const PopupModal: React.FC = () => {
                       placeholder="이미지 URL 또는 파일 선택"
                       className="w-full p-2 bg-white border border-slate-300 rounded-xl font-medium"
                     />
-                    <label className="bg-slate-800 hover:bg-slate-700 text-white font-bold px-3 py-2 rounded-xl cursor-pointer shrink-0 flex items-center gap-1 text-xs">
+                    <label className={`bg-slate-800 hover:bg-slate-700 text-white font-bold px-3 py-2 rounded-xl shrink-0 flex items-center gap-1 text-xs ${isUploadingImage ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}>
                       <Upload className="w-3.5 h-3.5" />
-                      <span>파일</span>
+                      <span>{isUploadingImage ? '업로드 중...' : '파일'}</span>
                       <input
                         type="file"
                         accept="image/*"
+                        disabled={isUploadingImage}
                         onChange={(e) => handleImageUpload(e, false)}
                         className="hidden"
                       />
@@ -451,12 +528,13 @@ export const PopupModal: React.FC = () => {
                           placeholder="이미지 URL 입력 또는 파일 직접 선택"
                           className="w-full p-2 bg-white border border-slate-300 rounded-xl text-xs"
                         />
-                        <label className="bg-slate-800 hover:bg-slate-700 text-white font-bold px-3 py-2 rounded-xl cursor-pointer shrink-0 flex items-center gap-1 text-xs">
+                        <label className={`bg-slate-800 hover:bg-slate-700 text-white font-bold px-3 py-2 rounded-xl shrink-0 flex items-center gap-1 text-xs ${isUploadingImage ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}>
                           <Upload className="w-3.5 h-3.5" />
-                          <span>업로드</span>
+                          <span>{isUploadingImage ? '업로드 중...' : '업로드'}</span>
                           <input
                             type="file"
                             accept="image/*"
+                            disabled={isUploadingImage}
                             onChange={(e) => handleImageUpload(e, true)}
                             className="hidden"
                           />
