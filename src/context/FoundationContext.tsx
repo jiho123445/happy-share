@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
-import { doc, onSnapshot, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, query, orderBy, writeBatch } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, getDoc, getDocs, collection, addDoc, updateDoc, deleteDoc, query, orderBy, writeBatch } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
+import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db, storage } from '../lib/firebase';
 import { testFirestoreConnection, GLOBAL_FOUNDATION_DOC, handleFirestoreError, OperationType } from '../lib/firestoreService';
 import {
@@ -528,6 +529,20 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   };
 
+  // Real Firebase Authentication state, tracked here (rather than inside
+  // AdminModal.tsx) so that `isAdmin` stays accurate everywhere in the
+  // app — including PopupModal.tsx's edit gating — even before the admin
+  // has opened the admin panel for the first time. This also lets
+  // AdminModal be lazy-loaded (see App.tsx) without breaking that.
+  useEffect(() => {
+    const ADMIN_UID = import.meta.env.VITE_ADMIN_UID || '';
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      const signedIn = !!user && (!ADMIN_UID || user.uid === ADMIN_UID);
+      setIsAdmin(signedIn);
+    });
+    return () => unsubscribe();
+  }, []);
+
   const [selectedProgram, setSelectedProgram] = useState<ProgramItem | null>(null);
   const [selectedNotice, setSelectedNotice] = useState<NoticeItem | null>(null);
   const [selectedGallery, setSelectedGallery] = useState<GalleryItem | null>(null);
@@ -715,94 +730,118 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return formatImageUrl(url, syncTimestamp);
   }, [syncTimestamp]);
 
-  // Real-time Firestore Cloud Synchronization (Sub-second mobile & desktop cross-device sync)
+  // ARCHITECTURE (2026 audit follow-up): site content used to live in one
+  // single `foundation/global` document (settings, programs, notices,
+  // press, gallery, popups all crammed together), which is capped at 1MB
+  // total by Firestore. Growth in any one area (e.g. lots of notices)
+  // could push the whole document over the limit and silently break
+  // saving for every other area too.
+  //
+  // Content now lives in six separate documents under the `foundation`
+  // collection instead: `settings`, `programs`, `notices`, `press`,
+  // `gallery`, `popups` — each with its own independent 1MB budget. We
+  // listen to the whole collection with one onSnapshot call and, for
+  // each area, prefer the new split document but fall back to the
+  // matching field on the old `foundation/global` document if that
+  // area hasn't been saved since this update (so nothing is lost and no
+  // manual migration step is required). As the admin edits each area
+  // going forward, that area's data naturally moves into its own
+  // document — the migration happens gradually, in the background,
+  // simply by using the admin panel normally.
   useEffect(() => {
     testFirestoreConnection();
 
-    const globalDocRef = doc(db, 'foundation', 'global');
+    const foundationCollectionRef = collection(db, 'foundation');
 
-    // Subscribe to real-time Cloud Firestore updates
     const unsubscribe = onSnapshot(
-      globalDocRef,
-      (docSnap) => {
-        if (docSnap.exists()) {
-          const d = docSnap.data();
-          if (d) {
-            if (d.settings) {
-              const { adminPassword: _legacyPassword, ...safeSettings } = d.settings as any;
-              setSettings(prev => ({
-                ...prev,
-                ...safeSettings,
-                heroImageUrl: d.settings.heroImageUrl || prev.heroImageUrl || INITIAL_SETTINGS.heroImageUrl,
-                chairmanImageUrl: d.settings.chairmanImageUrl || prev.chairmanImageUrl || INITIAL_SETTINGS.chairmanImageUrl,
-              }));
-            }
-            if (Array.isArray(d.programs) && d.programs.length > 0) setPrograms([...d.programs]);
-            if (Array.isArray(d.notices) && d.notices.length > 0) setNotices([...d.notices]);
-            if (Array.isArray(d.pressItems) && d.pressItems.length > 0) setPressItems([...d.pressItems]);
-            // Firestore is the authoritative source for gallery data.
-            // An empty gallery is also meaningful and must clear stale local cache.
-            if (Array.isArray(d.gallery)) {
-              const normalizedGallery = d.gallery.map((g: any) => ({
-                ...g,
-                images: (Array.isArray(g.images) && g.images.length > 0) ? g.images : (g.imageUrl ? [g.imageUrl] : [])
-              }));
-              setGallery(normalizedGallery);
-              try {
-                localStorage.setItem('nerve_nae_gallery', JSON.stringify(normalizedGallery));
-              } catch (e) {}
-            }
-            if (Array.isArray(d.galleryCategories) && d.galleryCategories.length > 0) {
-              setGalleryCategoriesState([...d.galleryCategories]);
-              try {
-                localStorage.setItem('nerve_nae_gallery_categories', JSON.stringify(d.galleryCategories));
-              } catch (e) {}
-            } else if (Array.isArray(d.settings?.galleryCategories) && d.settings.galleryCategories.length > 0) {
-              setGalleryCategoriesState([...d.settings.galleryCategories]);
-              try {
-                localStorage.setItem('nerve_nae_gallery_categories', JSON.stringify(d.settings.galleryCategories));
-              } catch (e) {}
-            }
-            if (Array.isArray(d.popups) && d.popups.length > 0) setPopups([...d.popups]);
-            // donations / inquiries / subscribers now live in their own
-            // Firestore collections (see the isAdmin-gated listener below)
-            // and are intentionally no longer read from this public document.
+      foundationCollectionRef,
+      (snap) => {
+        const byId: Record<string, any> = {};
+        snap.docs.forEach((d) => {
+          byId[d.id] = d.data();
+        });
+        const legacy = byId['global'] || {};
 
-            const now = Date.now();
-            setSyncTimestamp(now);
-            lastSyncTimeRef.current = now;
-            const timeStr = new Date().toLocaleTimeString('ko-KR');
-            setLastSyncTime(timeStr);
-            setSyncStatus('success');
-            setSyncError(null);
-            isFirestoreActiveRef.current = true;
+        const settingsSrc = byId['settings'] || legacy.settings;
+        if (settingsSrc) {
+          const { adminPassword: _legacyPassword, ...safeSettings } = settingsSrc as any;
+          setSettings(prev => ({
+            ...prev,
+            ...safeSettings,
+            heroImageUrl: settingsSrc.heroImageUrl || prev.heroImageUrl || INITIAL_SETTINGS.heroImageUrl,
+            chairmanImageUrl: settingsSrc.chairmanImageUrl || prev.chairmanImageUrl || INITIAL_SETTINGS.chairmanImageUrl,
+          }));
+        }
 
-            addDebugLog(
-              'success',
-              `⚡ Firestore 클라우드 실시간 동기화 완료 (갤러리 ${d.gallery?.length || 0}개, 공지 ${d.notices?.length || 0}개)`,
-              `반영시간: ${timeStr} · 전 기기 1초 실시간 반영`
-            );
-          }
-        } else {
-          // Initial seed to Firestore if document does not exist yet
-          const initialPayload = {
-            settings,
-            programs,
-            notices,
-            pressItems,
-            gallery,
-            popups,
-            updatedAt: new Date().toISOString()
-          };
-          if (auth.currentUser) {
-            setDoc(globalDocRef, initialPayload, { merge: true }).catch(err => {
-              handleFirestoreError(err, OperationType.WRITE, 'foundation/global');
-            });
-          }
+        const programsSrc = byId['programs']?.items ?? legacy.programs;
+        if (Array.isArray(programsSrc) && programsSrc.length > 0) setPrograms([...programsSrc]);
+
+        const noticesSrc = byId['notices']?.items ?? legacy.notices;
+        if (Array.isArray(noticesSrc) && noticesSrc.length > 0) setNotices([...noticesSrc]);
+
+        const pressSrc = byId['press']?.items ?? legacy.pressItems;
+        if (Array.isArray(pressSrc) && pressSrc.length > 0) setPressItems([...pressSrc]);
+
+        // Firestore is the authoritative source for gallery data.
+        // An empty gallery is also meaningful and must clear stale local cache.
+        const gallerySrc = byId['gallery']?.items ?? legacy.gallery;
+        if (Array.isArray(gallerySrc)) {
+          const normalizedGallery = gallerySrc.map((g: any) => ({
+            ...g,
+            images: (Array.isArray(g.images) && g.images.length > 0) ? g.images : (g.imageUrl ? [g.imageUrl] : [])
+          }));
+          setGallery(normalizedGallery);
+          try {
+            localStorage.setItem('nerve_nae_gallery', JSON.stringify(normalizedGallery));
+          } catch (e) {}
+        }
+
+        const galleryCategoriesSrc = byId['gallery']?.categories ?? legacy.galleryCategories ?? legacy.settings?.galleryCategories;
+        if (Array.isArray(galleryCategoriesSrc) && galleryCategoriesSrc.length > 0) {
+          setGalleryCategoriesState([...galleryCategoriesSrc]);
+          try {
+            localStorage.setItem('nerve_nae_gallery_categories', JSON.stringify(galleryCategoriesSrc));
+          } catch (e) {}
+        }
+
+        const popupsSrc = byId['popups']?.items ?? legacy.popups;
+        if (Array.isArray(popupsSrc) && popupsSrc.length > 0) setPopups([...popupsSrc]);
+        // donations / inquiries / subscribers now live in their own
+        // Firestore collections (see the isAdmin-gated listener below)
+        // and are intentionally no longer read from `foundation` documents.
+
+        const now = Date.now();
+        setSyncTimestamp(now);
+        lastSyncTimeRef.current = now;
+        const timeStr = new Date().toLocaleTimeString('ko-KR');
+        setLastSyncTime(timeStr);
+        setSyncStatus('success');
+        setSyncError(null);
+        isFirestoreActiveRef.current = true;
+
+        addDebugLog(
+          'success',
+          `⚡ Firestore 클라우드 실시간 동기화 완료 (갤러리 ${gallerySrc?.length || 0}개, 공지 ${noticesSrc?.length || 0}개)`,
+          `반영시간: ${timeStr} · 전 기기 1초 실시간 반영`
+        );
+
+        // Fresh install only: nothing exists anywhere yet (no legacy doc,
+        // no split docs) and an admin is logged in — seed the split
+        // documents from the in-app defaults so the site isn't blank.
+        if (snap.empty && auth.currentUser) {
+          const nowIso = new Date().toISOString();
+          const batch = writeBatch(db);
+          batch.set(doc(db, 'foundation', 'settings'), { ...settings, updatedAt: nowIso }, { merge: true });
+          batch.set(doc(db, 'foundation', 'programs'), { items: programs, updatedAt: nowIso }, { merge: true });
+          batch.set(doc(db, 'foundation', 'notices'), { items: notices, updatedAt: nowIso }, { merge: true });
+          batch.set(doc(db, 'foundation', 'press'), { items: pressItems, updatedAt: nowIso }, { merge: true });
+          batch.set(doc(db, 'foundation', 'gallery'), { items: gallery, categories: galleryCategories, updatedAt: nowIso }, { merge: true });
+          batch.set(doc(db, 'foundation', 'popups'), { items: popups, updatedAt: nowIso }, { merge: true });
+          batch.commit().catch(err => handleFirestoreError(err, OperationType.WRITE, 'foundation (initial seed)'));
         }
       },
       (error) => {
-        handleFirestoreError(error, OperationType.GET, 'foundation/global');
+        handleFirestoreError(error, OperationType.GET, 'foundation');
         isFirestoreActiveRef.current = false;
         fetchServerData();
       }
@@ -852,20 +891,28 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setSyncStatus('syncing');
     const startTime = Date.now();
     try {
-      // 1. Try Firestore direct fetch first
-      const globalDocRef = doc(db, 'foundation', 'global');
-      const snap = await getDoc(globalDocRef);
-      if (snap.exists()) {
-        const d = snap.data();
-        if (d.settings) {
-          const { adminPassword: _legacyPassword, ...safeSettings } = d.settings as any;
+      // 1. Try Firestore direct fetch first (split docs, same fallback-to-legacy logic as the realtime listener above)
+      const snap = await getDocs(collection(db, 'foundation'));
+      if (!snap.empty) {
+        const byId: Record<string, any> = {};
+        snap.docs.forEach((d) => { byId[d.id] = d.data(); });
+        const legacy = byId['global'] || {};
+
+        const settingsSrc = byId['settings'] || legacy.settings;
+        if (settingsSrc) {
+          const { adminPassword: _legacyPassword, ...safeSettings } = settingsSrc as any;
           setSettings(prev => ({ ...prev, ...safeSettings }));
         }
-        if (Array.isArray(d.programs) && d.programs.length > 0) setPrograms([...d.programs]);
-        if (Array.isArray(d.notices) && d.notices.length > 0) setNotices([...d.notices]);
-        if (Array.isArray(d.pressItems) && d.pressItems.length > 0) setPressItems([...d.pressItems]);
-        if (Array.isArray(d.gallery) && d.gallery.length > 0) setGallery([...d.gallery]);
-        if (Array.isArray(d.popups) && d.popups.length > 0) setPopups([...d.popups]);
+        const programsSrc = byId['programs']?.items ?? legacy.programs;
+        if (Array.isArray(programsSrc) && programsSrc.length > 0) setPrograms([...programsSrc]);
+        const noticesSrc = byId['notices']?.items ?? legacy.notices;
+        if (Array.isArray(noticesSrc) && noticesSrc.length > 0) setNotices([...noticesSrc]);
+        const pressSrc = byId['press']?.items ?? legacy.pressItems;
+        if (Array.isArray(pressSrc) && pressSrc.length > 0) setPressItems([...pressSrc]);
+        const gallerySrc = byId['gallery']?.items ?? legacy.gallery;
+        if (Array.isArray(gallerySrc) && gallerySrc.length > 0) setGallery([...gallerySrc]);
+        const popupsSrc = byId['popups']?.items ?? legacy.popups;
+        if (Array.isArray(popupsSrc) && popupsSrc.length > 0) setPopups([...popupsSrc]);
         // donations / inquiries / subscribers: see the dedicated
         // isAdmin-gated Firestore collection listener below.
 
@@ -999,9 +1046,14 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   }, [subscribers]);
 
   // Firestore & Server dual-write mutation helper
-  const postMutationToServer = useCallback((endpoint: string, payload: any, actionName: string) => {
-    // 1. Immediately write to Cloud Firestore for instant 1s cross-device synchronization
-    const globalDocRef = doc(db, 'foundation', 'global');
+  const postMutationToServer = useCallback((docName: string, payload: any, actionName: string) => {
+    // Writes to one of the split `foundation/{docName}` documents
+    // (settings / programs / notices / press / gallery / popups) instead
+    // of the old shared `foundation/global` document — see the realtime
+    // listener above for why. Each domain now has its own independent
+    // 1MB budget, so a large notices archive can no longer block a
+    // programs or settings save (or vice versa).
+    const targetDocRef = doc(db, 'foundation', docName);
     // Strip any `undefined` field values (e.g. `attachmentName: undefined`
     // when a notice has no attachment) — Firestore's setDoc() throws
     // synchronously on these, which silently skips our own .catch() error
@@ -1011,13 +1063,9 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       updatedAt: new Date().toISOString()
     });
 
-    // Firestore caps a single document at 1MB. This app keeps every field
-    // (settings, programs, notices, gallery, popups...) in one shared
-    // 'foundation/global' document, so a write that only changes `notices`
-    // can still fail once other fields already occupy most of that budget.
     // Fail fast with a clear Korean message instead of a silent/confusing
-    // setDoc rejection — this is what previously made a later notice/program
-    // save appear to just do nothing.
+    // setDoc rejection if a single domain's own data somehow still
+    // approaches the 1MB-per-document cap (e.g. an enormous gallery).
     const approxSizeBytes = new Blob([JSON.stringify(firestoreUpdate)]).size;
     const FIRESTORE_DOC_SOFT_LIMIT_BYTES = 900 * 1024; // 900KB safety margin under the 1MB hard cap
     if (approxSizeBytes > FIRESTORE_DOC_SOFT_LIMIT_BYTES) {
@@ -1025,7 +1073,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       handleFirestoreError(
         new Error(`Payload too large for a single Firestore document: ~${sizeKb}KB`),
         OperationType.WRITE,
-        'foundation/global'
+        `foundation/${docName}`
       );
       setSyncStatus('error');
       setSyncError(
@@ -1036,7 +1084,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
 
     try {
-      setDoc(globalDocRef, firestoreUpdate, { merge: true })
+      setDoc(targetDocRef, firestoreUpdate, { merge: true })
         .then(() => {
           addDebugLog('success', `[⚡ Firestore 클라우드 즉시 저장 완료] ${actionName}`);
           setSyncTimestamp(Date.now());
@@ -1044,7 +1092,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           setSyncError(null);
         })
         .catch((err) => {
-          handleFirestoreError(err, OperationType.WRITE, 'foundation/global');
+          handleFirestoreError(err, OperationType.WRITE, `foundation/${docName}`);
           // Surface the failure instead of only logging it — a silent catch here
           // is exactly what made past writes (e.g. notices with attachments that
           // pushed the shared foundation/global document past Firestore's 1MB
@@ -1058,7 +1106,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       // Without this try/catch that failure would be completely invisible:
       // local state already looks saved, but Firestore never receives the
       // write, and the change quietly reverts on the next refresh.
-      handleFirestoreError(err, OperationType.WRITE, 'foundation/global');
+      handleFirestoreError(err, OperationType.WRITE, `foundation/${docName}`);
       setSyncStatus('error');
       setSyncError(`${actionName} 저장에 실패했습니다. (${err instanceof Error ? err.message : String(err)})`);
     }
@@ -1068,9 +1116,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     // authentication on the server, so anyone who knew the URL could
     // overwrite the site's content or read it back out — including donor
     // and inquiry personal data. Firestore (gated by firestore.rules) is
-    // now the single source of truth; the `endpoint` parameter is kept
-    // only so call sites don't all need to change, but it is unused here.
-    void endpoint;
+    // now the single source of truth.
   }, [addDebugLog]);
 
   // Program CRUD
@@ -1083,19 +1129,19 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     };
     const next = [...programs, newProgram];
     setPrograms(next);
-    postMutationToServer('/api/sync', { programs: next }, `사업 추가: ${newProgram.title}`);
+    postMutationToServer('programs', { items: next }, `사업 추가: ${newProgram.title}`);
   };
 
   const updateProgram = (id: string, updated: Partial<ProgramItem>) => {
     const next = programs.map(p => p.id === id ? { ...p, ...updated } : p);
     setPrograms(next);
-    postMutationToServer('/api/sync', { programs: next }, `사업 수정 (ID: ${id})`);
+    postMutationToServer('programs', { items: next }, `사업 수정 (ID: ${id})`);
   };
 
   const deleteProgram = (id: string) => {
     const next = programs.filter(p => p.id !== id);
     setPrograms(next);
-    postMutationToServer('/api/sync', { programs: next }, `사업 삭제 (ID: ${id})`);
+    postMutationToServer('programs', { items: next }, `사업 삭제 (ID: ${id})`);
   };
 
   // Applies a new notices array to both React state and the ref in one
@@ -1127,19 +1173,19 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     };
     const next = [newNotice, ...noticesRef.current];
     applyNotices(next);
-    postMutationToServer('/api/sync', { notices: next }, `공지 추가: ${newNotice.title}`);
+    postMutationToServer('notices', { items: next }, `공지 추가: ${newNotice.title}`);
   };
 
   const updateNotice = (id: string, updated: Partial<NoticeItem>) => {
     const next = noticesRef.current.map(n => n.id === id ? { ...n, ...updated } : n);
     applyNotices(next);
-    postMutationToServer('/api/sync', { notices: next }, `공지 수정 (ID: ${id})`);
+    postMutationToServer('notices', { items: next }, `공지 수정 (ID: ${id})`);
   };
 
   const deleteNotice = (id: string) => {
     const next = noticesRef.current.filter(n => n.id !== id);
     applyNotices(next);
-    postMutationToServer('/api/sync', { notices: next }, `공지 삭제 (ID: ${id})`);
+    postMutationToServer('notices', { items: next }, `공지 삭제 (ID: ${id})`);
   };
 
   // Press Coverage CRUD (보도자료) — same ref-based, side-effect-outside-updater
@@ -1156,19 +1202,19 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     };
     const next = [newItem, ...pressItemsRef.current];
     applyPressItems(next);
-    postMutationToServer('/api/sync', { pressItems: next }, `보도자료 추가: ${newItem.title}`);
+    postMutationToServer('press', { items: next }, `보도자료 추가: ${newItem.title}`);
   };
 
   const updatePress = (id: string, updated: Partial<PressCoverageItem>) => {
     const next = pressItemsRef.current.map(p => p.id === id ? { ...p, ...updated } : p);
     applyPressItems(next);
-    postMutationToServer('/api/sync', { pressItems: next }, `보도자료 수정 (ID: ${id})`);
+    postMutationToServer('press', { items: next }, `보도자료 수정 (ID: ${id})`);
   };
 
   const deletePress = (id: string) => {
     const next = pressItemsRef.current.filter(p => p.id !== id);
     applyPressItems(next);
-    postMutationToServer('/api/sync', { pressItems: next }, `보도자료 삭제 (ID: ${id})`);
+    postMutationToServer('press', { items: next }, `보도자료 삭제 (ID: ${id})`);
   };
 
   // Gallery CRUD
@@ -1200,15 +1246,14 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       localStorage.setItem('nerve_nae_gallery', JSON.stringify(next));
     } catch (e) {}
 
-    // IMPORTANT: gallery metadata is written directly to Firestore.
-    // Do NOT send gallery data through /api/gallery because that endpoint
-    // can convert image data into server-local /uploads files.
-    const globalDocRef = doc(db, 'foundation', 'global');
+    // Gallery items are written directly to Firestore's split `gallery`
+    // document (see the architecture note above `postMutationToServer`).
+    const galleryDocRef = doc(db, 'foundation', 'gallery');
 
     setDoc(
-      globalDocRef,
+      galleryDocRef,
       {
-        gallery: next,
+        items: next,
         updatedAt: new Date().toISOString()
       },
       { merge: true }
@@ -1226,7 +1271,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         handleFirestoreError(
           err,
           OperationType.WRITE,
-          'foundation/global.gallery'
+          'foundation/gallery.items'
         );
         setSyncStatus('error');
         setSyncError('갤러리 저장에 실패했습니다.');
@@ -1294,13 +1339,13 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       g.id === id ? { ...g, ...consolidatedUpdate } : g
     );
 
-    const globalDocRef = doc(db, 'foundation', 'global');
+    const galleryDocRef = doc(db, 'foundation', 'gallery');
 
     try {
       await setDoc(
-        globalDocRef,
+        galleryDocRef,
         {
-          gallery: next,
+          items: next,
           updatedAt: new Date().toISOString()
         },
         { merge: true }
@@ -1350,7 +1395,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         handleFirestoreError(
           err,
           OperationType.WRITE,
-          'foundation/global.gallery'
+          'foundation/gallery.items'
         );
         setSyncStatus('error');
         setSyncError('갤러리 수정에 실패했습니다.');
@@ -1373,13 +1418,13 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
 
     const next = gallery.filter(g => g.id !== id);
-    const globalDocRef = doc(db, 'foundation', 'global');
+    const galleryDocRef = doc(db, 'foundation', 'gallery');
 
     try {
       await setDoc(
-        globalDocRef,
+        galleryDocRef,
         {
-          gallery: next,
+          items: next,
           updatedAt: new Date().toISOString()
         },
         { merge: true }
@@ -1418,7 +1463,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         handleFirestoreError(
           err,
           OperationType.WRITE,
-          'foundation/global.gallery'
+          'foundation/gallery.items'
         );
         setSyncStatus('error');
         setSyncError('갤러리 삭제에 실패했습니다.');
@@ -1439,20 +1484,19 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       localStorage.setItem('nerve_nae_gallery_categories', JSON.stringify(next));
     } catch (e) {}
 
-    const globalDocRef = doc(db, 'foundation', 'global');
+    const galleryDocRef = doc(db, 'foundation', 'gallery');
     try {
       await setDoc(
-        globalDocRef,
+        galleryDocRef,
         {
-          galleryCategories: next,
+          categories: next,
           updatedAt: new Date().toISOString()
         },
         { merge: true }
       );
-      postMutationToServer('/api/sync', { galleryCategories: next }, `갤러리 카테고리 추가: ${trimmed}`);
       addDebugLog('success', `갤러리 카테고리 항목 추가 완료: ${trimmed}`);
     } catch (err) {
-      handleFirestoreError(err, OperationType.WRITE, 'foundation/global.galleryCategories');
+      handleFirestoreError(err, OperationType.WRITE, 'foundation/gallery.categories');
     }
   };
 
@@ -1479,25 +1523,20 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       localStorage.setItem('nerve_nae_gallery', JSON.stringify(nextGallery));
     } catch (e) {}
 
-    const globalDocRef = doc(db, 'foundation', 'global');
+    const galleryDocRef = doc(db, 'foundation', 'gallery');
     try {
       await setDoc(
-        globalDocRef,
+        galleryDocRef,
         {
-          galleryCategories: uniqueCategories,
-          gallery: nextGallery,
+          categories: uniqueCategories,
+          items: nextGallery,
           updatedAt: new Date().toISOString()
         },
         { merge: true }
       );
-      postMutationToServer(
-        '/api/sync',
-        { galleryCategories: uniqueCategories, gallery: nextGallery },
-        `갤러리 카테고리 수정: ${oldCategory} -> ${trimmedNew}`
-      );
       addDebugLog('success', `갤러리 카테고리 항목 수정 완료 (${oldCategory} → ${trimmedNew})`);
     } catch (err) {
-      handleFirestoreError(err, OperationType.WRITE, 'foundation/global.galleryCategories');
+      handleFirestoreError(err, OperationType.WRITE, 'foundation/gallery.categories');
       throw err;
     }
   };
@@ -1510,20 +1549,19 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       localStorage.setItem('nerve_nae_gallery_categories', JSON.stringify(nextCategories));
     } catch (e) {}
 
-    const globalDocRef = doc(db, 'foundation', 'global');
+    const galleryDocRef = doc(db, 'foundation', 'gallery');
     try {
       await setDoc(
-        globalDocRef,
+        galleryDocRef,
         {
-          galleryCategories: nextCategories,
+          categories: nextCategories,
           updatedAt: new Date().toISOString()
         },
         { merge: true }
       );
-      postMutationToServer('/api/sync', { galleryCategories: nextCategories }, `갤러리 카테고리 삭제: ${categoryToDelete}`);
       addDebugLog('success', `갤러리 카테고리 항목 삭제 완료: ${categoryToDelete}`);
     } catch (err) {
-      handleFirestoreError(err, OperationType.WRITE, 'foundation/global.galleryCategories');
+      handleFirestoreError(err, OperationType.WRITE, 'foundation/gallery.categories');
       throw err;
     }
   };
@@ -1535,19 +1573,18 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       localStorage.setItem('nerve_nae_gallery_categories', JSON.stringify(filtered));
     } catch (e) {}
 
-    const globalDocRef = doc(db, 'foundation', 'global');
+    const galleryDocRef = doc(db, 'foundation', 'gallery');
     try {
       await setDoc(
-        globalDocRef,
+        galleryDocRef,
         {
-          galleryCategories: filtered,
+          categories: filtered,
           updatedAt: new Date().toISOString()
         },
         { merge: true }
       );
-      postMutationToServer('/api/sync', { galleryCategories: filtered }, `갤러리 카테고리 일괄 갱신`);
     } catch (err) {
-      handleFirestoreError(err, OperationType.WRITE, 'foundation/global.galleryCategories');
+      handleFirestoreError(err, OperationType.WRITE, 'foundation/gallery.categories');
     }
   };
 
@@ -1669,25 +1706,25 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     };
     const next = [newPopup, ...popups];
     setPopups(next);
-    postMutationToServer('/api/sync', { popups: next }, `팝업 추가: ${newPopup.title}`);
+    postMutationToServer('popups', { items: next }, `팝업 추가: ${newPopup.title}`);
   };
 
   const updatePopup = (id: string, updatedData: Partial<PopupItem>) => {
     const next = popups.map(p => p.id === id ? { ...p, ...updatedData } : p);
     setPopups(next);
-    postMutationToServer('/api/sync', { popups: next }, `팝업 수정 (ID: ${id})`);
+    postMutationToServer('popups', { items: next }, `팝업 수정 (ID: ${id})`);
   };
 
   const deletePopup = (id: string) => {
     const next = popups.filter(p => p.id !== id);
     setPopups(next);
-    postMutationToServer('/api/sync', { popups: next }, `팝업 삭제 (ID: ${id})`);
+    postMutationToServer('popups', { items: next }, `팝업 삭제 (ID: ${id})`);
   };
 
   const togglePopupActive = (id: string) => {
     const next = popups.map(p => p.id === id ? { ...p, isActive: !p.isActive } : p);
     setPopups(next);
-    postMutationToServer('/api/sync', { popups: next }, `팝업 활성 토글 (ID: ${id})`);
+    postMutationToServer('popups', { items: next }, `팝업 활성 토글 (ID: ${id})`);
   };
 
   const updateSettings = (newSettings: Partial<FoundationSettings>) => {
@@ -1698,7 +1735,10 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       try {
         localStorage.setItem('nerve_nae_settings', JSON.stringify(next));
       } catch (e) {}
-      postMutationToServer('/api/settings', { settings: next }, '재단 기본 설정 업데이트');
+      // Settings now live in their own `foundation/settings` document
+      // (fields stored flat, matching the FoundationSettings shape)
+      // rather than nested under a `settings` key on the old shared doc.
+      postMutationToServer('settings', next, '재단 기본 설정 업데이트');
       setSyncTimestamp(Date.now());
       return next;
     });
@@ -1717,13 +1757,19 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setGallery(INITIAL_GALLERY);
     setPopups(INITIAL_POPUPS);
     localStorage.clear();
-    postMutationToServer('/api/sync', {
-      settings: INITIAL_SETTINGS,
-      programs: INITIAL_PROGRAMS,
-      notices: INITIAL_NOTICES,
-      gallery: INITIAL_GALLERY,
-      popups: INITIAL_POPUPS
-    }, '초기 기본값으로 초기화');
+
+    const nowIso = new Date().toISOString();
+    const batch = writeBatch(db);
+    batch.set(doc(db, 'foundation', 'settings'), { ...INITIAL_SETTINGS, updatedAt: nowIso }, { merge: true });
+    batch.set(doc(db, 'foundation', 'programs'), { items: INITIAL_PROGRAMS, updatedAt: nowIso }, { merge: true });
+    batch.set(doc(db, 'foundation', 'notices'), { items: INITIAL_NOTICES, updatedAt: nowIso }, { merge: true });
+    batch.set(doc(db, 'foundation', 'gallery'), { items: INITIAL_GALLERY, updatedAt: nowIso }, { merge: true });
+    batch.set(doc(db, 'foundation', 'popups'), { items: INITIAL_POPUPS, updatedAt: nowIso }, { merge: true });
+    batch.commit().catch(err => {
+      handleFirestoreError(err, OperationType.WRITE, 'foundation (reset to defaults)');
+      setSyncStatus('error');
+      setSyncError('초기화 저장에 실패했습니다.');
+    });
   };
 
   const incrementNoticeViews = (id: string) => {
@@ -1735,7 +1781,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     applyNotices(next);
     // Persist the increment to Firestore so the count is shared across
     // devices/visitors instead of only living in this browser's state.
-    postMutationToServer('/api/sync', { notices: next }, `공지 조회수 증가 (ID: ${id})`);
+    postMutationToServer('notices', { items: next }, `공지 조회수 증가 (ID: ${id})`);
   };
 
   const goBackFromDetail = (fallbackTab: ActiveTab = 'news') => {

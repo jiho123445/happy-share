@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useFoundation } from '../context/FoundationContext';
 import { MapPin, Phone, Mail, Clock, Navigation, Send, CheckCircle2, Building } from 'lucide-react';
+import { HONEYPOT_FIELD_NAME, honeypotStyle, isLikelyBot, checkRateLimit } from '../utils/spamGuard';
 
 export const LocationSection: React.FC = () => {
   const { settings, addInquiry } = useFoundation();
+
+  const formMountedAt = useRef(Date.now());
+  const [honeypot, setHoneypot] = useState('');
 
   const [inquiryData, setInquiryData] = useState({
     name: '',
@@ -20,6 +24,17 @@ export const LocationSection: React.FC = () => {
     e.preventDefault();
     if (!inquiryData.name || !inquiryData.phone || !inquiryData.message) {
       alert('필수 입력항목(성함, 연락처, 문의내용)을 작성해 주세요.');
+      return;
+    }
+
+    if (isLikelyBot(honeypot, formMountedAt.current)) {
+      setSubmitted(true);
+      return;
+    }
+
+    const rateLimit = checkRateLimit('nerve_nae_inquiry_rate');
+    if (!rateLimit.allowed) {
+      alert(`짧은 시간에 너무 많이 문의되었습니다. ${rateLimit.retryAfterMinutes}분 후 다시 시도해 주세요.`);
       return;
     }
 
@@ -197,6 +212,16 @@ export const LocationSection: React.FC = () => {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
+              <input
+                type="text"
+                name={HONEYPOT_FIELD_NAME}
+                value={honeypot}
+                onChange={(e) => setHoneypot(e.target.value)}
+                style={honeypotStyle}
+                tabIndex={-1}
+                autoComplete="off"
+                aria-hidden="true"
+              />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">성함 *</label>

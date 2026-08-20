@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Mail, Send, CheckCircle2, HeartHandshake, RefreshCw } from 'lucide-react';
 import { useFoundation } from '../context/FoundationContext';
+import { HONEYPOT_FIELD_NAME, honeypotStyle, isLikelyBot, checkRateLimit } from '../utils/spamGuard';
 
 export const NewsletterSection: React.FC = () => {
   const { addSubscriber } = useFoundation();
+  const formMountedAt = useRef(Date.now());
+  const [honeypot, setHoneypot] = useState('');
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -14,6 +17,19 @@ export const NewsletterSection: React.FC = () => {
       alert('올바른 이메일 주소를 입력해 주세요.');
       return;
     }
+
+    if (isLikelyBot(honeypot, formMountedAt.current)) {
+      setSubscribed(true);
+      setEmail('');
+      return;
+    }
+
+    const rateLimit = checkRateLimit('nerve_nae_subscriber_rate');
+    if (!rateLimit.allowed) {
+      alert(`짧은 시간에 너무 많이 시도되었습니다. ${rateLimit.retryAfterMinutes}분 후 다시 시도해 주세요.`);
+      return;
+    }
+
     setSubmitting(true);
     try {
       await addSubscriber(email);
@@ -63,6 +79,16 @@ export const NewsletterSection: React.FC = () => {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-center gap-2 max-w-md mx-auto">
+              <input
+                type="text"
+                name={HONEYPOT_FIELD_NAME}
+                value={honeypot}
+                onChange={(e) => setHoneypot(e.target.value)}
+                style={honeypotStyle}
+                tabIndex={-1}
+                autoComplete="off"
+                aria-hidden="true"
+              />
               <div className="relative w-full sm:w-80">
                 <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input

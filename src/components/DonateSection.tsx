@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useFoundation } from '../context/FoundationContext';
 import { Heart, CreditCard, Gift, Users, CheckCircle2, AlertCircle, Send, Sparkles, ShieldCheck } from 'lucide-react';
+import { HONEYPOT_FIELD_NAME, honeypotStyle, isLikelyBot, checkRateLimit } from '../utils/spamGuard';
 
 export const DonateSection: React.FC = () => {
   const { settings, addDonation } = useFoundation();
+
+  const formMountedAt = useRef(Date.now());
+  const [honeypot, setHoneypot] = useState('');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -28,6 +32,20 @@ export const DonateSection: React.FC = () => {
     }
     if (!formData.privacyAgreed) {
       alert('개인정보 수집 및 이용 동의에 체크해 주세요.');
+      return;
+    }
+
+    // Spam mitigation: if this looks automated, pretend it succeeded
+    // without actually writing anything, so a bot has no signal to
+    // adapt its behavior around.
+    if (isLikelyBot(honeypot, formMountedAt.current)) {
+      setSubmitted(true);
+      return;
+    }
+
+    const rateLimit = checkRateLimit('nerve_nae_donation_rate');
+    if (!rateLimit.allowed) {
+      alert(`짧은 시간에 너무 많이 신청되었습니다. ${rateLimit.retryAfterMinutes}분 후 다시 시도해 주세요.`);
       return;
     }
 
@@ -195,6 +213,17 @@ export const DonateSection: React.FC = () => {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Honeypot field: invisible to real visitors, only bots fill this in. */}
+              <input
+                type="text"
+                name={HONEYPOT_FIELD_NAME}
+                value={honeypot}
+                onChange={(e) => setHoneypot(e.target.value)}
+                style={honeypotStyle}
+                tabIndex={-1}
+                autoComplete="off"
+                aria-hidden="true"
+              />
               
               {/* Type Selection */}
               <div>

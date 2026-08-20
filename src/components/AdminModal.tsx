@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useFoundation } from '../context/FoundationContext';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { signInWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut, updatePassword } from 'firebase/auth';
 import { doc, setDoc, deleteField } from 'firebase/firestore';
 import { auth, db, storage } from '../lib/firebase';
 import { INITIAL_SETTINGS } from '../data/initialData';
@@ -110,9 +110,11 @@ export const AdminModal: React.FC = () => {
     getImageUrl
   } = useFoundation();
 
-  // Authentication State
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => isAdmin);
-  const ADMIN_UID = import.meta.env.VITE_ADMIN_UID || '';
+  // Authentication state now lives in FoundationContext (`isAdmin`), kept
+  // in sync there via a real Firebase Auth listener so it's accurate even
+  // before this modal has ever been opened (see FoundationContext.tsx).
+  // This component just reads it directly instead of duplicating the
+  // Firebase Auth subscription.
   const [adminEmail, setAdminEmail] = useState<string>(() => import.meta.env.VITE_ADMIN_EMAIL || '');
   const [passwordInput, setPasswordInput] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -220,16 +222,6 @@ export const AdminModal: React.FC = () => {
   const [confirmAdminPassword, setConfirmAdminPassword] = useState('');
   const [passwordChangeSuccess, setPasswordChangeSuccess] = useState<string | null>(null);
   const [passwordChangeError, setPasswordChangeError] = useState<string | null>(null);
-
-  // Firebase Authentication handler. The old Firestore-stored password is no longer trusted.
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      const signedIn = !!user && (!ADMIN_UID || user.uid === ADMIN_UID);
-      setIsAuthenticated(signedIn);
-      setIsAdmin(signedIn);
-    });
-    return () => unsubscribe();
-  }, [setIsAdmin]);
 
   if (!adminOpen) return null;
 
@@ -1060,7 +1052,7 @@ export const AdminModal: React.FC = () => {
             <div>
               <h3 className="text-sm sm:text-base font-extrabold text-white flex items-center gap-2">
                 <span>너브내행복나눔재단 통합 관리자</span>
-                {isAuthenticated && (
+                {isAdmin && (
                   <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                     <span>Firebase 클라우드 1초 실시간 연동</span>
@@ -1074,11 +1066,10 @@ export const AdminModal: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            {isAuthenticated && (
+            {isAdmin && (
               <button
                 onClick={async () => {
                   await signOut(auth);
-                  setIsAuthenticated(false);
                   setIsAdmin(false);
                 }}
                 className="hidden sm:flex items-center gap-1 text-xs text-slate-400 hover:text-orange-400 px-3 py-1.5 rounded-xl hover:bg-slate-800 transition-colors"
@@ -1112,7 +1103,7 @@ export const AdminModal: React.FC = () => {
         )}
 
         {/* --- PASSWORD AUTHENTICATION SCREEN --- */}
-        {!isAuthenticated ? (
+        {!isAdmin ? (
           <div className="flex-1 flex items-center justify-center p-6 bg-slate-50">
             <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-xl max-w-md w-full space-y-6 text-center">
               <div className="w-16 h-16 bg-orange-100 rounded-3xl mx-auto flex items-center justify-center text-orange-600 shadow-inner">

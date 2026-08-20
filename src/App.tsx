@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { FoundationProvider, useFoundation } from './context/FoundationContext';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
@@ -21,9 +21,21 @@ import { Footer } from './components/Footer';
 import { NewsletterSection } from './components/NewsletterSection';
 import { FloatingQuickMenu } from './components/FloatingQuickMenu';
 import { ModalViewer } from './components/ModalViewer';
-import { AdminModal } from './components/AdminModal';
 import { PopupModal } from './components/PopupModal';
 import { SyncErrorBanner } from './components/SyncErrorBanner';
+
+// BUNDLE SIZE (2026 audit follow-up): AdminModal.tsx pulls in the exceljs
+// export library and a large amount of admin-only UI/logic that ordinary
+// visitors never touch. It used to be mounted unconditionally (just
+// internally returning null when closed), so every visitor downloaded
+// and parsed that whole chunk before ever seeing the homepage. It's now
+// loaded on demand — only once the admin actually opens the panel — via
+// a separate code-split chunk. `isAdmin` itself is tracked in
+// FoundationContext (not inside AdminModal) precisely so this lazy split
+// doesn't delay that from being accurate.
+const AdminModal = lazy(() =>
+  import('./components/AdminModal').then((m) => ({ default: m.AdminModal }))
+);
 
 const MainContent: React.FC = () => {
   const { activeTab } = useFoundation();
@@ -113,10 +125,24 @@ export default function App() {
         <Footer />
         <FloatingQuickMenu />
         <ModalViewer />
-        <AdminModal />
+        <AdminModalGate />
         <PopupModal />
         <SyncErrorBanner />
       </div>
     </FoundationProvider>
   );
 }
+
+// Only mount (and therefore only download) the AdminModal chunk once the
+// admin actually opens the panel. Rendering it unconditionally here would
+// trigger the lazy import() immediately on every page load regardless of
+// `adminOpen`, defeating the point of the code-split.
+const AdminModalGate: React.FC = () => {
+  const { adminOpen } = useFoundation();
+  if (!adminOpen) return null;
+  return (
+    <Suspense fallback={null}>
+      <AdminModal />
+    </Suspense>
+  );
+};
