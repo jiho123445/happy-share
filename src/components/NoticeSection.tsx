@@ -1,23 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useFoundation } from '../context/FoundationContext';
 import { NoticeItem } from '../types';
+import { Pagination } from './Pagination';
+import { YearFilter, extractYears } from './YearFilter';
 import { Newspaper, Search, Eye, Calendar, Pin, FileText, ChevronRight, Paperclip } from 'lucide-react';
 
 export const NoticeSection: React.FC = () => {
   const { notices, viewNoticeDetail, noticeCategory, setNoticeCategory } = useFoundation();
   const selectedCategory = noticeCategory || '전체';
   const setSelectedCategory = (cat: string) => setNoticeCategory(cat);
+  const [selectedYear, setSelectedYear] = useState<string>('전체');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const ITEMS_PER_PAGE = 9;
 
   const CATEGORIES = ['전체', '공지사항', '재단소식', '사업소식', '후원소식', '모집공고', '보도자료'];
 
   const filteredNotices = notices.filter((notice) => {
     const matchesCategory = selectedCategory === '전체' || notice.category === selectedCategory;
+    const matchesYear = selectedYear === '전체' || notice.date?.startsWith(selectedYear);
     const matchesSearch =
       notice.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       notice.content.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+    return matchesCategory && matchesYear && matchesSearch;
   });
+
+  const availableYears = extractYears(notices);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategory, selectedYear, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredNotices.length / ITEMS_PER_PAGE));
+  const paginatedNotices = filteredNotices.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   const handleNoticeClick = (notice: NoticeItem) => {
     viewNoticeDetail(notice);
@@ -60,15 +78,18 @@ export const NoticeSection: React.FC = () => {
             ))}
           </div>
 
-          <div className="relative w-full md:w-64">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="공지글 제목 검색..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-orange-500 focus:bg-white"
-            />
+          <div className="relative w-full md:w-64 flex items-center gap-2">
+            <YearFilter years={availableYears} selectedYear={selectedYear} onChange={setSelectedYear} focusRingClassName="focus:border-orange-500" />
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="공지글 제목 검색..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-orange-500 focus:bg-white"
+              />
+            </div>
           </div>
 
         </div>
@@ -91,7 +112,7 @@ export const NoticeSection: React.FC = () => {
                 등록된 공지글이 없거나 검색 결과가 없습니다.
               </div>
             ) : (
-              filteredNotices.map((notice) => (
+              paginatedNotices.map((notice) => (
                 <div
                   key={notice.id}
                   onClick={() => handleNoticeClick(notice)}
@@ -143,6 +164,13 @@ export const NoticeSection: React.FC = () => {
           </div>
 
         </div>
+
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          accentClassName="bg-orange-600"
+        />
 
       </div>
     </section>

@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useFoundation } from '../context/FoundationContext';
 import { GalleryItem } from '../types';
+import { Pagination } from './Pagination';
+import { YearFilter, extractYears } from './YearFilter';
 import {
   Image as ImageIcon,
   MapPin,
@@ -225,7 +227,10 @@ export const GallerySection: React.FC = () => {
   } = useFoundation();
 
   const [selectedCategory, setSelectedCategory] = useState<string>('전체');
+  const [selectedYear, setSelectedYear] = useState<string>('전체');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const ITEMS_PER_PAGE = 9;
   const [manualRefreshing, setManualRefreshing] = useState(false);
 
   // Category Manager Modal state
@@ -296,11 +301,26 @@ export const GallerySection: React.FC = () => {
 
   const filteredGallery = gallery.filter((item) => {
     const matchesCategory = selectedCategory === '전체' || item.category === selectedCategory;
+    const matchesYear = selectedYear === '전체' || item.date?.startsWith(selectedYear);
     const matchesSearch =
       item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+    return matchesCategory && matchesYear && matchesSearch;
   });
+
+  const availableYears = extractYears(gallery);
+
+  // Reset to page 1 whenever a filter changes, so the user doesn't get
+  // stuck on e.g. page 5 of a filtered list that now only has 2 pages.
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategory, selectedYear, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredGallery.length / ITEMS_PER_PAGE));
+  const paginatedGallery = filteredGallery.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   return (
     <section id="gallery-section" className="py-16 md:py-24 bg-slate-50 relative">
@@ -393,15 +413,18 @@ export const GallerySection: React.FC = () => {
             </button>
           </div>
 
-          <div className="relative w-full md:w-64">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="갤러리 제목 검색..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:bg-white"
-            />
+          <div className="relative w-full md:w-64 flex items-center gap-2">
+            <YearFilter years={availableYears} selectedYear={selectedYear} onChange={setSelectedYear} focusRingClassName="focus:border-emerald-500" />
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="갤러리 제목 검색..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:bg-white"
+              />
+            </div>
           </div>
         </div>
 
@@ -428,6 +451,7 @@ export const GallerySection: React.FC = () => {
               <button
                 onClick={() => {
                   setSelectedCategory('전체');
+                  setSelectedYear('전체');
                   setSearchQuery('');
                 }}
                 className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-4 py-2.5 rounded-xl cursor-pointer"
@@ -437,17 +461,25 @@ export const GallerySection: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredGallery.map((item) => (
-              <GalleryCard
-                key={item.id}
-                item={item}
-                onViewDetail={viewGalleryDetail}
-                onAdminEdit={() => setAdminOpen(true)}
-                getImageUrl={getImageUrl}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {paginatedGallery.map((item) => (
+                <GalleryCard
+                  key={item.id}
+                  item={item}
+                  onViewDetail={viewGalleryDetail}
+                  onAdminEdit={() => setAdminOpen(true)}
+                  getImageUrl={getImageUrl}
+                />
+              ))}
+            </div>
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              accentClassName="bg-emerald-600"
+            />
+          </>
         )}
 
       </div>
