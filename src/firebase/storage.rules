@@ -2,27 +2,29 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    
-    // 헬퍼 함수: 관리자 로그인 여부 확인
-    function isAdmin() {
-    return request.auth != null
-        && request.auth.uid == 'a1MQmdMGkgdorEl6V3FAptCAYo52';
-}
 
-    // 1. 활동사진 파일 Storage 경로 ('activities/')
-    // 누구나 이미지 조회 가능. 업로드/삭제는 관리자만 가능하며,
-    // 이미지 MIME type과 파일 크기를 서버 규칙에서 강제한다.
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.uid == 'a1MQmdMGkgdorEl6V3FAptCAYo52';
+    }
+
+    // Image uploads: one file <= 10 MB. The extension check is intentional:
+    // MIME type alone is not sufficient because browsers can report generic
+    // types for some files. Client-side validation is also performed, but
+    // these Storage Rules are the final server-side security boundary.
     match /activities/{allPaths=**} {
       allow read: if true;
       allow create, update: if isAdmin()
         && request.resource.size <= 10 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*');
+        && request.resource.contentType in [
+          'image/jpeg', 'image/png', 'image/webp'
+        ]
+        && request.resource.name.matches('.*\\.(jpg|JPG|jpeg|JPEG|png|PNG|webp|WEBP)$');
       allow delete: if isAdmin();
     }
 
-    // 2. 공지사항 첨부 파일 Storage 경로 ('notices/')
-    // 문서/이미지 첨부를 허용하되 관리자만 쓰기 가능하고,
-    // 최대 25MB 및 허용 MIME type을 서버 규칙에서 강제한다.
+    // Notice attachments: one file <= 25 MB. HWP/HWPX are included for
+    // Korean office documents; image attachments are also supported.
     match /notices/{allPaths=**} {
       allow read: if true;
       allow create, update: if isAdmin()
@@ -31,6 +33,7 @@ service firebase.storage {
           'application/pdf',
           'application/haansofthwp',
           'application/vnd.hancom.hwp',
+          'application/vnd.hancom.hwpx',
           'application/octet-stream',
           'application/msword',
           'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -38,21 +41,20 @@ service firebase.storage {
           'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           'application/vnd.ms-powerpoint',
           'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-          'image/jpeg',
-          'image/png',
-          'image/webp',
-          'image/gif'
-        ];
+          'image/jpeg', 'image/png', 'image/webp', 'image/gif'
+        ]
+        && request.resource.name.matches('.*\\.(pdf|PDF|hwp|HWP|hwpx|HWPX|doc|DOC|docx|DOCX|xls|XLS|xlsx|XLSX|ppt|PPT|pptx|PPTX|jpg|JPG|jpeg|JPEG|png|PNG|webp|WEBP|gif|GIF)$');
       allow delete: if isAdmin();
     }
 
-    // 3. 재단 설정 이미지 Storage 경로 ('settings/') - 이사장 사진, 메인 배너, 팝업 이미지 등
-    // 누구나 조회 가능. 업로드/삭제는 관리자만 가능하며 이미지만 허용한다.
     match /settings/{allPaths=**} {
       allow read: if true;
       allow create, update: if isAdmin()
         && request.resource.size <= 10 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*');
+        && request.resource.contentType in [
+          'image/jpeg', 'image/png', 'image/webp'
+        ]
+        && request.resource.name.matches('.*\\.(jpg|JPG|jpeg|JPEG|png|PNG|webp|WEBP)$');
       allow delete: if isAdmin();
     }
 

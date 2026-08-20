@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useFoundation } from '../context/FoundationContext';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { validateImageFile, validateNoticeFile } from '../utils/uploadValidation';
 import { signInWithEmailAndPassword, signOut, updatePassword } from 'firebase/auth';
 import { doc, setDoc, deleteField } from 'firebase/firestore';
 import { auth, db, storage } from '../lib/firebase';
@@ -331,6 +332,7 @@ export const AdminModal: React.FC = () => {
   // 않음": the notice appears locally, then reverts/disappears once Firestore's
   // realtime listener re-syncs the (unchanged) old document.
   const uploadNoticeFileToFirebase = async (file: File): Promise<string> => {
+    validateNoticeFile(file);
     const safeBaseName = file.name
       .replace(/\.[^/.]+$/, '')
       .replace(/[^a-zA-Z0-9가-힣_-]/g, '_')
@@ -495,8 +497,10 @@ export const AdminModal: React.FC = () => {
 
   // Gallery File Upload Handlers (with HTML5 Canvas compression + server static upload)
   const processImageFile = (file: File, callback: (finalUrl: string, fileName: string) => void, prefix: string = 'upload') => {
-    if (!file.type.startsWith('image/')) {
-      alert('이미지 파일(JPG, PNG, WEBP, GIF 등)만 업로드 가능합니다.');
+    try {
+      validateImageFile(file);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : '이미지 업로드가 허용되지 않습니다.');
       return;
     }
     const reader = new FileReader();
@@ -569,6 +573,12 @@ export const AdminModal: React.FC = () => {
     file: File,
     callback: (dataUrl: string, fileName: string) => void
   ) => {
+    try {
+      validateImageFile(file);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : '이미지 업로드가 허용되지 않습니다.');
+      return;
+    }
     if (!file.type.startsWith('image/')) {
       alert('이미지 파일(JPG, PNG, WEBP, GIF 등)만 업로드 가능합니다.');
       return;

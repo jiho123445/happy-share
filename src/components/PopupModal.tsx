@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useFoundation } from '../context/FoundationContext';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { validateImageFile } from '../utils/uploadValidation';
 import { storage } from '../lib/firebase';
 import {
   X,
@@ -228,8 +229,10 @@ export const PopupModal: React.FC = () => {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isEditMode: boolean) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      showToast('이미지 파일만 업로드할 수 있습니다.');
+    try {
+      validateImageFile(file);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : '이미지 업로드가 허용되지 않습니다.');
       return;
     }
 
