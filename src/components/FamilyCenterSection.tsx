@@ -1,5 +1,6 @@
 import React from 'react';
 import { useFoundation } from '../context/FoundationContext';
+import { INITIAL_SETTINGS } from '../data/initialData';
 import { Building2, Users, Heart, Sparkles, BookOpen, ShieldCheck, ExternalLink, Phone, MapPin } from 'lucide-react';
 
 export const FamilyCenterSection: React.FC = () => {
@@ -34,12 +35,11 @@ export const FamilyCenterSection: React.FC = () => {
               </div>
 
               <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-snug">
-                <span className="inline-block -ml-[0.42em]">“</span>다문화가족 지원을 넘어 홍천군 전체 가족을 보듬는 통합 가족복지 전문기관”
+                <span className="inline-block -ml-[0.42em]">“</span>{settings.familyCenterQuote || INITIAL_SETTINGS.familyCenterQuote}”
               </h3>
 
               <p className="text-base sm:text-lg md:text-xl font-bold text-slate-900 leading-relaxed bg-emerald-50/70 p-4 sm:p-5 rounded-2xl border border-emerald-200/80 shadow-2xs">
-                홍천군가족센터는 다양한 가족 형태(다문화가족, 1인가구, 한부모가족, 조손가족, 맞벌이가족 등)에 맞춰 
-                가족 교육, 상담, 돌봄, 다문화 이중언어 학습, 공동육아나눔터 등 생애주기별 맞춤 통합복지 서비스를 제공하고 있습니다.
+                {settings.familyCenterDescription || INITIAL_SETTINGS.familyCenterDescription}
               </p>
 
               {/* Official Website Link Button */}
@@ -58,41 +58,23 @@ export const FamilyCenterSection: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
-                  <div className="text-xs sm:text-sm font-extrabold text-emerald-800 flex items-center gap-1.5">
-                    <Users className="w-4 h-4 text-emerald-600" /> 다문화가족 정착지원
-                  </div>
-                  <p className="text-xs font-semibold text-slate-700">
-                    한국어 교육, 방문교육, 통번역 서비스, 모국 방문 및 정주여건 개선
-                  </p>
-                </div>
-
-                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
-                  <div className="text-xs sm:text-sm font-extrabold text-emerald-800 flex items-center gap-1.5">
-                    <Heart className="w-4 h-4 text-emerald-600" /> 가족상담 및 소통
-                  </div>
-                  <p className="text-xs font-semibold text-slate-700">
-                    부부상담, 부모-자녀 소통교육, 다문화 이중언어 교실 및 가족 캠프
-                  </p>
-                </div>
-
-                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
-                  <div className="text-xs sm:text-sm font-extrabold text-emerald-800 flex items-center gap-1.5">
-                    <BookOpen className="w-4 h-4 text-emerald-600" /> 공동육아나눔터
-                  </div>
-                  <p className="text-xs font-semibold text-slate-700">
-                    이웃과 함께하는 아동 돌봄 공간 및 자녀 돌봄 품앗이 활동
-                  </p>
-                </div>
-
-                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
-                  <div className="text-xs sm:text-sm font-extrabold text-emerald-800 flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-emerald-600" /> 맞춤형 가족 지원
-                  </div>
-                  <p className="text-xs font-semibold text-slate-700">
-                    1인가구 식생활 및 사회적 관계망 형성, 취약가구 긴급 자원 연계
-                  </p>
-                </div>
+                {(() => {
+                  const features = settings.familyCenterFeatures || INITIAL_SETTINGS.familyCenterFeatures || [];
+                  const icons = [Users, Heart, BookOpen, ShieldCheck];
+                  return features.slice(0, 4).map((feature, idx) => {
+                    const Icon = icons[idx] || Users;
+                    return (
+                      <div key={idx} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
+                        <div className="text-xs sm:text-sm font-extrabold text-emerald-800 flex items-center gap-1.5">
+                          <Icon className="w-4 h-4 text-emerald-600" /> {feature.title}
+                        </div>
+                        <p className="text-xs font-semibold text-slate-700">
+                          {feature.description}
+                        </p>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
 
             </div>
@@ -101,10 +83,16 @@ export const FamilyCenterSection: React.FC = () => {
             <div className="lg:col-span-5 space-y-4">
               <div className="rounded-3xl overflow-hidden shadow-lg border-4 border-emerald-50">
                 <img
-                  src="https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=800&q=80"
+                  src={settings.familyCenterImageUrl || INITIAL_SETTINGS.familyCenterImageUrl}
                   alt="홍천군가족센터 수강 현장"
                   loading="lazy"
                   className="w-full h-72 object-cover"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    if (INITIAL_SETTINGS.familyCenterImageUrl && target.src !== INITIAL_SETTINGS.familyCenterImageUrl) {
+                      target.src = INITIAL_SETTINGS.familyCenterImageUrl;
+                    }
+                  }}
                 />
               </div>
 
@@ -119,7 +107,7 @@ export const FamilyCenterSection: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2 text-xs font-medium text-emerald-100">
                   <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>위치: 강원특별자치도 홍천군 홍천읍 산림조합길 12</span>
+                  <span>위치: {settings.familyCenterAddress || INITIAL_SETTINGS.familyCenterAddress}</span>
                 </div>
                 
                 <a

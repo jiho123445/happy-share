@@ -131,6 +131,7 @@ export interface FoundationSettings {
   chairmanName: string;
   chairmanImageUrl?: string;
   heroImageUrl?: string;
+  familyCenterImageUrl?: string;
   chairmanGreeting?: string;
   sloganMain: string;
   sloganSub: string;
@@ -141,6 +142,12 @@ export interface FoundationSettings {
   fax: string;
   familyCenterPhone?: string;
   familyCenterFax?: string;
+  familyCenterAddress?: string;
+  familyCenterQuote?: string;
+  familyCenterDescription?: string;
+  /** Exactly 4 feature cards shown in the family center section, in fixed
+   * order (icons are fixed per position: Users, Heart, BookOpen, ShieldCheck). */
+  familyCenterFeatures?: { title: string; description: string }[];
   email: string;
   operatingHours: string;
   bankAccounts: {

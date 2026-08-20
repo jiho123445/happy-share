@@ -1432,6 +1432,68 @@ export const AdminModal: React.FC = () => {
                       </div>
                     </div>
 
+                    {/* Family Center Section Photo Upload */}
+                    <div className="p-3.5 bg-teal-50/60 rounded-xl border border-teal-200/80 space-y-2">
+                      <label className="block font-bold text-slate-800">가족센터 소개란 사진</label>
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={editSettings.familyCenterImageUrl || INITIAL_SETTINGS.familyCenterImageUrl}
+                          alt="가족센터 사진 미리보기"
+                          className="w-24 h-16 rounded-xl object-cover border border-slate-300 shrink-0 bg-white"
+                          onError={(e) => {
+                            const target = e.currentTarget;
+                            if (INITIAL_SETTINGS.familyCenterImageUrl && target.src !== INITIAL_SETTINGS.familyCenterImageUrl) {
+                              target.src = INITIAL_SETTINGS.familyCenterImageUrl;
+                            }
+                          }}
+                        />
+                        <div className="flex-1 space-y-1.5">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <label className="px-3.5 py-2 bg-white hover:bg-orange-50 border border-slate-300 hover:border-orange-400 rounded-xl text-xs font-bold text-slate-700 hover:text-orange-600 cursor-pointer flex items-center gap-2 transition-all w-fit shadow-2xs">
+                              <Upload className="w-4 h-4 text-orange-500" />
+                              <span>내 컴퓨터에서 가족센터 사진 선택</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    processImageFile(file, (finalUrl) => {
+                                      setEditSettings((prev) => ({ ...prev, familyCenterImageUrl: finalUrl }));
+                                      updateSettings({ familyCenterImageUrl: finalUrl });
+                                      showToast('가족센터 사진이 저장되었습니다.');
+                                    }, 'familycenter');
+                                  }
+                                }}
+                              />
+                            </label>
+                            {editSettings.familyCenterImageUrl && editSettings.familyCenterImageUrl !== INITIAL_SETTINGS.familyCenterImageUrl && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const defaultUrl = INITIAL_SETTINGS.familyCenterImageUrl || '';
+                                  setEditSettings((prev) => ({ ...prev, familyCenterImageUrl: defaultUrl }));
+                                  updateSettings({ familyCenterImageUrl: defaultUrl });
+                                  showToast('기본 가족센터 사진으로 복원되었습니다.');
+                                }}
+                                className="text-[11px] text-slate-500 hover:text-red-500 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-red-50 transition-colors"
+                              >
+                                기본 사진 복원
+                              </button>
+                            )}
+                          </div>
+                          <input
+                            type="text"
+                            placeholder="또는 이미지 URL 직접 입력"
+                            value={editSettings.familyCenterImageUrl || ''}
+                            onChange={(e) => setEditSettings({ ...editSettings, familyCenterImageUrl: e.target.value })}
+                            className="w-full p-2 bg-white border rounded-lg text-[11px] font-mono text-slate-600"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
                     <div>
                       <label className="block font-bold text-slate-700 mb-1">이사장 인사말 문구</label>
                       <textarea
@@ -1485,6 +1547,76 @@ export const AdminModal: React.FC = () => {
                           className="w-full p-2.5 bg-slate-50 border rounded-xl"
                         />
                       </div>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">가족센터 위치 주소</label>
+                      <input
+                        type="text"
+                        value={editSettings.familyCenterAddress ?? INITIAL_SETTINGS.familyCenterAddress ?? ''}
+                        onChange={(e) => setEditSettings({ ...editSettings, familyCenterAddress: e.target.value })}
+                        className="w-full p-2.5 bg-slate-50 border rounded-xl"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">가족센터 소개 인용문 (큰따옴표 안 문구)</label>
+                      <textarea
+                        rows={2}
+                        value={editSettings.familyCenterQuote ?? INITIAL_SETTINGS.familyCenterQuote ?? ''}
+                        onChange={(e) => setEditSettings({ ...editSettings, familyCenterQuote: e.target.value })}
+                        className="w-full p-2.5 bg-slate-50 border rounded-xl leading-relaxed"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">가족센터 소개 설명 (초록 박스 문단)</label>
+                      <textarea
+                        rows={4}
+                        value={editSettings.familyCenterDescription ?? INITIAL_SETTINGS.familyCenterDescription ?? ''}
+                        onChange={(e) => setEditSettings({ ...editSettings, familyCenterDescription: e.target.value })}
+                        className="w-full p-2.5 bg-slate-50 border rounded-xl leading-relaxed"
+                      />
+                    </div>
+
+                    <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                      <label className="block font-bold text-slate-800">가족센터 지원 카드 4개 (제목 · 설명)</label>
+                      {(() => {
+                        const iconLabels = ['다문화가족 정착지원 카드', '가족상담 및 소통 카드', '공동육아나눔터 카드', '맞춤형 가족 지원 카드'];
+                        const currentFeatures = editSettings.familyCenterFeatures
+                          ?? INITIAL_SETTINGS.familyCenterFeatures
+                          ?? [];
+                        return [0, 1, 2, 3].map((idx) => {
+                          const feature = currentFeatures[idx] || { title: '', description: '' };
+                          return (
+                            <div key={idx} className="p-3 bg-white rounded-lg border border-slate-200 space-y-1.5">
+                              <div className="text-[11px] font-bold text-slate-500">{iconLabels[idx]}</div>
+                              <input
+                                type="text"
+                                placeholder="카드 제목"
+                                value={feature.title}
+                                onChange={(e) => {
+                                  const next = [...currentFeatures];
+                                  next[idx] = { ...feature, title: e.target.value };
+                                  setEditSettings({ ...editSettings, familyCenterFeatures: next });
+                                }}
+                                className="w-full p-2 bg-slate-50 border rounded-lg text-sm font-bold"
+                              />
+                              <input
+                                type="text"
+                                placeholder="카드 설명"
+                                value={feature.description}
+                                onChange={(e) => {
+                                  const next = [...currentFeatures];
+                                  next[idx] = { ...feature, description: e.target.value };
+                                  setEditSettings({ ...editSettings, familyCenterFeatures: next });
+                                }}
+                                className="w-full p-2 bg-slate-50 border rounded-lg text-xs"
+                              />
+                            </div>
+                          );
+                        });
+                      })()}
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

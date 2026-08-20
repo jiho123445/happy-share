@@ -16,6 +16,16 @@ export const INITIAL_SETTINGS: FoundationSettings = {
   chairmanName: '윤성일',
   chairmanImageUrl: '/uploads/chairman_profile.jpg',
   heroImageUrl: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1200&q=80',
+  familyCenterImageUrl: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=800&q=80',
+  familyCenterAddress: '강원특별자치도 홍천군 홍천읍 산림조합길 12',
+  familyCenterQuote: '다문화가족 지원을 넘어 홍천군 전체 가족을 보듬는 통합 가족복지 전문기관',
+  familyCenterDescription: '홍천군가족센터는 다양한 가족 형태(다문화가족, 1인가구, 한부모가족, 조손가족, 맞벌이가족 등)에 맞춰 가족 교육, 상담, 돌봄, 다문화 이중언어 학습, 공동육아나눔터 등 생애주기별 맞춤 통합복지 서비스를 제공하고 있습니다.',
+  familyCenterFeatures: [
+    { title: '다문화가족 정착지원', description: '한국어 교육, 방문교육, 통번역 서비스, 모국 방문 및 정주여건 개선' },
+    { title: '가족상담 및 소통', description: '부부상담, 부모-자녀 소통교육, 다문화 이중언어 교실 및 가족 캠프' },
+    { title: '공동육아나눔터', description: '이웃과 함께하는 아동 돌봄 공간 및 자녀 돌봄 품앗이 활동' },
+    { title: '맞춤형 가족 지원', description: '1인가구 식생활 및 사회적 관계망 형성, 취약가구 긴급 자원 연계' }
+  ],
   chairmanGreeting: `안녕하십니까. 사단법인 너브내 행복나눔재단 이사장 윤성일입니다.
 
 먼저 바쁘신 가운데 저희 재단 홈페이지를 찾아주신 후원자님, 자원봉사자님, 그리고 지역주민 여러분께 진심으로 감사의 인사를 드립니다.
