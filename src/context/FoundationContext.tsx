@@ -539,9 +539,14 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   // has opened the admin panel for the first time. This also lets
   // AdminModal be lazy-loaded (see App.tsx) without breaking that.
   useEffect(() => {
-    const ADMIN_UID = import.meta.env.VITE_ADMIN_UID || '';
+    // VITE_ADMIN_UID is preferred when configured in Vercel.
+    // Keep the Firebase Rules UID as a safe client-side fallback so that
+    // the admin UI does not become permanently locked out when the
+    // environment variable is missing after a deployment. The real
+    // authorization boundary remains Firestore/Storage Security Rules.
+    const ADMIN_UID = import.meta.env.VITE_ADMIN_UID || 'a1MQmdMGkgdorEl6V3FAptCAYo52';
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      const signedIn = !!user && !!ADMIN_UID && user.uid === ADMIN_UID;
+      const signedIn = !!user && user.uid === ADMIN_UID;
       setIsAdmin(signedIn);
     });
     return () => unsubscribe();
