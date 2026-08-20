@@ -24,24 +24,41 @@ service cloud.firestore {
     // also does a light shape check so a malformed/malicious payload can't
     // slip in a pre-set "처리완료" status or missing required fields.
     match /donations/{id} {
-      allow create: if request.resource.data.keys().hasAll(['name', 'phone', 'createdAt', 'status'])
+      allow create: if request.resource.data.keys().hasOnly(['name', 'phone', 'email', 'donationType', 'targetCategory', 'amountOrItem', 'message', 'privacyAgreed', 'createdAt', 'status'])
+        && request.resource.data.keys().hasAll(['name', 'phone', 'createdAt', 'status'])
         && request.resource.data.name is string
         && request.resource.data.name.size() > 0 && request.resource.data.name.size() < 200
         && request.resource.data.phone is string
         && request.resource.data.phone.size() > 0 && request.resource.data.phone.size() < 50
+        && request.resource.data.email is string
+        && request.resource.data.email.size() < 200
+        && request.resource.data.donationType is string
+        && request.resource.data.donationType.size() > 0 && request.resource.data.donationType.size() < 50
+        && request.resource.data.targetCategory is string
+        && request.resource.data.targetCategory.size() > 0 && request.resource.data.targetCategory.size() < 100
+        && (!request.resource.data.keys().hasAny(['amountOrItem']) || request.resource.data.amountOrItem is string)
+        && (!request.resource.data.keys().hasAny(['message']) || request.resource.data.message is string)
+        && request.resource.data.privacyAgreed == true
+        && request.resource.data.createdAt is string
         && request.resource.data.status == '접수완료';
       allow read, update, delete: if isAdmin();
     }
 
     // Contact inquiries: contain name/phone/email/message. Same pattern.
     match /inquiries/{id} {
-      allow create: if request.resource.data.keys().hasAll(['name', 'phone', 'message', 'createdAt', 'status'])
+      allow create: if request.resource.data.keys().hasOnly(['name', 'phone', 'email', 'subject', 'message', 'createdAt', 'status'])
+        && request.resource.data.keys().hasAll(['name', 'phone', 'message', 'createdAt', 'status'])
         && request.resource.data.name is string
         && request.resource.data.name.size() > 0 && request.resource.data.name.size() < 200
         && request.resource.data.phone is string
         && request.resource.data.phone.size() > 0 && request.resource.data.phone.size() < 50
         && request.resource.data.message is string
+        && request.resource.data.email is string
+        && request.resource.data.email.size() < 200
+        && request.resource.data.subject is string
+        && request.resource.data.subject.size() > 0 && request.resource.data.subject.size() < 300
         && request.resource.data.message.size() > 0 && request.resource.data.message.size() < 5000
+        && request.resource.data.createdAt is string
         && request.resource.data.status == '대기중';
       allow read, update, delete: if isAdmin();
     }
@@ -49,9 +66,11 @@ service cloud.firestore {
     // Newsletter subscribers: contain email only, but still not meant for
     // public listing/scraping. Same create-only-for-public pattern.
     match /subscribers/{id} {
-      allow create: if request.resource.data.keys().hasAll(['email', 'subscribedAt', 'status'])
+      allow create: if request.resource.data.keys().hasOnly(['email', 'subscribedAt', 'status'])
+        && request.resource.data.keys().hasAll(['email', 'subscribedAt', 'status'])
         && request.resource.data.email is string
         && request.resource.data.email.size() > 0 && request.resource.data.email.size() < 200
+        && request.resource.data.subscribedAt is string
         && request.resource.data.status == '구독중';
       allow read, update, delete: if isAdmin();
     }

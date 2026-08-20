@@ -42,7 +42,7 @@ export const PopupModal: React.FC = () => {
 
   // SECURITY (2026 audit): this used to have its own separate "admin"
   // unlock, checked entirely in the browser against a plaintext password
-  // (`settings.adminPassword`, falling back to a hardcoded '1026' that was
+  // (`settings.adminPassword` and a hardcoded password that was
   // visible in the deployed JS bundle) — completely unrelated to real
   // Firebase Authentication. Anyone who guessed or found that string could
   // "unlock" popup editing without ever logging in. It now simply reuses

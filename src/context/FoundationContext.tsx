@@ -521,25 +521,16 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [aboutSubTab, setAboutSubTab] = useState<AboutSubTab>(initialParsed.aboutSubTab || 'greeting');
   const [noticeCategory, setNoticeCategory] = useState<string>(initialParsed.noticeCategory || '전체');
   const [adminOpen, setAdminOpen] = useState<boolean>(false);
-  const [isAdmin, setIsAdminState] = useState<boolean>(() => {
-    try {
-      return sessionStorage.getItem('nerve_nae_admin_auth') === 'true';
-    } catch {
-      return false;
-    }
-  });
+  // Administrator status is derived exclusively from Firebase Authentication.
+  // Do not persist an independent browser-side admin flag: a sessionStorage
+  // value is not an authorization boundary and can be edited by the visitor.
+  const [isAdmin, setIsAdminState] = useState<boolean>(false);
 
+  // Kept for the existing context API. Firebase's auth-state listener below
+  // is the authoritative source of truth; callers must never be able to grant
+  // themselves admin access by calling this setter.
   const setIsAdmin = (val: boolean) => {
-    setIsAdminState(val);
-    try {
-      if (val) {
-        sessionStorage.setItem('nerve_nae_admin_auth', 'true');
-      } else {
-        sessionStorage.removeItem('nerve_nae_admin_auth');
-      }
-    } catch (e) {
-      console.warn('Session storage error', e);
-    }
+    setIsAdminState(Boolean(val));
   };
 
   // Real Firebase Authentication state, tracked here (rather than inside
@@ -550,7 +541,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   useEffect(() => {
     const ADMIN_UID = import.meta.env.VITE_ADMIN_UID || '';
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      const signedIn = !!user && (!ADMIN_UID || user.uid === ADMIN_UID);
+      const signedIn = !!user && !!ADMIN_UID && user.uid === ADMIN_UID;
       setIsAdmin(signedIn);
     });
     return () => unsubscribe();

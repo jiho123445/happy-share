@@ -4,7 +4,7 @@
 
 기존 홈페이지에 공존하던 두 가지 관리자 인증 방식을 하나로 통합했습니다.
 
-- 제거: 팝업에서 사용하는 기존 관리자 비밀번호 / 기본값 1026
+- 제거: 팝업에서 사용하는 기존 관리자 비밀번호 / 하드코딩된 기본 비밀번호
 - 제거: `sessionStorage`의 관리자 권한 플래그
 - 유지: Firebase Authentication 이메일 + 비밀번호
 - 관리자 권한 기준: `VITE_ADMIN_UID`와 Firebase Authentication의 현재 사용자 UID 일치 여부
@@ -52,7 +52,7 @@ VITE_ADMIN_EMAIL=관리자 Firebase 이메일
 VITE_ADMIN_UID=Firebase Authentication에서 확인한 관리자 User UID
 ```
 
-`VITE_ADMIN_UID`가 설정되면 그 값을 사용하고, 설정하지 않으면 현재 지정된 관리자 UID를 사용하도록 했습니다.
+`VITE_ADMIN_UID`가 설정되어 있고 현재 Firebase Authentication 사용자 UID와 정확히 일치할 때만 관리자 권한을 부여합니다. 값이 없으면 관리자 권한이 부여되지 않습니다.
 
 ## 배포 후 반드시 확인할 테스트
 
@@ -61,11 +61,11 @@ VITE_ADMIN_UID=Firebase Authentication에서 확인한 관리자 User UID
 팝업의 관리자 버튼을 눌렀을 때:
 
 - `관리자 비밀번호 확인`
-- `기본: 1026`
+- `기본값 없음`
 
 화면이 **나오면 안 됩니다.**
 
-기존 `1026`을 입력해서 관리자 기능에 들어가는 것도 **실패해야 정상**입니다.
+기존의 하드코딩된 비밀번호를 입력해 관리자 기능에 들어가는 것도 **실패해야 정상**입니다.
 
 ### 2. Firebase 관리자 로그인
 

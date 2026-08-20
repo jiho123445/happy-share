@@ -17,13 +17,13 @@
 
 ## 3. 팝업 편집 화면의 "가짜 로그인" 제거
 
-- `src/components/PopupModal.tsx`에 있던, Firebase 로그인과 무관하게 비밀번호 문자열(`'1026'` 하드코딩 기본값)만 비교하던 로컬 인증 로직을 완전히 제거했습니다.
+- `src/components/PopupModal.tsx`에 있던, Firebase 로그인과 무관하게 비밀번호 문자열(하드코딩된 기본 비밀번호)만 비교하던 로컬 인증 로직을 완전히 제거했습니다.
 - 이제 팝업 편집도 다른 관리자 기능과 동일하게, 실제 Firebase Authentication 로그인(`AdminModal.tsx`) 여부만 확인합니다. 로그인 안 된 상태에서 팝업 수정 버튼을 누르면 정식 관리자 로그인 화면이 열립니다.
 
 ## 4. 코드 정리
 
 - 어디서도 사용되지 않던 루트 레거시 파일 삭제: `auth.js`, `board.js`, `contact.js`, `donation.js`, `gallery.js`, 루트 `firebaseInit.js`
-- `adminPassword` 필드를 타입(`src/types.ts`)과 초기 데이터(`src/data/initialData.ts`)에서 제거
+- `adminPassword` 필드를 타입과 초기 데이터에서 제거하고, 번들에 포함되는 `data/foundation_store.json`에서도 제거
 
 ## 5. (추가 수정) 팝업 이미지 업로드 방식 개선
 
