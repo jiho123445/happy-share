@@ -39,31 +39,29 @@ export const GalleryDetailPage: React.FC = () => {
     }
   }, [selectedGallery]);
 
-  if (!selectedGallery) {
-    return null;
-  }
-
-  // Multi-image list with fallback to single imageUrl (100% backward compatible)
+  // Multi-image list with fallback to single imageUrl (100% backward
+  // compatible). Computed null-safely (not inside the early-return guard
+  // below) because the keyboard-navigation effect right after it needs
+  // to run on every render regardless of whether selectedGallery is set —
+  // see the note on that effect for why.
   const allImages =
-    selectedGallery.images && selectedGallery.images.length > 0
+    selectedGallery?.images && selectedGallery.images.length > 0
       ? selectedGallery.images
-      : selectedGallery.imageUrl
+      : selectedGallery?.imageUrl
       ? [selectedGallery.imageUrl]
       : [];
 
-  const currentPhoto = allImages[activePhotoIdx] || selectedGallery.imageUrl;
-
-  const handlePrevPhoto = (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    setActivePhotoIdx((prev) => (prev > 0 ? prev - 1 : allImages.length - 1));
-  };
-
-  const handleNextPhoto = (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    setActivePhotoIdx((prev) => (prev < allImages.length - 1 ? prev + 1 : 0));
-  };
-
-  // Keyboard arrow navigation
+  // Keyboard arrow navigation.
+  //
+  // BUG FIX (2026 audit follow-up): this hook used to be declared AFTER
+  // the `if (!selectedGallery) return null;` guard below. React requires
+  // every hook to run in the same order on every render; when
+  // `selectedGallery` became null (e.g. navigating away from this page),
+  // that early return skipped this `useEffect` entirely on that render
+  // even though it had run on the previous one — a "rendered fewer hooks
+  // than expected" violation that crashes the whole app to a blank white
+  // screen (React error #300). It's now declared before the early
+  // return, using the null-safe `allImages` above, so it's always called.
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (allImages.length <= 1) return;
@@ -78,6 +76,22 @@ export const GalleryDetailPage: React.FC = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [allImages.length, isLightboxOpen]);
+
+  if (!selectedGallery) {
+    return null;
+  }
+
+  const currentPhoto = allImages[activePhotoIdx] || selectedGallery.imageUrl;
+
+  const handlePrevPhoto = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setActivePhotoIdx((prev) => (prev > 0 ? prev - 1 : allImages.length - 1));
+  };
+
+  const handleNextPhoto = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setActivePhotoIdx((prev) => (prev < allImages.length - 1 ? prev + 1 : 0));
+  };
 
   // Related gallery items
   const relatedGallery = gallery.filter((g) => g.id !== selectedGallery.id).slice(0, 3);

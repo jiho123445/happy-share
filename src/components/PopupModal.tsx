@@ -71,6 +71,17 @@ export const PopupModal: React.FC = () => {
   // Toast feedback inside modal
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
+  // Tracks in-progress popup image upload (Firebase Storage). Declared
+  // here — before the early `return null` below — because React requires
+  // every hook to be called in the same order on every render. This was
+  // previously declared further down the component body, after that
+  // early return, which meant it was skipped entirely whenever no popup
+  // was visible (e.g. right after closing one) but WAS called on renders
+  // where a popup was showing — a classic "hooks called conditionally"
+  // bug that crashes the whole app with React error #300 the moment the
+  // hook count changes between renders.
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
   const showToast = (msg: string) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(null), 3000);
@@ -214,8 +225,6 @@ export const PopupModal: React.FC = () => {
   // Storage under `settings/` (admin-only write, same as the chairman/
   // hero image uploader in AdminModal.tsx), storing only the short
   // download URL on the popup instead.
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
-
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isEditMode: boolean) => {
     const file = e.target.files?.[0];
     if (!file) return;
