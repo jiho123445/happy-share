@@ -81,5 +81,75 @@ export function createExpressApp() {
     res.json({ status: "ok", timestamp: Date.now(), isVercel });
   });
 
+  // Dynamic sitemap: lists the homepage plus every individual notice,
+  // program, and gallery post URL, read live from the public
+  // `foundation/global` Firestore document (see firestore.rules — this
+  // document is publicly readable by design). Replaces the old static
+  // sitemap.xml, which only ever listed the homepage.
+  app.get("/sitemap.xml", async (req, res) => {
+    const SITE_ORIGIN = "https://nbnhappy.or.kr";
+    const PROJECT_ID = "gen-lang-client-0288068906";
+    const DATABASE_ID = "ai-studio-c345f36f-becb-4d51-8f4b-58287995f527";
+
+    res.setHeader("Content-Type", "application/xml; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=3600");
+
+    const urls: { loc: string; changefreq: string; priority: string }[] = [
+      { loc: `${SITE_ORIGIN}/`, changefreq: "weekly", priority: "1.0" },
+      { loc: `${SITE_ORIGIN}/about`, changefreq: "monthly", priority: "0.6" },
+      { loc: `${SITE_ORIGIN}/programs`, changefreq: "monthly", priority: "0.6" },
+      { loc: `${SITE_ORIGIN}/news`, changefreq: "daily", priority: "0.8" },
+      { loc: `${SITE_ORIGIN}/gallery`, changefreq: "weekly", priority: "0.6" },
+      { loc: `${SITE_ORIGIN}/press`, changefreq: "weekly", priority: "0.5" },
+      { loc: `${SITE_ORIGIN}/family-center`, changefreq: "monthly", priority: "0.5" },
+      { loc: `${SITE_ORIGIN}/donate`, changefreq: "monthly", priority: "0.7" },
+    ];
+
+    try {
+      const fsUrl = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/${DATABASE_ID}/documents/foundation/global`;
+      const fsRes = await fetch(fsUrl);
+      if (fsRes.ok) {
+        const json: any = await fsRes.json();
+        const fields = json.fields || {};
+
+        const unwrap = (value: any): any => {
+          if (value == null) return null;
+          if ("stringValue" in value) return value.stringValue;
+          if ("arrayValue" in value) return (value.arrayValue.values || []).map(unwrap);
+          if ("mapValue" in value) {
+            const out: Record<string, any> = {};
+            const f = value.mapValue.fields || {};
+            for (const k of Object.keys(f)) out[k] = unwrap(f[k]);
+            return out;
+          }
+          return null;
+        };
+
+        const notices: any[] = fields.notices ? unwrap(fields.notices) : [];
+        const programs: any[] = fields.programs ? unwrap(fields.programs) : [];
+        const gallery: any[] = fields.gallery ? unwrap(fields.gallery) : [];
+
+        for (const n of notices) {
+          if (n?.id) urls.push({ loc: `${SITE_ORIGIN}/notices/${encodeURIComponent(n.id)}`, changefreq: "monthly", priority: "0.5" });
+        }
+        for (const p of programs) {
+          if (p?.id) urls.push({ loc: `${SITE_ORIGIN}/programs/${encodeURIComponent(p.id)}`, changefreq: "monthly", priority: "0.5" });
+        }
+        for (const g of gallery) {
+          if (g?.id) urls.push({ loc: `${SITE_ORIGIN}/gallery/${encodeURIComponent(g.id)}`, changefreq: "monthly", priority: "0.4" });
+        }
+      }
+    } catch (e) {
+      // Firestore unreachable — still return the static top-level pages above
+      // rather than failing the whole sitemap.
+    }
+
+    const body = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls
+      .map((u) => `  <url>\n    <loc>${u.loc}</loc>\n    <changefreq>${u.changefreq}</changefreq>\n    <priority>${u.priority}</priority>\n  </url>`)
+      .join("\n")}\n</urlset>\n`;
+
+    res.send(body);
+  });
+
   return app;
 }

@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://happy-share-psi.vercel.app/sitemap.xml
+Sitemap: https://nbnhappy.or.kr/sitemap.xml

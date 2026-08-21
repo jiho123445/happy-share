@@ -144,7 +144,12 @@ interface FoundationContextType {
 const FoundationContext = createContext<FoundationContextType | undefined>(undefined);
 
 // Helper to build URL hash from state
-const buildHash = (state: {
+// Builds a real URL path (e.g. /notices/abc123) instead of a #hash fragment.
+// Real paths are sent to the server on every request, which is what lets a
+// server-side bot-detection layer (see middleware.ts) serve per-article
+// preview metadata to link-preview bots and search crawlers. A #hash
+// fragment is never sent to the server, so it can't be used for that.
+const buildPath = (state: {
   tab: ActiveTab;
   aboutSubTab?: AboutSubTab;
   noticeCategory?: string;
@@ -154,37 +159,65 @@ const buildHash = (state: {
 }): string => {
   const { tab, aboutSubTab, noticeCategory, noticeId, programId, galleryId } = state;
   if (tab === 'notice-detail' && noticeId) {
-    return `#notice-detail?id=${encodeURIComponent(noticeId)}`;
+    return `/notices/${encodeURIComponent(noticeId)}`;
   }
   if (tab === 'program-detail' && programId) {
-    return `#program-detail?id=${encodeURIComponent(programId)}`;
+    return `/programs/${encodeURIComponent(programId)}`;
   }
   if (tab === 'gallery-detail' && galleryId) {
-    return `#gallery-detail?id=${encodeURIComponent(galleryId)}`;
+    return `/gallery/${encodeURIComponent(galleryId)}`;
   }
   if (tab === 'about') {
     return aboutSubTab && aboutSubTab !== 'greeting'
-      ? `#about?sub=${encodeURIComponent(aboutSubTab)}`
-      : '#about';
+      ? `/about?sub=${encodeURIComponent(aboutSubTab)}`
+      : '/about';
   }
   if (tab === 'news') {
     return noticeCategory && noticeCategory !== '전체'
-      ? `#news?cat=${encodeURIComponent(noticeCategory)}`
-      : '#news';
+      ? `/news?cat=${encodeURIComponent(noticeCategory)}`
+      : '/news';
   }
   if (tab === 'main') {
-    return '#main';
+    return '/';
   }
-  return `#${tab}`;
+  return `/${tab}`;
 };
 
-// Helper to parse URL hash to state
-const parseHash = (hashStr: string) => {
-  const clean = (hashStr || '').replace(/^#/, '').trim();
-  if (!clean || clean === 'main') {
-    return { tab: 'main' as ActiveTab };
+// Parses a real URL path (+ query string) into route state. Replaces the
+// old #hash parser now that URLs are real server-visible paths.
+const parsePath = (pathname: string, search: string) => {
+  const clean = (pathname || '/').trim();
+  const params = new URLSearchParams(search || '');
+
+  const res: {
+    tab: ActiveTab;
+    aboutSubTab?: AboutSubTab;
+    noticeCategory?: string;
+    noticeId?: string;
+    programId?: string;
+    galleryId?: string;
+  } = { tab: 'main' as ActiveTab };
+
+  const noticeMatch = clean.match(/^\/notices\/([^/]+)\/?$/);
+  const programMatch = clean.match(/^\/programs\/([^/]+)\/?$/);
+  const galleryMatch = clean.match(/^\/gallery\/([^/]+)\/?$/);
+
+  if (noticeMatch) {
+    res.tab = 'notice-detail';
+    res.noticeId = decodeURIComponent(noticeMatch[1]);
+    return res;
   }
-  const [tabPart, queryPart] = clean.split('?');
+  if (programMatch) {
+    res.tab = 'program-detail';
+    res.programId = decodeURIComponent(programMatch[1]);
+    return res;
+  }
+  if (galleryMatch) {
+    res.tab = 'gallery-detail';
+    res.galleryId = decodeURIComponent(galleryMatch[1]);
+    return res;
+  }
+
   const validTabs: ActiveTab[] = [
     'main',
     'about',
@@ -194,30 +227,47 @@ const parseHash = (hashStr: string) => {
     'press',
     'family-center',
     'donate',
-    'contact',
-    'notice-detail',
-    'gallery-detail',
-    'program-detail'
+    'contact'
   ];
-  const tab = validTabs.includes(tabPart as ActiveTab) ? (tabPart as ActiveTab) : ('main' as ActiveTab);
-  const params = new URLSearchParams(queryPart || '');
+  const tabPart = clean.replace(/^\//, '').replace(/\/$/, '');
+  res.tab = validTabs.includes(tabPart as ActiveTab) ? (tabPart as ActiveTab) : ('main' as ActiveTab);
 
-  const res: {
-    tab: ActiveTab;
-    aboutSubTab?: AboutSubTab;
-    noticeCategory?: string;
-    noticeId?: string;
-    programId?: string;
-    galleryId?: string;
-  } = { tab };
-
-  if (tab === 'notice-detail' && params.get('id')) res.noticeId = params.get('id')!;
-  if (tab === 'program-detail' && params.get('id')) res.programId = params.get('id')!;
-  if (tab === 'gallery-detail' && params.get('id')) res.galleryId = params.get('id')!;
   if (params.get('sub')) res.aboutSubTab = params.get('sub') as AboutSubTab;
   if (params.get('cat')) res.noticeCategory = params.get('cat')!;
 
   return res;
+};
+
+// ── Backward compatibility for links shared before the routing switch ──
+// Before this update, every internal link used a #hash fragment (e.g.
+// #notice-detail?id=xxx). Any such link already sent out via KakaoTalk,
+// SMS, or indexed by a search engine would otherwise silently land on the
+// homepage after the switch to real URL paths, since a #hash fragment is
+// never sent to the server and parsePath() only reads the real path.
+// This converts a legacy hash (if present) into the equivalent new path,
+// so old links keep working. Runs once on initial page load only.
+const legacyHashToPath = (hashStr: string): string | null => {
+  const clean = (hashStr || '').replace(/^#/, '').trim();
+  if (!clean || clean === 'main') return null;
+
+  const [tabPart, queryPart] = clean.split('?');
+  const params = new URLSearchParams(queryPart || '');
+  const id = params.get('id');
+
+  if (tabPart === 'notice-detail' && id) return `/notices/${encodeURIComponent(id)}`;
+  if (tabPart === 'program-detail' && id) return `/programs/${encodeURIComponent(id)}`;
+  if (tabPart === 'gallery-detail' && id) return `/gallery/${encodeURIComponent(id)}`;
+
+  const validTabs = ['about', 'programs', 'news', 'gallery', 'press', 'family-center', 'donate', 'contact'];
+  if (validTabs.includes(tabPart)) {
+    const sub = params.get('sub');
+    const cat = params.get('cat');
+    if (tabPart === 'about' && sub) return `/about?sub=${encodeURIComponent(sub)}`;
+    if (tabPart === 'news' && cat) return `/news?cat=${encodeURIComponent(cat)}`;
+    return `/${tabPart}`;
+  }
+
+  return null;
 };
 
 // ── Notice view-count de-duplication ────────────────────────────────────
@@ -514,7 +564,29 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setShowPopupsFlag(prev => prev + 1);
   };
 
-  const initialParsed = parseHash(typeof window !== 'undefined' ? window.location.hash : '');
+  const hasMigratedLegacyHash = useRef(false);
+
+  // If this page was opened via an old-style #hash link (shared before
+  // the routing switch), rewrite the browser URL to the new real path
+  // before anything else reads window.location. replaceState (not
+  // pushState) so it doesn't add a spurious extra back-button entry.
+  // Guarded by a ref so this only ever runs once (on mount), not on
+  // every re-render.
+  if (!hasMigratedLegacyHash.current && typeof window !== 'undefined' && window.location.hash) {
+    hasMigratedLegacyHash.current = true;
+    const migratedPath = legacyHashToPath(window.location.hash);
+    if (migratedPath) {
+      window.history.replaceState(null, '', migratedPath);
+    } else {
+      // Unrecognized hash — still strip it so it doesn't linger in the URL.
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+  }
+
+  const initialParsed = parsePath(
+    typeof window !== 'undefined' ? window.location.pathname : '/',
+    typeof window !== 'undefined' ? window.location.search : ''
+  );
 
   const [activeTab, setActiveTabState] = useState<ActiveTab>(initialParsed.tab || 'main');
   const [previousTab, setPreviousTab] = useState<ActiveTab>('main');
@@ -612,7 +684,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   // Handle browser Back / Forward navigation (PopState)
   useEffect(() => {
     // Set initial history state if not present
-    const curHash = window.location.hash || '#main';
+    const curPath = window.location.pathname + window.location.search || '/';
     const initObj = {
       tab: activeTab,
       aboutSubTab,
@@ -622,12 +694,12 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       galleryId: selectedGallery?.id
     };
     if (!window.history.state) {
-      window.history.replaceState(initObj, '', curHash);
+      window.history.replaceState(initObj, '', curPath);
     }
 
     const handlePopState = (e: PopStateEvent) => {
       isPopStateRef.current = true;
-      const state = e.state || parseHash(window.location.hash);
+      const state = e.state || parsePath(window.location.pathname, window.location.search);
       const targetTab: ActiveTab = state.tab || 'main';
 
       if (targetTab === 'notice-detail') {
@@ -695,10 +767,11 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       programId: selectedProgram?.id,
       galleryId: selectedGallery?.id
     };
-    const targetHash = buildHash(stateObj);
+    const targetPath = buildPath(stateObj);
+    const currentPath = window.location.pathname + window.location.search;
 
-    if (window.location.hash !== targetHash) {
-      window.history.pushState(stateObj, '', targetHash);
+    if (currentPath !== targetPath) {
+      window.history.pushState(stateObj, '', targetPath);
     }
   }, [activeTab, aboutSubTab, noticeCategory, selectedNotice?.id, selectedProgram?.id, selectedGallery?.id]);
 
