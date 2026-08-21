@@ -67,7 +67,7 @@ function buildPreviewHtml(shellHtml, opts) {
   const { title, description, image, canonicalPath } = opts;
   const fullTitle = `${title} | ${SITE_NAME}`;
   const canonicalUrl = `${SITE_ORIGIN}${canonicalPath}`;
-  const ogImage = image || `${SITE_ORIGIN}/og-image.jpg`;
+  const ogImage = image || `${SITE_ORIGIN}/og-image.png`;
 
   let html = shellHtml;
 
