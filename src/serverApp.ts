@@ -24,13 +24,144 @@ import fs from "fs";
  *    file serving for legacy images that were uploaded before this fix
  *    (new uploads now go directly to Firebase Storage, which enforces
  *    isAdmin() on writes).
+ *  - `/sitemap.xml` — dynamically lists individual notice/program/gallery
+ *    URLs read live from Firestore.
+ *  - `/notices/:id`, `/programs/:id`, `/gallery/:id` — bot-aware preview
+ *    rendering (see below). Real visitors are transparently passed
+ *    through to the normal SPA; only known link-preview/search bots get
+ *    a small standalone HTML response with that item's title/description
+ *    filled in.
  *
  * Do NOT re-add data-mutation or full-data-read endpoints here without
  * adding real server-side authentication (e.g. verifying a Firebase ID
  * token with the Firebase Admin SDK) first.
  */
+
+const PROJECT_ID = "gen-lang-client-0288068906";
+const DATABASE_ID = "ai-studio-c345f36f-becb-4d51-8f4b-58287995f527";
+
+// Minimal unwrapper for Firestore REST API's typed value format
+// (e.g. { stringValue: "..." }, { arrayValue: { values: [...] } }).
+function unwrapFirestoreValue(value: any): any {
+  if (value == null) return null;
+  if ("stringValue" in value) return value.stringValue;
+  if ("integerValue" in value) return Number(value.integerValue);
+  if ("doubleValue" in value) return value.doubleValue;
+  if ("booleanValue" in value) return value.booleanValue;
+  if ("nullValue" in value) return null;
+  if ("arrayValue" in value) {
+    return (value.arrayValue.values || []).map(unwrapFirestoreValue);
+  }
+  if ("mapValue" in value) {
+    const out: Record<string, any> = {};
+    const fields = value.mapValue.fields || {};
+    for (const key of Object.keys(fields)) {
+      out[key] = unwrapFirestoreValue(fields[key]);
+    }
+    return out;
+  }
+  return null;
+}
+
+async function fetchFoundationGlobal(): Promise<Record<string, any> | null> {
+  const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/${DATABASE_ID}/documents/foundation/global`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const json: any = await res.json();
+    const fields = json.fields || {};
+    const out: Record<string, any> = {};
+    for (const key of Object.keys(fields)) {
+      out[key] = unwrapFirestoreValue(fields[key]);
+    }
+    return out;
+  } catch {
+    return null;
+  }
+}
+
+// Known link-preview / search bot user-agent substrings (lowercase).
+const BOT_UA_PATTERNS = [
+  "kakaotalk",
+  "facebookexternalhit",
+  "twitterbot",
+  "slackbot",
+  "telegrambot",
+  "whatsapp",
+  "discordbot",
+  "linkedinbot",
+  "googlebot",
+  "yeti", // Naver's crawler
+  "bingbot",
+  "daumoa", // Daum's crawler
+];
+
+function isBotRequest(userAgent: string): boolean {
+  const ua = userAgent.toLowerCase();
+  return BOT_UA_PATTERNS.some((pattern) => ua.includes(pattern));
+}
+
+function escapeHtml(input: string): string {
+  return String(input)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function truncate(text: string, max: number): string {
+  const clean = String(text || "").replace(/\s+/g, " ").trim();
+  return clean.length > max ? clean.slice(0, max - 1) + "…" : clean;
+}
+
+function renderPreviewHtml(opts: {
+  siteOrigin: string;
+  title: string;
+  description: string;
+  image?: string;
+  canonicalPath: string;
+}): string {
+  const SITE_NAME = "사단법인 너브내행복나눔재단";
+  const { siteOrigin, title, description, image, canonicalPath } = opts;
+  const fullTitle = `${title} | ${SITE_NAME}`;
+  const canonicalUrl = `${siteOrigin}${canonicalPath}`;
+  const ogImage = image || `${siteOrigin}/og-image.jpg`;
+
+  return `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>${escapeHtml(fullTitle)}</title>
+<meta name="description" content="${escapeHtml(description)}" />
+<link rel="canonical" href="${escapeHtml(canonicalUrl)}" />
+<meta property="og:type" content="article" />
+<meta property="og:site_name" content="${escapeHtml(SITE_NAME)}" />
+<meta property="og:title" content="${escapeHtml(title)}" />
+<meta property="og:description" content="${escapeHtml(description)}" />
+<meta property="og:image" content="${escapeHtml(ogImage)}" />
+<meta property="og:url" content="${escapeHtml(canonicalUrl)}" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="${escapeHtml(title)}" />
+<meta name="twitter:description" content="${escapeHtml(description)}" />
+<meta name="twitter:image" content="${escapeHtml(ogImage)}" />
+</head>
+<body>
+<h1>${escapeHtml(title)}</h1>
+<p>${escapeHtml(description)}</p>
+<p><a href="${escapeHtml(canonicalUrl)}">${escapeHtml(SITE_NAME)}에서 전체 내용 보기</a></p>
+</body>
+</html>`;
+}
+
 export function createExpressApp() {
   const app = express();
+  // Vercel terminates TLS at the edge and forwards to this function over
+  // plain HTTP, setting X-Forwarded-Proto: https. Trust that header so
+  // req.protocol correctly reports "https" in production (and stays
+  // "http" for local dev), which the preview/passthrough route below
+  // relies on to build a working self-referential URL.
+  app.set("trust proxy", true);
 
   // In Vercel serverless environment, use /tmp for persistent writes
   const isVercel = process.env.VERCEL === "1" || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
@@ -81,6 +212,98 @@ export function createExpressApp() {
     res.json({ status: "ok", timestamp: Date.now(), isVercel });
   });
 
+  // Bot-aware preview rendering for individual notice/program/gallery
+  // pages. See the file-level comment above for why this exists.
+  //
+  // Real visitors: this route fetches the site's own homepage HTML
+  // (which Vercel already serves normally and unaffected by this route)
+  // and returns that same SPA shell — the URL bar keeps showing
+  // /notices/:id etc., and the client-side router (FoundationContext.tsx)
+  // reads that path once the app boots, exactly as if the static file
+  // had been served directly.
+  //
+  // Known bots: instead, respond with a small standalone HTML page
+  // containing that specific item's title/description/image in the
+  // og:*/twitter:* meta tags.
+  const previewHandler = async (req: express.Request, res: express.Response) => {
+    const userAgent = req.get("user-agent") || "";
+    const siteOrigin = `${req.protocol}://${req.get("host")}`;
+    const id = decodeURIComponent(req.params.id || "");
+
+    const passThroughToSpa = async () => {
+      try {
+        const shellRes = await fetch(`${siteOrigin}/`);
+        const shellHtml = await shellRes.text();
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+        return res.status(200).send(shellHtml);
+      } catch (e) {
+        // If the internal fetch fails for any reason, degrade gracefully
+        // by sending the visitor to the homepage rather than a hard error.
+        return res.redirect(302, "/");
+      }
+    };
+
+    if (!isBotRequest(userAgent) || !id) {
+      return passThroughToSpa();
+    }
+
+    const data = await fetchFoundationGlobal();
+    if (!data) return passThroughToSpa();
+
+    let html: string | null = null;
+    const kind = req.path.startsWith("/notices/")
+      ? "notice"
+      : req.path.startsWith("/programs/")
+      ? "program"
+      : "gallery";
+
+    if (kind === "notice") {
+      const notice = (data.notices || []).find((n: any) => n.id === id);
+      if (notice) {
+        const imageAttachment = (notice.attachments || []).find((a: any) =>
+          /^(jpe?g|png|webp|gif)$/i.test(a.type || "") || /\.(jpe?g|png|webp|gif)$/i.test(a.url || "")
+        );
+        html = renderPreviewHtml({
+          siteOrigin,
+          title: notice.title || "공지사항",
+          description: truncate(notice.content || "", 120),
+          image: imageAttachment?.url,
+          canonicalPath: `/notices/${encodeURIComponent(id)}`,
+        });
+      }
+    } else if (kind === "program") {
+      const program = (data.programs || []).find((p: any) => p.id === id);
+      if (program) {
+        html = renderPreviewHtml({
+          siteOrigin,
+          title: program.title || "주요사업",
+          description: truncate(program.summary || "", 120),
+          canonicalPath: `/programs/${encodeURIComponent(id)}`,
+        });
+      }
+    } else {
+      const item = (data.gallery || []).find((g: any) => g.id === id);
+      if (item) {
+        html = renderPreviewHtml({
+          siteOrigin,
+          title: item.title || "갤러리",
+          description: truncate(item.description || "", 120),
+          image: item.imageUrl,
+          canonicalPath: `/gallery/${encodeURIComponent(id)}`,
+        });
+      }
+    }
+
+    if (!html) return passThroughToSpa();
+
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    return res.status(200).send(html);
+  };
+
+  app.get("/notices/:id", previewHandler);
+  app.get("/programs/:id", previewHandler);
+  app.get("/gallery/:id", previewHandler);
+
   // Dynamic sitemap: lists the homepage plus every individual notice,
   // program, and gallery post URL, read live from the public
   // `foundation/global` Firestore document (see firestore.rules — this
@@ -88,8 +311,6 @@ export function createExpressApp() {
   // sitemap.xml, which only ever listed the homepage.
   app.get("/sitemap.xml", async (req, res) => {
     const SITE_ORIGIN = "https://nbnhappy.or.kr";
-    const PROJECT_ID = "gen-lang-client-0288068906";
-    const DATABASE_ID = "ai-studio-c345f36f-becb-4d51-8f4b-58287995f527";
 
     res.setHeader("Content-Type", "application/xml; charset=utf-8");
     res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=3600");
@@ -105,43 +326,21 @@ export function createExpressApp() {
       { loc: `${SITE_ORIGIN}/donate`, changefreq: "monthly", priority: "0.7" },
     ];
 
-    try {
-      const fsUrl = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/${DATABASE_ID}/documents/foundation/global`;
-      const fsRes = await fetch(fsUrl);
-      if (fsRes.ok) {
-        const json: any = await fsRes.json();
-        const fields = json.fields || {};
+    const data = await fetchFoundationGlobal();
+    if (data) {
+      const notices: any[] = data.notices || [];
+      const programs: any[] = data.programs || [];
+      const gallery: any[] = data.gallery || [];
 
-        const unwrap = (value: any): any => {
-          if (value == null) return null;
-          if ("stringValue" in value) return value.stringValue;
-          if ("arrayValue" in value) return (value.arrayValue.values || []).map(unwrap);
-          if ("mapValue" in value) {
-            const out: Record<string, any> = {};
-            const f = value.mapValue.fields || {};
-            for (const k of Object.keys(f)) out[k] = unwrap(f[k]);
-            return out;
-          }
-          return null;
-        };
-
-        const notices: any[] = fields.notices ? unwrap(fields.notices) : [];
-        const programs: any[] = fields.programs ? unwrap(fields.programs) : [];
-        const gallery: any[] = fields.gallery ? unwrap(fields.gallery) : [];
-
-        for (const n of notices) {
-          if (n?.id) urls.push({ loc: `${SITE_ORIGIN}/notices/${encodeURIComponent(n.id)}`, changefreq: "monthly", priority: "0.5" });
-        }
-        for (const p of programs) {
-          if (p?.id) urls.push({ loc: `${SITE_ORIGIN}/programs/${encodeURIComponent(p.id)}`, changefreq: "monthly", priority: "0.5" });
-        }
-        for (const g of gallery) {
-          if (g?.id) urls.push({ loc: `${SITE_ORIGIN}/gallery/${encodeURIComponent(g.id)}`, changefreq: "monthly", priority: "0.4" });
-        }
+      for (const n of notices) {
+        if (n?.id) urls.push({ loc: `${SITE_ORIGIN}/notices/${encodeURIComponent(n.id)}`, changefreq: "monthly", priority: "0.5" });
       }
-    } catch (e) {
-      // Firestore unreachable — still return the static top-level pages above
-      // rather than failing the whole sitemap.
+      for (const p of programs) {
+        if (p?.id) urls.push({ loc: `${SITE_ORIGIN}/programs/${encodeURIComponent(p.id)}`, changefreq: "monthly", priority: "0.5" });
+      }
+      for (const g of gallery) {
+        if (g?.id) urls.push({ loc: `${SITE_ORIGIN}/gallery/${encodeURIComponent(g.id)}`, changefreq: "monthly", priority: "0.4" });
+      }
     }
 
     const body = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls
