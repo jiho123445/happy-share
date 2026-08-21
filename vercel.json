@@ -14,18 +14,6 @@
       "destination": "/api"
     },
     {
-      "source": "/notices/(.*)",
-      "destination": "/api"
-    },
-    {
-      "source": "/programs/(.*)",
-      "destination": "/api"
-    },
-    {
-      "source": "/gallery/(.*)",
-      "destination": "/api"
-    },
-    {
       "source": "/((?!api|uploads).*)|/",
       "destination": "/index.html"
     }

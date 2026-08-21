@@ -212,97 +212,16 @@ export function createExpressApp() {
     res.json({ status: "ok", timestamp: Date.now(), isVercel });
   });
 
-  // Bot-aware preview rendering for individual notice/program/gallery
-  // pages. See the file-level comment above for why this exists.
-  //
-  // Real visitors: this route fetches the site's own homepage HTML
-  // (which Vercel already serves normally and unaffected by this route)
-  // and returns that same SPA shell — the URL bar keeps showing
-  // /notices/:id etc., and the client-side router (FoundationContext.tsx)
-  // reads that path once the app boots, exactly as if the static file
-  // had been served directly.
-  //
-  // Known bots: instead, respond with a small standalone HTML page
-  // containing that specific item's title/description/image in the
-  // og:*/twitter:* meta tags.
-  const previewHandler = async (req: express.Request, res: express.Response) => {
-    const userAgent = req.get("user-agent") || "";
-    const siteOrigin = `${req.protocol}://${req.get("host")}`;
-    const id = decodeURIComponent(req.params.id || "");
-
-    const passThroughToSpa = async () => {
-      try {
-        const shellRes = await fetch(`${siteOrigin}/`);
-        const shellHtml = await shellRes.text();
-        res.setHeader("Content-Type", "text/html; charset=utf-8");
-        return res.status(200).send(shellHtml);
-      } catch (e) {
-        // If the internal fetch fails for any reason, degrade gracefully
-        // by sending the visitor to the homepage rather than a hard error.
-        return res.redirect(302, "/");
-      }
-    };
-
-    if (!isBotRequest(userAgent) || !id) {
-      return passThroughToSpa();
-    }
-
-    const data = await fetchFoundationGlobal();
-    if (!data) return passThroughToSpa();
-
-    let html: string | null = null;
-    const kind = req.path.startsWith("/notices/")
-      ? "notice"
-      : req.path.startsWith("/programs/")
-      ? "program"
-      : "gallery";
-
-    if (kind === "notice") {
-      const notice = (data.notices || []).find((n: any) => n.id === id);
-      if (notice) {
-        const imageAttachment = (notice.attachments || []).find((a: any) =>
-          /^(jpe?g|png|webp|gif)$/i.test(a.type || "") || /\.(jpe?g|png|webp|gif)$/i.test(a.url || "")
-        );
-        html = renderPreviewHtml({
-          siteOrigin,
-          title: notice.title || "공지사항",
-          description: truncate(notice.content || "", 120),
-          image: imageAttachment?.url,
-          canonicalPath: `/notices/${encodeURIComponent(id)}`,
-        });
-      }
-    } else if (kind === "program") {
-      const program = (data.programs || []).find((p: any) => p.id === id);
-      if (program) {
-        html = renderPreviewHtml({
-          siteOrigin,
-          title: program.title || "주요사업",
-          description: truncate(program.summary || "", 120),
-          canonicalPath: `/programs/${encodeURIComponent(id)}`,
-        });
-      }
-    } else {
-      const item = (data.gallery || []).find((g: any) => g.id === id);
-      if (item) {
-        html = renderPreviewHtml({
-          siteOrigin,
-          title: item.title || "갤러리",
-          description: truncate(item.description || "", 120),
-          image: item.imageUrl,
-          canonicalPath: `/gallery/${encodeURIComponent(id)}`,
-        });
-      }
-    }
-
-    if (!html) return passThroughToSpa();
-
-    res.setHeader("Content-Type", "text/html; charset=utf-8");
-    return res.status(200).send(html);
-  };
-
-  app.get("/notices/:id", previewHandler);
-  app.get("/programs/:id", previewHandler);
-  app.get("/gallery/:id", previewHandler);
+  // NOTE: A bot-aware preview route for /notices/:id, /programs/:id, and
+  // /gallery/:id (giving KakaoTalk/search-engine link previews their own
+  // title/description per article) was attempted here and rolled back —
+  // it caused 500 errors in production that weren't reproducible in local
+  // testing. The helper functions above (fetchFoundationGlobal,
+  // renderPreviewHtml, isBotRequest, truncate, escapeHtml) are left in
+  // place since they're harmless when unused and can be wired back up
+  // later with more careful staging/testing. For now these paths are
+  // served the same way as every other route: the static SPA shell via
+  // vercel.json's catch-all rewrite, which is proven to work reliably.
 
   // Dynamic sitemap: lists the homepage plus every individual notice,
   // program, and gallery post URL, read live from the public
