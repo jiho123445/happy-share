@@ -22,6 +22,8 @@
  * requiring visitors to log in).
  */
 
+import { next } from '@vercel/edge';
+
 export const config = {
   matcher: ['/notices/:id', '/programs/:id', '/gallery/:id'],
 };
@@ -150,7 +152,7 @@ export default async function middleware(request: Request) {
 
   if (!isBotRequest(userAgent)) {
     // Real visitors: don't touch the request, let the normal SPA load.
-    return;
+    return next();
   }
 
   const noticeMatch = url.pathname.match(/^\/notices\/([^/]+)\/?$/);
@@ -160,10 +162,10 @@ export default async function middleware(request: Request) {
   const id = decodeURIComponent(
     noticeMatch?.[1] || programMatch?.[1] || galleryMatch?.[1] || ''
   );
-  if (!id) return;
+  if (!id) return next();
 
   const data = await fetchFoundationGlobal();
-  if (!data) return; // Firestore unreachable — fall through to normal SPA.
+  if (!data) return next(); // Firestore unreachable — fall through to normal SPA.
 
   let html: string | null = null;
 
@@ -200,7 +202,7 @@ export default async function middleware(request: Request) {
     }
   }
 
-  if (!html) return; // Item not found — fall through to normal SPA (which shows its own not-found state).
+  if (!html) return next(); // Item not found — fall through to normal SPA (which shows its own not-found state).
 
   return new Response(html, {
     status: 200,
