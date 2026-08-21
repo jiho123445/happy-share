@@ -238,6 +238,38 @@ const parsePath = (pathname: string, search: string) => {
   return res;
 };
 
+// ── Backward compatibility for links shared before the routing switch ──
+// Before this update, every internal link used a #hash fragment (e.g.
+// #notice-detail?id=xxx). Any such link already sent out via KakaoTalk,
+// SMS, or indexed by a search engine would otherwise silently land on the
+// homepage after the switch to real URL paths, since a #hash fragment is
+// never sent to the server and parsePath() only reads the real path.
+// This converts a legacy hash (if present) into the equivalent new path,
+// so old links keep working. Runs once on initial page load only.
+const legacyHashToPath = (hashStr: string): string | null => {
+  const clean = (hashStr || '').replace(/^#/, '').trim();
+  if (!clean || clean === 'main') return null;
+
+  const [tabPart, queryPart] = clean.split('?');
+  const params = new URLSearchParams(queryPart || '');
+  const id = params.get('id');
+
+  if (tabPart === 'notice-detail' && id) return `/notices/${encodeURIComponent(id)}`;
+  if (tabPart === 'program-detail' && id) return `/programs/${encodeURIComponent(id)}`;
+  if (tabPart === 'gallery-detail' && id) return `/gallery/${encodeURIComponent(id)}`;
+
+  const validTabs = ['about', 'programs', 'news', 'gallery', 'press', 'family-center', 'donate', 'contact'];
+  if (validTabs.includes(tabPart)) {
+    const sub = params.get('sub');
+    const cat = params.get('cat');
+    if (tabPart === 'about' && sub) return `/about?sub=${encodeURIComponent(sub)}`;
+    if (tabPart === 'news' && cat) return `/news?cat=${encodeURIComponent(cat)}`;
+    return `/${tabPart}`;
+  }
+
+  return null;
+};
+
 // ── Notice view-count de-duplication ────────────────────────────────────
 // Prevents a single visitor from inflating a notice's view count every time
 // they reopen it (refresh, prev/next navigation, revisiting the list).
@@ -531,6 +563,25 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const triggerPopupShow = () => {
     setShowPopupsFlag(prev => prev + 1);
   };
+
+  const hasMigratedLegacyHash = useRef(false);
+
+  // If this page was opened via an old-style #hash link (shared before
+  // the routing switch), rewrite the browser URL to the new real path
+  // before anything else reads window.location. replaceState (not
+  // pushState) so it doesn't add a spurious extra back-button entry.
+  // Guarded by a ref so this only ever runs once (on mount), not on
+  // every re-render.
+  if (!hasMigratedLegacyHash.current && typeof window !== 'undefined' && window.location.hash) {
+    hasMigratedLegacyHash.current = true;
+    const migratedPath = legacyHashToPath(window.location.hash);
+    if (migratedPath) {
+      window.history.replaceState(null, '', migratedPath);
+    } else {
+      // Unrecognized hash — still strip it so it doesn't linger in the URL.
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+  }
 
   const initialParsed = parsePath(
     typeof window !== 'undefined' ? window.location.pathname : '/',
