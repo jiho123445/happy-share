@@ -20,7 +20,7 @@ import {
   getDownloadURL,
   deleteObject
 } from "firebase/storage";
-import { db, storage } from "./firebaseInit.js";
+import { db, storage } from "../lib/firebase.ts";
 
 const COLLECTION_NAME = "activities";
 

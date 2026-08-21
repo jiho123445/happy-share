@@ -10,6 +10,10 @@
       "destination": "/api"
     },
     {
+      "source": "/sitemap.xml",
+      "destination": "/api"
+    },
+    {
       "source": "/((?!api|uploads).*)|/",
       "destination": "/index.html"
     }
