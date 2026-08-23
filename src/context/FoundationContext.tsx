@@ -1406,10 +1406,24 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     try {
       await setDoc(
         galleryDocRef,
-        {
+        // BUG FIX (2026-08-23): this write previously sent the raw `next`
+        // array straight to Firestore. If any photo in an edited gallery
+        // item ended up with an `undefined` field (most commonly
+        // `storagePath`, e.g. for a photo added via "이미지 URL로 추가"
+        // rather than a real Storage upload), Firestore's setDoc() throws
+        // SYNCHRONOUSLY on that `undefined` value — before the write ever
+        // reaches Firestore, let alone Storage. The admin panel's own
+        // catch block then showed a generic "Firebase Storage 설정과
+        // 관리자 인증 상태를 확인해 주세요" message, which pointed at the
+        // wrong system entirely; the actual failure was a malformed
+        // Firestore payload, not a Storage/auth problem, and this applied
+        // even to edits with zero new uploads. See sanitizeForFirestore.ts
+        // (already used by every other foundation/{docName} write in this
+        // file except gallery's, which is what let this slip through).
+        sanitizeForFirestore({
           items: next,
           updatedAt: new Date().toISOString()
-        },
+        }),
         { merge: true }
       );
 
@@ -1485,10 +1499,10 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     try {
       await setDoc(
         galleryDocRef,
-        {
+        sanitizeForFirestore({
           items: next,
           updatedAt: new Date().toISOString()
-        },
+        }),
         { merge: true }
       );
 
@@ -1550,10 +1564,10 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     try {
       await setDoc(
         galleryDocRef,
-        {
+        sanitizeForFirestore({
           categories: next,
           updatedAt: new Date().toISOString()
-        },
+        }),
         { merge: true }
       );
       addDebugLog('success', `갤러리 카테고리 항목 추가 완료: ${trimmed}`);
@@ -1589,11 +1603,11 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     try {
       await setDoc(
         galleryDocRef,
-        {
+        sanitizeForFirestore({
           categories: uniqueCategories,
           items: nextGallery,
           updatedAt: new Date().toISOString()
-        },
+        }),
         { merge: true }
       );
       addDebugLog('success', `갤러리 카테고리 항목 수정 완료 (${oldCategory} → ${trimmedNew})`);
@@ -1615,10 +1629,10 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     try {
       await setDoc(
         galleryDocRef,
-        {
+        sanitizeForFirestore({
           categories: nextCategories,
           updatedAt: new Date().toISOString()
-        },
+        }),
         { merge: true }
       );
       addDebugLog('success', `갤러리 카테고리 항목 삭제 완료: ${categoryToDelete}`);
@@ -1639,10 +1653,10 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     try {
       await setDoc(
         galleryDocRef,
-        {
+        sanitizeForFirestore({
           categories: filtered,
           updatedAt: new Date().toISOString()
-        },
+        }),
         { merge: true }
       );
     } catch (err) {
