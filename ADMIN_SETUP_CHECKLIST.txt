@@ -1,7 +1,16 @@
 [필수]
 1. Firebase Authentication Email/Password 활성화
 2. 관리자 계정 생성
-3. 관리자 UID 확인
-4. Vercel에 VITE_ADMIN_EMAIL 입력 (VITE_ADMIN_UID는 선택사항이며, 미설정 시 Firebase Rules의 관리자 UID를 사용)
-5. firestore.rules / storage.rules의 REPLACE_WITH_ADMIN_UID 교체
+3. 관리자 UID 확인 (현재 firestore.rules / storage.rules에 지정된 값: a1MQmdMGkgdorEl6V3FAptCAYo52)
+4. Vercel(배포 환경)에 아래 두 값을 "반드시 모두" 입력
+     VITE_ADMIN_EMAIL = 관리자 Firebase 이메일
+     VITE_ADMIN_UID   = a1MQmdMGkgdorEl6V3FAptCAYo52  (Firebase Authentication의 실제 관리자 User UID와 일치해야 함)
+
+   ⚠️ 주의: 코드상 VITE_ADMIN_UID는 선택사항이 아닙니다. 이 값이 비어 있으면
+   프론트엔드의 isAdmin은 항상 false로 고정되어, 이메일/비밀번호를 올바르게
+   입력해도 관리자 화면에 절대 로그인되지 않습니다("잘못된 관리자 이메일 또는
+   비밀번호"처럼 보이지만 실제로는 환경변수 누락이 원인인 경우가 많습니다).
+   Vite 환경변수는 빌드 시점에 값이 고정되므로, 값을 넣거나 바꾼 뒤에는
+   반드시 재배포(재빌드)해야 적용됩니다.
+5. firestore.rules / storage.rules가 위와 동일한 관리자 UID를 사용하는지 확인 후 Firebase 콘솔에서 게시(Publish)
 6. Preview 테스트 후 운영 배포

@@ -235,17 +235,35 @@ export const AdminModal: React.FC = () => {
     }
     try {
       await signInWithEmailAndPassword(auth, adminEmail.trim(), passwordInput);
-      // Legacy password was stored in the public foundation document. Remove it after a successful admin login.
+    } catch (error: any) {
+      // Sign-in itself failed — this is the only case that should show
+      // "wrong email or password" to the user.
+      console.error('Firebase 관리자 로그인 실패:', error);
+      setLoginError('관리자 이메일 또는 비밀번호가 올바르지 않거나 Firebase Authentication 설정이 필요합니다.');
+      return;
+    }
+
+    // Sign-in succeeded. Login is complete regardless of what happens next —
+    // clear the form/error immediately so a hiccup below can never be
+    // mistaken for a failed login.
+    setLoginError(null);
+    setPasswordInput('');
+
+    // Best-effort cleanup: the legacy password used to be stored in the
+    // public foundation document. Remove it now that it's no longer used.
+    // This is deliberately isolated from the sign-in try/catch above — if
+    // this write fails (e.g. this signed-in account isn't the configured
+    // ADMIN_UID, so Firestore rules reject the write, or the field was
+    // already removed), it must NOT be reported as a login failure, since
+    // the admin is, in fact, already logged in at this point.
+    try {
       await setDoc(
         doc(db, 'foundation', 'global'),
         { settings: { adminPassword: deleteField() } },
         { merge: true }
       );
-      setLoginError(null);
-      setPasswordInput('');
-    } catch (error: any) {
-      console.error('Firebase 관리자 로그인 실패:', error);
-      setLoginError('관리자 이메일 또는 비밀번호가 올바르지 않거나 Firebase Authentication 설정이 필요합니다.');
+    } catch (cleanupError) {
+      console.warn('레거시 adminPassword 필드 정리 실패 (로그인에는 영향 없음):', cleanupError);
     }
   };
 
