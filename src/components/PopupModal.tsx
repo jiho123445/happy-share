@@ -88,7 +88,15 @@ export const PopupModal: React.FC = () => {
     setTimeout(() => setToastMsg(null), 3000);
   };
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  // BUG FIX (2026-08-24): previously computed via
+  // `new Date().toISOString().split('T')[0]`, which is the date in UTC,
+  // not Korea Standard Time. For visitors here between midnight and 9 AM
+  // KST, that UTC date is still "yesterday", so a popup dismissed with
+  // "오늘 하루 동안 보지 않기" checked during those hours would compare
+  // against tomorrow's (KST) date the next time the page loads and show
+  // up again — the exact symptom reported. en-CA locale reliably formats
+  // as YYYY-MM-DD.
+  const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' }).format(new Date());
 
   // When showPopupsFlag changes or activeTab becomes 'main', reset session closed states
   useEffect(() => {
@@ -142,11 +150,31 @@ export const PopupModal: React.FC = () => {
     setClosedPopupIds(prev => [...prev, ...visiblePopups.map(p => p.id)]);
   };
 
+  // BUG FIX (2026-08-24): this used to only update local React state —
+  // the localStorage write only happened later, inside handleClose /
+  // handleCloseAll. So checking "오늘 하루 동안 보지 않기" did nothing by
+  // itself; the visitor also had to separately click "닫기" (or the top
+  // "모두 닫기" X) for the preference to actually persist. Anyone who
+  // checked the box and then just navigated away, or closed the browser
+  // tab, or clicked "자세히 보기" instead, saw the checkbox reset to
+  // unchecked and the popup right back the next visit — exactly the
+  // reported symptom. Now checking the box persists immediately, and
+  // unchecking it removes the saved preference (so a visitor can still
+  // change their mind before actually closing the popup).
   const toggleDontShowToday = (popupId: string) => {
-    setDontShowTodayMap(prev => ({
-      ...prev,
-      [popupId]: !prev[popupId]
-    }));
+    setDontShowTodayMap(prev => {
+      const next = !prev[popupId];
+      try {
+        if (next) {
+          localStorage.setItem(`hide_popup_${popupId}`, todayStr);
+        } else {
+          localStorage.removeItem(`hide_popup_${popupId}`);
+        }
+      } catch (e) {
+        console.warn('Failed to update hide_popup in localStorage', e);
+      }
+      return { ...prev, [popupId]: next };
+    });
   };
 
   const handleNavigate = (popup: PopupItem) => {
