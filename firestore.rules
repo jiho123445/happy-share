@@ -75,6 +75,45 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
+    // Client-side error reports (2026-08 monitoring addition). Anyone's
+    // browser may report an error it hit (including anonymous visitors —
+    // that's the whole point of catching real-world failures), but only
+    // the admin can read or clear them. Deliberately small/flat shape so
+    // a malicious payload can't smuggle in something large or unrelated.
+    match /errorLogs/{id} {
+      allow create: if request.resource.data.keys().hasOnly(['message', 'stack', 'url', 'userAgent', 'context', 'createdAt'])
+        && request.resource.data.keys().hasAll(['message', 'url', 'createdAt'])
+        && request.resource.data.message is string
+        && request.resource.data.message.size() > 0 && request.resource.data.message.size() < 2000
+        && (!request.resource.data.keys().hasAny(['stack']) || (request.resource.data.stack is string && request.resource.data.stack.size() < 4000))
+        && request.resource.data.url is string
+        && request.resource.data.url.size() < 500
+        && (!request.resource.data.keys().hasAny(['userAgent']) || (request.resource.data.userAgent is string && request.resource.data.userAgent.size() < 500))
+        && (!request.resource.data.keys().hasAny(['context']) || (request.resource.data.context is string && request.resource.data.context.size() < 200))
+        && request.resource.data.createdAt is string;
+      allow read, delete: if isAdmin();
+      allow update: if false;
+    }
+
+    // Admin action history (2026-08 monitoring addition). Only the admin
+    // performs the actions this records, so only the admin may write —
+    // there is no public-facing reason for anyone else to create one of
+    // these — and entries are never edited after the fact, only read or
+    // (in bulk, by the admin) cleared, so the trail stays trustworthy.
+    match /auditLogs/{id} {
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasOnly(['action', 'summary', 'adminEmail', 'createdAt'])
+        && request.resource.data.keys().hasAll(['action', 'summary', 'createdAt'])
+        && request.resource.data.action is string
+        && request.resource.data.action.size() > 0 && request.resource.data.action.size() < 100
+        && request.resource.data.summary is string
+        && request.resource.data.summary.size() > 0 && request.resource.data.summary.size() < 500
+        && (!request.resource.data.keys().hasAny(['adminEmail']) || (request.resource.data.adminEmail is string && request.resource.data.adminEmail.size() < 200))
+        && request.resource.data.createdAt is string;
+      allow read, delete: if isAdmin();
+      allow update: if false;
+    }
+
     // Test collection is disabled in production.
     match /test/{docId} {
       allow read, write: if false;

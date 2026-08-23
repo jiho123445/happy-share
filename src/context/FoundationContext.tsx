@@ -32,6 +32,7 @@ import {
 import { INITIAL_PRESS_COVERAGE } from '../data/pressCoverage';
 import { formatImageUrl } from '../utils/imageUrl';
 import { sanitizeForFirestore } from '../utils/sanitizeForFirestore';
+import { writeAuditLog } from '../utils/auditLog';
 
 interface FoundationContextType {
   settings: FoundationSettings;
@@ -227,7 +228,9 @@ const parsePath = (pathname: string, search: string) => {
     'press',
     'family-center',
     'donate',
-    'contact'
+    'contact',
+    'privacy',
+    'terms'
   ];
   const tabPart = clean.replace(/^\//, '').replace(/\/$/, '');
   res.tab = validTabs.includes(tabPart as ActiveTab) ? (tabPart as ActiveTab) : ('main' as ActiveTab);
@@ -1152,6 +1155,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           setSyncTimestamp(Date.now());
           setSyncStatus('success');
           setSyncError(null);
+          writeAuditLog(docName, actionName);
         })
         .catch((err) => {
           handleFirestoreError(err, OperationType.WRITE, `foundation/${docName}`);
@@ -1426,6 +1430,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         }),
         { merge: true }
       );
+      writeAuditLog('gallery', `갤러리 수정 (ID: ${id})`);
 
       // Firestore가 새 이미지 정보를 확정한 뒤 더 이상 사용되지 않는 기존 Storage 파일들을 정리합니다.
       const oldPaths = new Set<string>();
@@ -1505,6 +1510,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         }),
         { merge: true }
       );
+      writeAuditLog('gallery', `갤러리 삭제 (ID: ${id})`);
 
       setGallery(next);
 
@@ -1571,6 +1577,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         { merge: true }
       );
       addDebugLog('success', `갤러리 카테고리 항목 추가 완료: ${trimmed}`);
+      writeAuditLog('gallery', `갤러리 카테고리 추가: ${trimmed}`);
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, 'foundation/gallery.categories');
     }
@@ -1611,6 +1618,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         { merge: true }
       );
       addDebugLog('success', `갤러리 카테고리 항목 수정 완료 (${oldCategory} → ${trimmedNew})`);
+      writeAuditLog('gallery', `갤러리 카테고리 수정: ${oldCategory} → ${trimmedNew}`);
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, 'foundation/gallery.categories');
       throw err;
@@ -1636,6 +1644,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         { merge: true }
       );
       addDebugLog('success', `갤러리 카테고리 항목 삭제 완료: ${categoryToDelete}`);
+      writeAuditLog('gallery', `갤러리 카테고리 삭제: ${categoryToDelete}`);
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, 'foundation/gallery.categories');
       throw err;
@@ -1659,6 +1668,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         }),
         { merge: true }
       );
+      writeAuditLog('gallery', '갤러리 카테고리 순서 변경');
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, 'foundation/gallery.categories');
     }
@@ -1687,6 +1697,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setDonations(prev => prev.map(d => d.id === id ? { ...d, status } : d));
     try {
       await updateDoc(doc(db, 'donations', id), { status });
+      writeAuditLog('donations', `후원 신청 상태 변경 (ID: ${id}) → ${status}`);
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, `donations/${id}`);
     }
@@ -1720,6 +1731,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setInquiries(prev => prev.map(i => i.id === id ? { ...i, status } : i));
     try {
       await updateDoc(doc(db, 'inquiries', id), { status });
+      writeAuditLog('inquiries', `문의 상태 변경 (ID: ${id}) → ${status}`);
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, `inquiries/${id}`);
     }
@@ -1760,6 +1772,7 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setSubscribers(prev => prev.map(s => s.id === id ? { ...s, status } : s));
     try {
       await updateDoc(doc(db, 'subscribers', id), { status });
+      writeAuditLog('subscribers', `구독자 상태 변경 (ID: ${id}) → ${status}`);
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, `subscribers/${id}`);
     }

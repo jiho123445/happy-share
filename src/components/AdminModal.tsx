@@ -11,6 +11,7 @@ import { ProgramItem, NoticeItem, GalleryItem, NoticeAttachment, PopupItem, Pres
 import { downloadNoticeFile, exportDonationsToExcel, exportInquiriesToExcel, exportSubscribersToExcel } from '../utils/download';
 import { isAttachmentPreviewable } from '../utils/attachmentPreview';
 import { AttachmentPreviewModal } from './AttachmentPreviewModal';
+import { AdminSystemLogs } from './AdminSystemLogs';
 import {
   X,
   Settings,
@@ -123,7 +124,7 @@ export const AdminModal: React.FC = () => {
   const [loginError, setLoginError] = useState<string | null>(null);
 
   // Tab State
-  const [activeTab, setActiveTab] = useState<'settings' | 'familyCenter' | 'programs' | 'notices' | 'press' | 'gallery' | 'donations' | 'inquiries' | 'subscribers' | 'popups'>('settings');
+  const [activeTab, setActiveTab] = useState<'settings' | 'familyCenter' | 'programs' | 'notices' | 'press' | 'gallery' | 'donations' | 'inquiries' | 'subscribers' | 'popups' | 'logs'>('settings');
   const [subscriberSearch, setSubscriberSearch] = useState<string>('');
 
   // Editing States
@@ -1307,6 +1308,15 @@ export const AdminModal: React.FC = () => {
                 }`}
               >
                 <Bell className="w-3.5 h-3.5 text-orange-500" /> 팝업창 관리 ({popups.length})
+              </button>
+
+              <button
+                onClick={() => setActiveTab('logs')}
+                className={`px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-colors shrink-0 ${
+                  activeTab === 'logs' ? 'bg-white text-orange-600 shadow-2xs font-extrabold' : 'hover:bg-slate-200'
+                }`}
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-slate-500" /> 시스템 로그
               </button>
             </div>
 
@@ -4105,6 +4115,50 @@ export const AdminModal: React.FC = () => {
                     )}
                   </div>
                 </div>
+              )}
+
+              {/* Logs Tab (오류 로그 + 활동 로그 + 백업) */}
+              {activeTab === 'logs' && (
+                <AdminSystemLogs
+                  onBackupDownload={() => {
+                    // BACKUP (2026-08 addition): everything here is
+                    // already loaded in memory (the admin panel needs it
+                    // to render its own tabs), so this needs no extra
+                    // Firestore reads — it just serializes the current
+                    // state, including the admin-only collections
+                    // (donations/inquiries/subscribers) that a public,
+                    // unauthenticated script could never read anyway.
+                    // Deliberately a manual, admin-triggered download
+                    // rather than an automatic scheduled job: personal
+                    // donor/inquiry data should only ever leave Firestore
+                    // when the admin explicitly asks for it.
+                    const backup = {
+                      exportedAt: new Date().toISOString(),
+                      exportedBy: auth.currentUser?.email || null,
+                      settings,
+                      programs,
+                      notices,
+                      press: pressItems,
+                      gallery,
+                      galleryCategories,
+                      popups,
+                      donations,
+                      inquiries,
+                      subscribers
+                    };
+                    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    const dateStr = new Date().toISOString().split('T')[0];
+                    a.href = url;
+                    a.download = `nbnhappy-backup-${dateStr}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    showToast('전체 데이터가 JSON 파일로 다운로드되었습니다.');
+                  }}
+                />
               )}
 
             </div>

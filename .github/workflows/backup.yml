@@ -1,0 +1,40 @@
+name: Content Backup
+
+# AUTOMATED CONTENT BACKUP (2026-08 addition): runs daily and commits a
+# dated JSON snapshot of the site's public content (settings/programs/
+# notices/press/gallery/popups) into backups/. This is a safety net
+# against accidental deletion or a bad edit in the admin panel — it does
+# NOT include donor/inquiry/subscriber personal data, which never leaves
+# Firestore except via the admin panel's own "백업 다운로드" button (see
+# scripts/backup-content.mjs for why). Can also be run manually from the
+# Actions tab (workflow_dispatch) any time.
+
+on:
+  schedule:
+    # 18:00 UTC = 03:00 KST — once a day, off-peak.
+    - cron: '0 18 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/backup-content.mjs
+      - name: Commit backup file if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add backups/
+          if git diff --cached --quiet; then
+            echo "No content changes since last backup — nothing to commit."
+          else
+            git commit -m "chore: automated content backup $(date -u +%Y-%m-%d)"
+            git push
+          fi

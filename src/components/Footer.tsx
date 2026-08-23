@@ -5,7 +5,7 @@ import { Waves, Heart, Shield, Lock, FileText, ArrowUp, MailX, Network, ChevronR
 
 export const Footer: React.FC = () => {
   const { settings, setActiveTab, setAboutSubTab } = useFoundation();
-  const [modalType, setModalType] = useState<'privacy' | 'terms' | 'email-refusal' | 'sitemap' | null>(null);
+  const [modalType, setModalType] = useState<'email-refusal' | 'sitemap' | null>(null);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -93,13 +93,19 @@ export const Footer: React.FC = () => {
             <div className="text-slate-300 font-bold">약관 및 사이트안내</div>
             <div className="flex flex-col gap-1.5">
               <button
-                onClick={() => setModalType('privacy')}
+                onClick={() => {
+                  setActiveTab('privacy');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
                 className="text-left text-orange-400 font-semibold hover:underline flex items-center gap-1"
               >
                 <Lock className="w-3.5 h-3.5" /> 개인정보처리방침
               </button>
               <button
-                onClick={() => setModalType('terms')}
+                onClick={() => {
+                  setActiveTab('terms');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
                 className="text-left hover:text-white flex items-center gap-1"
               >
                 <FileText className="w-3.5 h-3.5" /> 이용약관
@@ -139,8 +145,6 @@ export const Footer: React.FC = () => {
           <div className="bg-white text-slate-800 rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-4 max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <h3 className="text-lg font-bold text-slate-900">
-                {modalType === 'privacy' && '개인정보처리방침'}
-                {modalType === 'terms' && '이용약관'}
                 {modalType === 'email-refusal' && '이메일주소 무단수집거부'}
                 {modalType === 'sitemap' && '너브내행복나눔재단 사이트맵'}
               </h3>
@@ -153,22 +157,6 @@ export const Footer: React.FC = () => {
             </div>
 
             <div className="text-xs space-y-3 leading-relaxed text-slate-600">
-              {modalType === 'privacy' && (
-                <>
-                  <p><strong>제1조 (목적)</strong> 사단법인 너브내행복나눔재단은 후원자 및 신청자의 개인정보를 중요시하며, 개인정보보호법 등 관련 법령을 준수합니다.</p>
-                  <p><strong>제2조 (수집 항목)</strong> 이름, 연락처, 이메일, 후원 및 문의내용</p>
-                  <p><strong>제3조 (이용 목적)</strong> 후원금 관리, 기부금 영수증 발급, 소식지 전달 및 문의사항 답변</p>
-                  <p><strong>제4조 (보유 기간)</strong> 관계 법령에 따른 보존 의무 기간 동안 안전하게 관리 후 파기합니다.</p>
-                </>
-              )}
-
-              {modalType === 'terms' && (
-                <>
-                  <p><strong>제1조 (목적)</strong> 본 약관은 너브내행복나눔재단 공식 홈페이지 서비스 제공 및 이용조건을 규정함을 목적으로 합니다.</p>
-                  <p><strong>제2조 (서비스의 제공)</strong> 재단은 공익사업 안내, 후원 신청, 공지사항 및 갤러리 정보를 제공합니다.</p>
-                </>
-              )}
-
               {modalType === 'email-refusal' && (
                 <>
                   <p>본 웹사이트에 게시된 이메일 주소가 전자우편 수집 프로그램이나 그 밖의 기술적 장치를 이용하여 무단으로 수집되는 것을 거부합니다.</p>

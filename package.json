@@ -15,6 +15,7 @@
     "test:coverage": "vitest run --coverage",
     "test:security": "node scripts/security-audit.mjs",
     "test:smoke": "node scripts/smoke-test.mjs",
+    "backup:content": "node scripts/backup-content.mjs",
     "verify": "npm run lint && npm test && npm run test:security && npm run build"
   },
   "dependencies": {

@@ -1,4 +1,5 @@
 import React from 'react';
+import { logClientError } from '../utils/errorLogger';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -30,6 +31,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     // audit's "no console.log" cleanup) so real errors are still visible
     // in browser devtools / Vercel logs for debugging.
     console.error('Unhandled error in component tree:', error, info.componentStack);
+    logClientError(error, 'react-error-boundary');
   }
 
   handleReload = () => {

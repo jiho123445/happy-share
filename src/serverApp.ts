@@ -243,6 +243,8 @@ export function createExpressApp() {
       { loc: `${SITE_ORIGIN}/press`, changefreq: "weekly", priority: "0.5" },
       { loc: `${SITE_ORIGIN}/family-center`, changefreq: "monthly", priority: "0.5" },
       { loc: `${SITE_ORIGIN}/donate`, changefreq: "monthly", priority: "0.7" },
+      { loc: `${SITE_ORIGIN}/privacy`, changefreq: "yearly", priority: "0.3" },
+      { loc: `${SITE_ORIGIN}/terms`, changefreq: "yearly", priority: "0.3" },
     ];
 
     const data = await fetchFoundationGlobal();

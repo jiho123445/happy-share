@@ -133,7 +133,9 @@ async function main() {
     "press",
     "family-center",
     "donate",
-    "contact"
+    "contact",
+    "privacy",
+    "terms"
   ];
   for (const route of TOP_LEVEL_ROUTES) {
     const dir = path.join(DIST_DIR, route);

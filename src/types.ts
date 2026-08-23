@@ -174,6 +174,8 @@ export type ActiveTab =
   | 'donate'
   | 'family-center'
   | 'contact'
+  | 'privacy'
+  | 'terms'
   | 'notice-detail'
   | 'gallery-detail'
   | 'program-detail'

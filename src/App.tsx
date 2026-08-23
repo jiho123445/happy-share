@@ -24,6 +24,8 @@ import { ModalViewer } from './components/ModalViewer';
 import { PopupModal } from './components/PopupModal';
 import { SyncErrorBanner } from './components/SyncErrorBanner';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { PrivacyPolicyPage } from './components/PrivacyPolicyPage';
+import { TermsPage } from './components/TermsPage';
 
 // BUNDLE SIZE (2026 audit follow-up): AdminModal.tsx pulls in the exceljs
 // export library and a large amount of admin-only UI/logic that ordinary
@@ -98,6 +100,18 @@ const MainContent: React.FC = () => {
       {activeTab === 'contact' && (
         <div className="pt-4">
           <LocationSection />
+        </div>
+      )}
+
+      {activeTab === 'privacy' && (
+        <div className="pt-4">
+          <PrivacyPolicyPage />
+        </div>
+      )}
+
+      {activeTab === 'terms' && (
+        <div className="pt-4">
+          <TermsPage />
         </div>
       )}
 
