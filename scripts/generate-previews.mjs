@@ -107,6 +107,32 @@ async function main() {
     return;
   }
 
+  // BUG FIX (2026-08-23): creating dist/notices/, dist/programs/, and
+  // dist/gallery/ as directories further down — even when empty — shadows
+  // the SPA catch-all rewrite in vercel.json for the *bare* routes
+  // /notices, /programs, and /gallery (no id). Vercel's static file
+  // server checks the deployed filesystem before falling back to
+  // vercel.json rewrites; finding a directory with no index.html at that
+  // exact path, it returns its own 404 instead of ever reaching the
+  // "/(.*)" -> "/index.html" rewrite that would normally boot the React
+  // app. Every real visitor to https://<domain>/gallery (the site's own
+  // nav links, per src/serverApp.ts's sitemap.xml) hit that 404.
+  //
+  // Fix: always write a plain copy of the untouched app shell as
+  // index.html inside each of these three directories. This happens
+  // BEFORE the Firestore fetch below (and unconditionally, regardless of
+  // whether that fetch succeeds) precisely because it must never be
+  // skipped — unlike the per-item preview pages, which are a nice-to-have
+  // for link previews, this is what keeps the site's own top-level routes
+  // from 404ing.
+  const noticesDir = path.join(DIST_DIR, "notices");
+  const programsDir = path.join(DIST_DIR, "programs");
+  const galleryDir = path.join(DIST_DIR, "gallery");
+  for (const dir of [noticesDir, programsDir, galleryDir]) {
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, "index.html"), shellHtml, "utf-8");
+  }
+
   let data;
   try {
     const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/${DATABASE_ID}/documents/foundation/global`;
@@ -117,15 +143,13 @@ async function main() {
     data = {};
     for (const key of Object.keys(fields)) data[key] = unwrapFirestoreValue(fields[key]);
   } catch (e) {
-    console.warn("[generate-previews] Could not fetch Firestore data at build time, skipping preview generation:", e.message);
+    console.warn("[generate-previews] Could not fetch Firestore data at build time, skipping per-item preview generation:", e.message);
     return;
   }
 
   let count = 0;
 
   const notices = data.notices || [];
-  const noticesDir = path.join(DIST_DIR, "notices");
-  fs.mkdirSync(noticesDir, { recursive: true });
   for (const notice of notices) {
     if (!notice?.id) continue;
     const imageAttachment = (notice.attachments || []).find(
@@ -142,8 +166,6 @@ async function main() {
   }
 
   const programs = data.programs || [];
-  const programsDir = path.join(DIST_DIR, "programs");
-  fs.mkdirSync(programsDir, { recursive: true });
   for (const program of programs) {
     if (!program?.id) continue;
     const html = buildPreviewHtml(shellHtml, {
@@ -156,8 +178,6 @@ async function main() {
   }
 
   const gallery = data.gallery || [];
-  const galleryDir = path.join(DIST_DIR, "gallery");
-  fs.mkdirSync(galleryDir, { recursive: true });
   for (const item of gallery) {
     if (!item?.id) continue;
     const html = buildPreviewHtml(shellHtml, {
