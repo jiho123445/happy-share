@@ -107,31 +107,43 @@ async function main() {
     return;
   }
 
-  // BUG FIX (2026-08-23): creating dist/notices/, dist/programs/, and
-  // dist/gallery/ as directories further down — even when empty — shadows
-  // the SPA catch-all rewrite in vercel.json for the *bare* routes
-  // /notices, /programs, and /gallery (no id). Vercel's static file
-  // server checks the deployed filesystem before falling back to
-  // vercel.json rewrites; finding a directory with no index.html at that
-  // exact path, it returns its own 404 instead of ever reaching the
-  // "/(.*)" -> "/index.html" rewrite that would normally boot the React
-  // app. Every real visitor to https://<domain>/gallery (the site's own
-  // nav links, per src/serverApp.ts's sitemap.xml) hit that 404.
-  //
-  // Fix: always write a plain copy of the untouched app shell as
-  // index.html inside each of these three directories. This happens
-  // BEFORE the Firestore fetch below (and unconditionally, regardless of
-  // whether that fetch succeeds) precisely because it must never be
-  // skipped — unlike the per-item preview pages, which are a nice-to-have
-  // for link previews, this is what keeps the site's own top-level routes
-  // from 404ing.
-  const noticesDir = path.join(DIST_DIR, "notices");
-  const programsDir = path.join(DIST_DIR, "programs");
-  const galleryDir = path.join(DIST_DIR, "gallery");
-  for (const dir of [noticesDir, programsDir, galleryDir]) {
+  // BUG FIX (2026-08-23, updated after /news also 404'd): every top-level
+  // route this SPA recognizes (see the `validTabs` list in
+  // src/context/FoundationContext.tsx's parsePath()) needs a real static
+  // index.html at its own path. Originally only notices/programs/gallery
+  // got this treatment, on the assumption that vercel.json's catch-all
+  // rewrite ("/(.*)" -> "/index.html") would handle every other path. It
+  // turned out that catch-all rewrite isn't actually being applied on
+  // this deployment for *any* bare route with no matching file — /news
+  // 404'd exactly like /gallery originally did, and /about, /press,
+  // /family-center, /donate, /contact were almost certainly broken the
+  // same way, just not yet noticed. Rather than keep discovering these
+  // one broken link at a time, every route the app itself can navigate to
+  // now gets a real file, which always takes priority over routing
+  // config and works regardless of whatever is preventing the rewrite
+  // from firing. This happens BEFORE the Firestore fetch below (and
+  // unconditionally, regardless of whether that fetch succeeds) precisely
+  // because it must never be skipped.
+  const TOP_LEVEL_ROUTES = [
+    "notices",
+    "programs",
+    "gallery",
+    "about",
+    "news",
+    "press",
+    "family-center",
+    "donate",
+    "contact"
+  ];
+  for (const route of TOP_LEVEL_ROUTES) {
+    const dir = path.join(DIST_DIR, route);
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(path.join(dir, "index.html"), shellHtml, "utf-8");
   }
+  // Re-usable directory paths for the per-item preview files written below.
+  const noticesDir = path.join(DIST_DIR, "notices");
+  const programsDir = path.join(DIST_DIR, "programs");
+  const galleryDir = path.join(DIST_DIR, "gallery");
 
   let data;
   try {
