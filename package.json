@@ -12,7 +12,10 @@
     "lint": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:security": "node scripts/security-audit.mjs",
+    "test:smoke": "node scripts/smoke-test.mjs",
+    "verify": "npm run lint && npm test && npm run test:security && npm run build"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",
