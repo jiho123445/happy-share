@@ -1,5 +1,6 @@
-import { doc, getDocFromServer, onSnapshot, setDoc } from 'firebase/firestore';
-import { db } from './firebase';
+// firestoreService.ts intentionally has no Firestore SDK imports of its
+// own now — handleFirestoreError() below is pure logging, and
+// GLOBAL_FOUNDATION_DOC is just a path constant.
 
 export enum OperationType {
   CREATE = 'create',
@@ -27,15 +28,12 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
 
 export const GLOBAL_FOUNDATION_DOC = 'foundation/global';
 
-// Test connection on boot
-export async function testFirestoreConnection() {
-  try {
-    const testRef = doc(db, 'test', 'connection');
-    await getDocFromServer(testRef);
-    console.log('Firebase Firestore connection verified successfully');
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.warn('Firestore client is offline or initializing');
-    }
-  }
-}
+// BUG FIX (2026-08-24): removed testFirestoreConnection(), which used to
+// run on every page load and read `test/connection` — a path
+// firestore.rules explicitly denies to everyone (`allow read, write: if
+// false;`), on purpose. That made it a guaranteed-to-fail request on
+// every single visit: no functional impact (the failure was silently
+// swallowed), but a wasted round-trip and a steady stream of
+// permission-denied entries in Firebase's usage logs. The onSnapshot
+// listener in FoundationContext.tsx already reports connectivity for
+// real; this separate probe added nothing.
