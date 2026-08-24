@@ -1,5 +1,6 @@
 /**
- * ANALYTICS (2026-08 addition): Google Analytics 4 integration.
+ * ANALYTICS (2026-08 addition, revised 2026-08-24): Google Analytics 4
+ * integration.
  *
  * Entirely optional and off by default — gated behind VITE_GA_MEASUREMENT_ID,
  * following the same pattern as VITE_ADMIN_UID/VITE_ADMIN_EMAIL elsewhere in
@@ -7,14 +8,22 @@
  * is a silent no-op and nothing GA-related ever loads, so this is safe to
  * ship even before the measurement ID is configured in Vercel.
  *
- * This is a single-page app: tab changes (news/gallery/about/etc.) do NOT
- * trigger a full page reload, so gtag.js's automatic page_view tracking
- * (which fires once, on initial script load) would only ever see the very
- * first tab a visitor lands on. trackPageView() is called manually from
- * FoundationContext.tsx whenever `activeTab` changes, so every section a
- * visitor navigates to — including back/forward browser navigation — is
- * recorded as its own page_view, the way it would be on a traditional
- * multi-page site.
+ * REVISION NOTE: the original version of this file used
+ * `send_page_view: false` on the initial config call, relying entirely on
+ * a manually-fired page_view event from FoundationContext.tsx for every
+ * navigation, including the very first page load. Verified against Google
+ * Tag Assistant that the tag configured correctly but the debug session
+ * showed zero page_view hits actually sent — a known-flaky pattern with
+ * gtag.js in single-page apps (Google's own docs and multiple field
+ * reports describe send_page_view:false interacting unreliably with
+ * SPA frameworks). Switched to the standard, well-tested approach
+ * instead: let gtag.js send its normal automatic page_view on the
+ * initial config call (the most heavily-used, best-supported code path
+ * in gtag.js), and only fire manual page_view events for subsequent
+ * in-app navigation (tab changes) that wouldn't otherwise trigger a
+ * pageview at all, since this is a client-side-routed SPA with no full
+ * page reloads. See the isFirstPageView guard in trackPageView() below
+ * and its caller in FoundationContext.tsx.
  */
 
 const MEASUREMENT_ID = (import.meta.env.VITE_GA_MEASUREMENT_ID || '').trim();
@@ -43,18 +52,29 @@ export function initAnalytics(): void {
       window.dataLayer!.push(args);
     };
     window.gtag('js', new Date());
-    // send_page_view: false — this SPA sends its own page_view events via
-    // trackPageView() on every tab change instead of relying on gtag.js's
-    // one-time automatic pageview, which would otherwise only ever see
-    // whichever tab the visitor first landed on.
-    window.gtag('config', MEASUREMENT_ID, { send_page_view: false });
+    // The initial page_view is sent automatically by this config call
+    // (gtag.js's default, best-supported behavior). trackPageView() below
+    // is only used for subsequent SPA tab changes, which otherwise
+    // wouldn't be seen as separate pageviews at all.
+    window.gtag('config', MEASUREMENT_ID);
   } catch (e) {
     console.warn('[analytics] Failed to initialize Google Analytics:', e);
   }
 }
 
+let isFirstPageView = true;
+
 export function trackPageView(path: string, title?: string): void {
   if (!MEASUREMENT_ID || typeof window === 'undefined' || !window.gtag) return;
+  // The very first call (initial page load) is already covered by the
+  // automatic page_view sent from the 'config' command in initAnalytics()
+  // above — sending a second one here would double-count that first
+  // visit. Every call after that is a genuine in-app navigation with no
+  // full page reload, so it needs its own manual page_view.
+  if (isFirstPageView) {
+    isFirstPageView = false;
+    return;
+  }
   try {
     window.gtag('event', 'page_view', {
       page_path: path,
