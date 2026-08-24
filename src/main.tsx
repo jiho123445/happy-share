@@ -3,6 +3,7 @@ import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import { logClientError } from './utils/errorLogger';
+import { initAnalytics } from './utils/analytics';
 
 // MONITORING (2026-08 addition): React's ErrorBoundary only catches
 // errors thrown during rendering. Real-world failures this project has
@@ -17,6 +18,8 @@ window.addEventListener('error', (event) => {
 window.addEventListener('unhandledrejection', (event) => {
   logClientError(event.reason, 'unhandled-promise-rejection');
 });
+
+initAnalytics();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
