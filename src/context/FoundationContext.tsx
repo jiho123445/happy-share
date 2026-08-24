@@ -3,7 +3,7 @@ import { doc, onSnapshot, setDoc, getDoc, getDocs, collection, addDoc, updateDoc
 import { ref, deleteObject } from 'firebase/storage';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db, storage } from '../lib/firebase';
-import { testFirestoreConnection, GLOBAL_FOUNDATION_DOC, handleFirestoreError, OperationType } from '../lib/firestoreService';
+import { GLOBAL_FOUNDATION_DOC, handleFirestoreError, OperationType } from '../lib/firestoreService';
 import {
   FoundationSettings,
   TimelineItem,
@@ -832,7 +832,17 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   // document — the migration happens gradually, in the background,
   // simply by using the admin panel normally.
   useEffect(() => {
-    testFirestoreConnection();
+    // BUG FIX (2026-08-24): this used to call testFirestoreConnection()
+    // here, which reads `test/connection` on every single page load —
+    // but firestore.rules explicitly denies all access to that path
+    // (`match /test/{docId} { allow read, write: if false; }`), on
+    // purpose, so this read was *guaranteed* to fail every time, for
+    // every visitor. It never broke anything (the failure was caught and
+    // silently ignored), but it was a wasted round-trip on every page
+    // load and a steady stream of permission-denied entries in Firebase's
+    // usage logs for no benefit. The onSnapshot listener set up just
+    // below this already proves the Firestore connection works or
+    // doesn't — a separate connectivity probe added nothing.
 
     const foundationCollectionRef = collection(db, 'foundation');
 
