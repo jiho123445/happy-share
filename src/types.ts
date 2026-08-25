@@ -1,80 +1,194 @@
-export interface Course {
-  id: string;
-  title: string;
-  category: '국비지원' | '자격증' | '실무·기초' | '코딩·AI' | '학생·특강';
-  summary: string;
-  description: string;
-  target: string; // 대상 (예: 취업준비생, 재직자, 시니어, 학생)
-  duration: string; // 기간 (예: 2개월, 40시간)
-  schedule: string; // 시간대 (예: 월~금 10:00 - 12:00 / 야간반 19:00 - 21:00)
-  nationalSupport: boolean; // 국비지원 가능 여부
-  subsidyRate: string; // 지원율 (예: 최대 100% 지원)
-  tuition: number; // 일반 수강료 (원)
-  selfPayEstimate: string; // 예상 자부담금 (예: 0원 ~ 50,000원)
-  certificationTags: string[]; // 관련 자격증
-  curriculum: string[]; // 주차별/단계별 교육내용
-  featured?: boolean;
-}
-
-export interface Notice {
-  id: string;
-  title: string;
-  date: string;
-  category: '모집안내' | '시험일정' | '학원소개' | '국비지원';
-  content: string;
-  important?: boolean;
-}
-
-export interface ConsultationForm {
+export interface NoticeAttachment {
   name: string;
-  phone: string;
-  courseInterest: string;
-  preferredTime: '상관없음' | '오전반' | '오후반' | '야간반' | '주말반';
-  hasNaeilCard: '유' | '무' | '발급예정/잘모름';
-  userCategory: '취업준비생' | '재직자' | '대학생/학생' | '주부/시니어' | '기타';
-  message: string;
+  url?: string;
+  size?: string;
+  type?: string;
 }
 
-export interface InquiryRecord extends ConsultationForm {
-  id: string;
-  receiptNumber?: string;
-  createdAt: string; // ISO date string
-  status: '상담대기' | '상담완료' | '등록완료' | '보류';
-  adminNotes?: string;
-}
-
-export interface FAQItem {
-  question: string;
-  answer: string;
-  category: string;
-}
-
-// 자료실 - 서식/예제/프로그램 등 다운로드 자료
-export type MaterialType = '학원서식' | '예제서식' | '채점프로그램';
-
-export interface MaterialItem {
+export interface NoticeItem {
   id: string;
   title: string;
-  description?: string;
-  courseCategory: string; // 과정명 (예: '컴퓨터활용능력 2급/1급 취득반') 또는 '공통'
-  materialType: MaterialType;
-  studentVisible: boolean; // '예제서식'과 '채점프로그램'만 true (Firestore 쿼리 where 절에 사용)
-  fileName: string;
-  storagePath: string; // Storage 경로 (다운로드는 매번 api/download-material에서 임시 링크 발급)
-  fileSize: number; // bytes
-  createdAt: string; // ISO date string
-  uploadedBy: string; // 업로드한 관리자 이메일
-  downloadCount: number; // 다운로드 클릭 횟수
+  category: '공지사항' | '재단소식' | '사업소식' | '후원소식' | '모집공고' | '보도자료';
+  date: string;
+  views: number;
+  content: string;
+  isImportant?: boolean;
+  author: string;
+  attachmentName?: string;
+  /** @deprecated Legacy single-attachment URL, kept in sync alongside
+   * `attachments` for backward compatibility with older documents/readers.
+   * New code should read/write `attachments` instead. */
+  attachmentUrl?: string;
+  attachments?: NoticeAttachment[];
 }
 
-// 자료실 - 수강생 회원가입/승인 관련
-export type StudentStatus = '승인대기' | '승인됨' | '거절됨';
+export interface GalleryItem {
+  id: string;
+  title: string;
+  category: string; // e.g. '장학금 전달', '교육지원', '명절 나눔', '삼계탕 나눔', '생활용품 지원', '주거환경 개선', '복지시설 지원', '다문화가족 활동', '가족센터 활동', '지역사회 봉사'
+  date: string;
+  imageUrl: string; // 대표 사진 (커버 이미지) - 기존 단일 사진 데이터 100% 호환
+  images?: string[]; // 항목 내 여러 장의 사진 목록 (다중 사진 지원)
+  /** Firebase Storage path for primary file uploaded by the gallery manager. */
+  storagePath?: string;
+  /** Firebase Storage paths for all uploaded files in this gallery post. */
+  storagePaths?: string[];
+  description: string;
+  location?: string;
+  author?: string;
+  isProtected?: boolean; // 관리자 공식 등록 보호 여부 (임의 변경 불가)
+}
 
-export interface StudentProfile {
-  uid: string;
+export interface TimelineItem {
+  year: string;
+  title: string;
+  subtitle?: string;
+  description: string;
+  category?: '출범' | '수상' | '사업확대' | '법인전환';
+  imageUrl?: string;
+  awardBadge?: string;
+  /** Shows the "주요 도약 시점" badge in the timeline. Not currently set
+   * on any entry in initialData.ts — set to true on specific entries to
+   * use this. */
+  isMilestone?: boolean;
+}
+
+export interface ProgramItem {
+  id: string;
+  code: string; // '01', '02', '03', '04', '05', '06'
+  title: string;
+  subtitle: string;
+  summary: string;
+  details: string[];
+  iconName: string;
+  targetAudience: string;
+  impactMessage: string;
+  badge?: string;
+}
+
+export interface AwardItem {
+  year: string;
+  title: string;
+  issuer: string;
+  description: string;
+}
+
+export interface DonationApplication {
+  id: string;
   name: string;
   phone: string;
   email: string;
-  status: StudentStatus;
-  createdAt: string; // ISO date string
+  donationType: '정기후원' | '일시후원' | '물품후원' | '봉사활동';
+  targetCategory: string; // '장학·교육', '긴급지원', '주거환경', '다문화가족', '복지시설배분', '지역나눔'
+  amountOrItem?: string;
+  message?: string;
+  privacyAgreed: boolean;
+  createdAt: string;
+  status: '접수완료' | '확인중' | '처리완료';
 }
+
+export interface ContactInquiry {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  subject: string;
+  message: string;
+  createdAt: string;
+  status: '대기중' | '답변완료';
+}
+
+export interface NewsletterSubscriber {
+  id: string;
+  email: string;
+  subscribedAt: string;
+  status: '구독중' | '해지';
+}
+
+export interface DebugLog {
+  id: string;
+  time: string;
+  type: 'info' | 'success' | 'warn' | 'error';
+  message: string;
+  details?: string;
+}
+
+export interface PopupItem {
+  id: string;
+  title: string;
+  content: string;
+  imageUrl?: string;
+  linkUrl?: string;
+  startDate?: string;
+  endDate?: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface FoundationSettings {
+  name: string;
+  englishName: string;
+  chairmanName: string;
+  chairmanImageUrl?: string;
+  heroImageUrl?: string;
+  familyCenterImageUrl?: string;
+  chairmanGreeting?: string;
+  sloganMain: string;
+  sloganSub: string;
+  establishedYear: string;
+  reorganizedYear: string;
+  address: string;
+  phone: string;
+  fax: string;
+  familyCenterPhone?: string;
+  familyCenterFax?: string;
+  familyCenterAddress?: string;
+  familyCenterQuote?: string;
+  familyCenterDescription?: string;
+  /** Exactly 4 feature cards shown in the family center section, in fixed
+   * order (icons are fixed per position: Users, Heart, BookOpen, ShieldCheck). */
+  familyCenterFeatures?: { title: string; description: string }[];
+  email: string;
+  operatingHours: string;
+  bankAccounts: {
+    bank: string;
+    accountNumber: string;
+    holder: string;
+  }[];
+  snsLinks: {
+    naver?: string;
+    facebook?: string;
+    instagram?: string;
+    youtube?: string;
+  };
+  galleryCategories?: string[];
+}
+
+export type ActiveTab =
+  | 'main'
+  | 'about'
+  | 'programs'
+  | 'news'
+  | 'gallery'
+  | 'press'
+  | 'donate'
+  | 'family-center'
+  | 'contact'
+  | 'privacy'
+  | 'terms'
+  | 'notice-detail'
+  | 'gallery-detail'
+  | 'program-detail'
+  | 'family-center-detail';
+
+export type AboutSubTab = 'greeting' | 'purpose' | 'history' | 'organization';
+
+export interface PressCoverageItem {
+  id: string;
+  title: string;
+  outlet: string; // 언론사명 (e.g. '강원일보', '신아일보')
+  date: string; // YYYY-MM-DD
+  summary: string;
+  url: string; // 원문 기사 링크 (외부 사이트)
+}
+

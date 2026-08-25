@@ -1,48 +1,28 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
-import { ErrorBoundary } from './components/ErrorBoundary.tsx';
-import { reportClientError } from './lib/firestoreService';
 import './index.css';
-<<<<<<< Updated upstream
-=======
 import { logClientError } from './utils/errorLogger';
 import { initAnalytics } from './utils/analytics';
->>>>>>> Stashed changes
 
-// ErrorBoundary는 React 렌더링 중에 발생한 오류만 잡을 수 있습니다.
-// 이벤트 핸들러 안에서 난 오류나 처리되지 않은 Promise 거부(rejection)는
-// ErrorBoundary를 그냥 지나쳐 버립니다. 그런 오류도 놓치지 않도록 전역
-// 리스너를 추가해 같은 errorLogs 컬렉션에 기록합니다.
+// MONITORING (2026-08 addition): React's ErrorBoundary only catches
+// errors thrown during rendering. Real-world failures this project has
+// actually hit — a blocked fetch() inside a click handler, a rejected
+// Firestore write inside an async admin action — happen outside React's
+// render cycle entirely and would otherwise never be recorded anywhere
+// but the browser console the admin isn't watching. These two listeners
+// catch everything else.
 window.addEventListener('error', (event) => {
-  const err = event.error instanceof Error ? event.error : new Error(String(event.message || '알 수 없는 오류'));
-  reportClientError({
-    message: err.message,
-    stack: err.stack,
-    url: window.location.href,
-    userAgent: navigator.userAgent,
-    context: 'window.onerror',
-  });
+  logClientError(event.error || event.message, 'window-onerror');
 });
-
 window.addEventListener('unhandledrejection', (event) => {
-  const reason = event.reason;
-  const err = reason instanceof Error ? reason : new Error(String(reason));
-  reportClientError({
-    message: err.message,
-    stack: err.stack,
-    url: window.location.href,
-    userAgent: navigator.userAgent,
-    context: 'unhandledrejection',
-  });
+  logClientError(event.reason, 'unhandled-promise-rejection');
 });
 
 initAnalytics();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ErrorBoundary>
-      <App />
-    </ErrorBoundary>
+    <App />
   </StrictMode>,
 );
