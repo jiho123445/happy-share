@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://nbnhappy.or.kr/sitemap.xml
+Sitemap: https://www.jahrd.co.kr/sitemap.xml

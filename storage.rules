@@ -3,65 +3,65 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
+    // 헬퍼 함수: 관리자 여부 확인
+    // ⚠️ 이전 버전은 Firestore의 admins 컬렉션을 조회하는 방식(firestore.exists())을
+    // 썼는데, 이 방식은 Firebase 콘솔에서 "두 서비스 연결 권한"을 별도로 한 번 더
+    // 승인해야만 정상 작동합니다. 이 승인 단계를 놓치면 모든 업로드/삭제 요청이
+    // 조용히 거부되어(화면에는 별다른 오류 없이 0%에서 멈춘 것처럼 보임) 원인을
+    // 찾기 어려워지는 문제가 있었습니다.
+    // 지금은 대신 로그인한 계정의 이메일을 직접 확인하는 방식으로 바꿨습니다.
+    // 추가 설정 없이 즉시 작동하고, 이 프로젝트는 관리자 계정이 1개뿐이라 이
+    // 방식으로 충분합니다. 나중에 관리자 계정을 추가하실 경우, 아래 목록에
+    // 이메일 주소를 한 줄 더 추가하고 다시 게시(Publish)하시면 됩니다.
     function isAdmin() {
       return request.auth != null
-        && request.auth.uid == 'a1MQmdMGkgdorEl6V3FAptCAYo52';
+        && request.auth.token.email in [
+          'jiho1234@jahrd.co.kr'
+        ];
     }
 
-    // Activities: one image file <= 10 MiB.
+    function isAllowedImage() {
+      return request.resource.size < 10 * 1024 * 1024 // 10MB 이하
+        && request.resource.contentType.matches('image/(jpeg|jpg|png|webp)');
+    }
+
+    // 1. 활동사진 파일 Storage 경로 ('activities/')
+    // 누구나 이미지 조회(read) 가능, 관리자만 업로드 및 삭제(write) 가능
+    // 업로드는 10MB 이하의 JPEG/PNG/WebP 이미지로 제한합니다.
     match /activities/{allPaths=**} {
       allow read: if true;
-      allow create, update: if isAdmin()
-        && request.resource.size <= 10 * 1024 * 1024
-        && request.resource.contentType in [
-          'image/jpeg', 'image/png', 'image/webp'
-        ]
-        && request.resource.name.matches('.*\\.(jpg|JPG|jpeg|JPEG|png|PNG|webp|WEBP)$');
       allow delete: if isAdmin();
+      allow create, update: if isAdmin() && isAllowedImage();
     }
 
-    // Notice attachments: one file <= 25 MiB.
-    // HWP/HWPX are normalized by the app to the canonical MIME values below.
+    // 2. 공지사항 첨부 파일 Storage 경로 ('notices/')
+    // 이미지 외에 PDF 첨부도 허용하되, 크기 제한은 동일하게 적용합니다.
     match /notices/{allPaths=**} {
       allow read: if true;
-      allow create, update: if isAdmin()
-        && request.resource.size <= 25 * 1024 * 1024
-        && request.resource.contentType in [
-          'application/pdf',
-          'application/haansofthwp',
-          'application/vnd.hancom.hwp',
-          'application/x-hwp',
-          'application/vnd.hancom.hwpx',
-          'application/x-hwpx',
-          'application/octet-stream',
-          'application/zip',
-          'application/msword',
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          'application/vnd.ms-excel',
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          'application/vnd.ms-powerpoint',
-          'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-          'image/jpeg', 'image/png', 'image/webp', 'image/gif'
-        ]
-        && request.resource.name.matches('.*\\.(pdf|PDF|hwp|HWP|hwpx|HWPX|doc|DOC|docx|DOCX|xls|XLS|xlsx|XLSX|ppt|PPT|pptx|PPTX|jpg|JPG|jpeg|JPEG|png|PNG|webp|WEBP|gif|GIF)$');
       allow delete: if isAdmin();
+      allow create, update: if isAdmin()
+        && request.resource.size < 10 * 1024 * 1024
+        && (request.resource.contentType.matches('image/(jpeg|jpg|png|webp)')
+            || request.resource.contentType == 'application/pdf');
     }
 
-    // Site setting images: one image file <= 10 MiB.
-    match /settings/{allPaths=**} {
-      allow read: if true;
-      allow create, update: if isAdmin()
-        && request.resource.size <= 10 * 1024 * 1024
-        && request.resource.contentType in [
-          'image/jpeg', 'image/png', 'image/webp'
-        ]
-        && request.resource.name.matches('.*\\.(jpg|JPG|jpeg|JPEG|png|PNG|webp|WEBP)$');
+    // 3. 자료실 파일 Storage 경로 ('materials/')
+    // 학생은 Storage를 직접 읽지 않습니다.
+    // 학생/관리자의 다운로드는 /api/download-material에서 Firebase Admin SDK가
+    // 로그인·승인상태·자료유형을 다시 확인한 뒤 5분짜리 Signed URL을 발급합니다.
+    // 따라서 승인되지 않은 학생이나 학원서식은 파일 URL을 직접 알아도
+    // Storage Rules를 통한 직접 읽기가 차단됩니다.
+    //
+    // 업로드/수정/삭제는 관리자만 허용합니다.
+    match /materials/{allPaths=**} {
+      // 학생은 Storage를 직접 읽지 않습니다.
+      // 자료 다운로드는 /api/download-material에서 Firebase Admin SDK가
+      // 관리자/승인학생 및 자료유형을 다시 확인한 뒤 5분짜리 Signed URL을 발급합니다.
+      // 따라서 학생의 직접 Storage 접근은 차단합니다.
+      allow read: if isAdmin();
       allow delete: if isAdmin();
+      allow create, update: if isAdmin() && request.resource.size < 100 * 1024 * 1024;
     }
 
-    // Any other Storage path is denied by default.
-    match /{allPaths=**} {
-      allow read, write: if false;
-    }
   }
 }

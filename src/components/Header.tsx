@@ -1,438 +1,270 @@
-import React, { useState } from 'react';
-import { useFoundation } from '../context/FoundationContext';
-import { ActiveTab } from '../types';
-import { Logo } from './Logo';
-import {
-  Heart,
-  Phone,
-  MapPin,
-  Menu,
-  X,
-  Settings,
-  ChevronDown,
-  Waves,
-  Calendar,
-  Award,
-  Users,
-  BookOpen,
-  Building2,
-  Sparkles,
-  Newspaper,
-  Image as ImageIcon,
-  ExternalLink,
-  PartyPopper
-} from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Phone, MapPin, Menu, X, ChevronRight, Award, Bot, FileText, Calendar, FileSpreadsheet, ShieldCheck } from 'lucide-react';
+import { ACADEMY_INFO } from '../data/coursesData';
+import { AcademyLogoSeal } from './AcademyLogoSeal';
 
-export const Header: React.FC = () => {
-  const { settings, activeTab, setActiveTab, setAboutSubTab, setAdminOpen, hasNewDonation, pendingDonationsCount } = useFoundation();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+interface HeaderProps {
+  activeSection: string;
+  onNavigate: (sectionId: string) => void;
+  onOpenAiModal: () => void;
+  onOpenAdminModal?: () => void;
+  pendingInquiryCount?: number;
+}
 
-  const handleNavClick = (tab: ActiveTab, elementId?: string) => {
-    setActiveTab(tab);
-    setMobileMenuOpen(false);
-    setActiveDropdown(null);
+export const Header: React.FC<HeaderProps> = ({ activeSection, onNavigate, onOpenAiModal, onOpenAdminModal, pendingInquiryCount = 0 }) => {
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-    if (elementId) {
-      setTimeout(() => {
-        const el = document.getElementById(elementId);
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth' });
-        }
-      }, 100);
-    } else {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 20) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
-  const handleAboutSubTabClick = (subTab: 'greeting' | 'purpose' | 'history' | 'organization') => {
-    setAboutSubTab(subTab);
-    setActiveTab('about');
-    setMobileMenuOpen(false);
-    setActiveDropdown(null);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const navItems = [
+    { id: 'home', label: '홈' },
+    { id: 'courses', label: '교육과정' },
+    { id: 'national-support', label: '국비지원' },
+    { id: 'intro', label: '학원소개' },
+    { id: 'notices', label: '공지·시험일정' },
+    { id: 'materials', label: '자료실' },
+    { id: 'inquiry', label: '온라인 수강문의' },
+    { id: 'location', label: '오시는길' },
+  ];
+
+  const handleNavClick = (id: string) => {
+    onNavigate(id);
+    setIsMobileMenuOpen(false);
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-md shadow-sm border-b border-orange-100/60">
-      {/* Top Utility Bar */}
-      <div className="bg-slate-900 text-slate-300 text-xs py-1.5 border-b border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2 sm:gap-3 text-slate-300">
-            <span className="flex items-center gap-1 font-medium">
-              <MapPin className="w-3.5 h-3.5 text-emerald-400" />
-              <span>강원특별자치도 홍천군</span>
+    <header className="sticky top-0 z-40 w-full bg-white/50 backdrop-blur-md border-b border-white/50 shadow-sm transition-all duration-200">
+      {/* Top Banner Contact Strip (Desktop & Mobile) */}
+      <div className="bg-slate-900/90 backdrop-blur-md text-slate-200 text-xs py-1.5 border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 flex flex-wrap justify-between items-center gap-2">
+          <div className="flex items-center gap-4 text-slate-300">
+            <span className="inline-flex items-center gap-1 font-medium text-emerald-400">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              2026년 국민내일배움카드 신규 모집중
             </span>
-            <span className="text-slate-600">|</span>
-            <span className="inline-flex items-center gap-1 font-medium">
-              <Phone className="w-3.5 h-3.5 text-orange-400" />
-              <span>문의: {settings.phone}</span>
-            </span>
-            <span className="text-slate-600 hidden sm:inline">|</span>
-            <span className="hidden sm:inline-flex items-center gap-1 font-medium text-slate-400">
-              <span>FAX: {settings.fax}</span>
+            <span className="hidden sm:inline-flex items-center gap-1">
+              <MapPin className="w-3.5 h-3.5 text-slate-400" />
+              {ACADEMY_INFO.address}
             </span>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <span className="text-[11px] bg-slate-800 text-orange-300 px-2 py-0.5 rounded font-medium">
-              2009년부터 시작된 홍천의 나눔
-            </span>
-            <button
-              onClick={() => setAdminOpen(true)}
-              className="flex items-center gap-1 text-slate-400 hover:text-white transition-colors py-0.5 px-1.5 rounded hover:bg-slate-800 relative"
-              title="관리자 화면 열기"
+          <div className="flex items-center gap-3">
+            <a
+              href={`tel:${ACADEMY_INFO.phoneClean}`}
+              className="inline-flex items-center gap-1 hover:text-white font-semibold transition-colors"
             >
-              <Settings className="w-3.5 h-3.5 text-orange-400" />
-              <span className="hidden md:inline">관리자</span>
-              {hasNewDonation && (
-                <span className="relative flex h-2 w-2 ml-0.5 shrink-0" title={`신규 후원신청 ${pendingDonationsCount}건`}>
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                </span>
-              )}
+              <Phone className="w-3.5 h-3.5 text-blue-400" />
+              <span>상담전화: {ACADEMY_INFO.phone}</span>
+            </a>
+            <button
+              onClick={onOpenAiModal}
+              className="hidden md:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-medium text-[11px] shadow-sm shadow-blue-300 transition-colors"
+            >
+              <Bot className="w-3 h-3" />
+              <span>AI 수강추천</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Main Brand & Navigation Bar (Single Row as in image_3) */}
-      <div className="bg-white border-b border-slate-200/80 shadow-2xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-3 flex items-center justify-between gap-3 lg:gap-6">
-          {/* Foundation Text Logo */}
-          <button
-            onClick={() => handleNavClick('main')}
-            className="flex items-center shrink-0 max-w-[70%] sm:max-w-none group text-left transition-transform hover:scale-[1.01]"
-            title="사단법인 너브내행복나눔재단 메인으로 이동"
+      {/* Main Navigation Bar */}
+      <div className={`max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 transition-all ${isScrolled ? 'py-2' : 'py-3'}`}>
+        <div className="flex items-center justify-between gap-2 lg:gap-4">
+          {/* Logo */}
+          <div
+            onClick={() => handleNavClick('hero')}
+            className="flex items-center gap-2.5 sm:gap-3 cursor-pointer group shrink-0"
+            id="header-logo"
           >
-            <Logo variant="dark" />
-          </button>
-
-          {/* Desktop Navigation Links (In the same row as logo) */}
-          <nav className="hidden lg:flex items-center gap-2 xl:gap-4 text-base xl:text-lg font-extrabold text-slate-800 shrink-0">
-            {/* 재단소개 */}
-            <div className="relative group" onMouseEnter={() => setActiveDropdown('about')} onMouseLeave={() => setActiveDropdown(null)}>
-              <button
-                onClick={() => handleNavClick('about')}
-                className={`flex items-center gap-1 px-2.5 xl:px-3 py-2 rounded-xl transition-all ${
-                  activeTab === 'about' ? 'text-orange-700 bg-orange-100/90 font-black' : 'hover:text-orange-700 hover:bg-amber-100/60'
-                }`}
-              >
-                <span>재단소개</span>
-                <ChevronDown className="w-4 xl:w-5 h-4 xl:h-5 text-slate-500 group-hover:rotate-180 transition-transform" />
-              </button>
-              {activeDropdown === 'about' && (
-                <div className="absolute top-full left-0 w-72 bg-white rounded-2xl shadow-2xl border border-slate-200/90 py-2.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                  <button onClick={() => handleAboutSubTabClick('greeting')} className="w-full text-left px-5 py-3 text-base sm:text-lg font-extrabold text-slate-800 hover:bg-orange-50 hover:text-orange-600 flex items-center gap-2.5 transition-colors">
-                    <Users className="w-5 h-5 text-orange-500 shrink-0" /> 이사장 인사말
-                  </button>
-                  <button onClick={() => handleAboutSubTabClick('purpose')} className="w-full text-left px-5 py-3 text-base sm:text-lg font-extrabold text-slate-800 hover:bg-orange-50 hover:text-orange-600 flex items-center gap-2.5 transition-colors">
-                    <BookOpen className="w-5 h-5 text-orange-500 shrink-0" /> 설립목적 및 정체성
-                  </button>
-                  <button onClick={() => handleAboutSubTabClick('history')} className="w-full text-left px-5 py-3 text-base sm:text-lg font-extrabold text-slate-800 hover:bg-orange-50 hover:text-orange-600 flex items-center gap-2.5 transition-colors">
-                    <Calendar className="w-5 h-5 text-orange-500 shrink-0" /> 재단 연혁 (2026~2009)
-                  </button>
-                  <button onClick={() => handleAboutSubTabClick('organization')} className="w-full text-left px-5 py-3 text-base sm:text-lg font-extrabold text-slate-800 hover:bg-orange-50 hover:text-orange-600 flex items-center gap-2.5 transition-colors">
-                    <Building2 className="w-5 h-5 text-orange-500 shrink-0" /> 조직도 및 위탁기관
-                  </button>
-                  <button onClick={() => handleNavClick('contact')} className="w-full text-left px-5 py-3 text-base sm:text-lg font-extrabold text-slate-800 hover:bg-orange-50 hover:text-orange-600 flex items-center gap-2.5 border-t border-slate-100 mt-1 pt-3 transition-colors">
-                    <MapPin className="w-5 h-5 text-orange-500 shrink-0" /> 오시는 길 (지도)
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* 주요사업 */}
-            <div className="relative group" onMouseEnter={() => setActiveDropdown('programs')} onMouseLeave={() => setActiveDropdown(null)}>
-              <button
-                onClick={() => handleNavClick('programs')}
-                className={`flex items-center gap-1 px-2.5 xl:px-3 py-2 rounded-xl transition-all ${
-                  activeTab === 'programs' ? 'text-orange-700 bg-orange-100/90 font-black' : 'hover:text-orange-700 hover:bg-amber-100/60'
-                }`}
-              >
-                <span>주요사업</span>
-                <ChevronDown className="w-4 xl:w-5 h-4 xl:h-5 text-slate-500 group-hover:rotate-180 transition-transform" />
-              </button>
-              {activeDropdown === 'programs' && (
-                <div className="absolute top-full left-0 w-80 bg-white rounded-2xl shadow-2xl border border-slate-200/90 py-2.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                  <button onClick={() => handleNavClick('programs', 'prog-01')} className="w-full text-left px-5 py-3 text-base sm:text-lg font-extrabold text-slate-800 hover:bg-orange-50 hover:text-orange-600 transition-colors">
-                    01. 장학·교육지원
-                  </button>
-                  <button onClick={() => handleNavClick('programs', 'prog-02')} className="w-full text-left px-5 py-3 text-base sm:text-lg font-extrabold text-slate-800 hover:bg-orange-50 hover:text-orange-600 transition-colors">
-                    02. 취약계층 긴급지원
-                  </button>
-                  <button onClick={() => handleNavClick('programs', 'prog-03')} className="w-full text-left px-5 py-3 text-base sm:text-lg font-extrabold text-slate-800 hover:bg-orange-50 hover:text-orange-600 transition-colors">
-                    03. 주거환경 개선
-                  </button>
-                  <button onClick={() => handleNavClick('programs', 'prog-04')} className="w-full text-left px-5 py-3 text-base sm:text-lg font-extrabold text-slate-800 hover:bg-orange-50 hover:text-orange-600 transition-colors">
-                    04. 다문화·가족지원
-                  </button>
-                  <button onClick={() => handleNavClick('programs', 'prog-05')} className="w-full text-left px-5 py-3 text-base sm:text-lg font-extrabold text-slate-800 hover:bg-orange-50 hover:text-orange-600 flex items-center justify-between transition-colors">
-                    <span>05. 복지시설 배분사업</span>
-                    <span className="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-black">너브내배분</span>
-                  </button>
-                  <button onClick={() => handleNavClick('programs', 'prog-06')} className="w-full text-left px-5 py-3 text-base sm:text-lg font-extrabold text-slate-800 hover:bg-orange-50 hover:text-orange-600 flex items-center justify-between transition-colors">
-                    <span>06. 다문화가족 한마음 축제</span>
-                    <PartyPopper className="w-4 h-4 text-pink-500" />
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* 활동소식 */}
-            <div className="relative group" onMouseEnter={() => setActiveDropdown('news')} onMouseLeave={() => setActiveDropdown(null)}>
-              <button
-                onClick={() => handleNavClick('news')}
-                className={`flex items-center gap-1 px-2.5 xl:px-3 py-2 rounded-xl transition-all ${
-                  activeTab === 'news' || activeTab === 'gallery' || activeTab === 'press' ? 'text-orange-700 bg-orange-100/90 font-black' : 'hover:text-orange-700 hover:bg-amber-100/60'
-                }`}
-              >
-                <span>활동소식</span>
-                <ChevronDown className="w-4 xl:w-5 h-4 xl:h-5 text-slate-500 group-hover:rotate-180 transition-transform" />
-              </button>
-              {activeDropdown === 'news' && (
-                <div className="absolute top-full left-0 w-64 bg-white rounded-2xl shadow-2xl border border-slate-200/90 py-2.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                  <button onClick={() => handleNavClick('news')} className="w-full text-left px-5 py-3 text-base sm:text-lg font-extrabold text-slate-800 hover:bg-orange-50 hover:text-orange-600 flex items-center gap-2.5 transition-colors">
-                    <Newspaper className="w-5 h-5 text-orange-500 shrink-0" /> 공지사항 & 뉴스
-                  </button>
-                  <button onClick={() => handleNavClick('gallery')} className="w-full text-left px-5 py-3 text-base sm:text-lg font-extrabold text-slate-800 hover:bg-orange-50 hover:text-orange-600 flex items-center gap-2.5 transition-colors">
-                    <ImageIcon className="w-5 h-5 text-emerald-500 shrink-0" /> 활동 갤러리
-                  </button>
-                  <button onClick={() => handleNavClick('press')} className="w-full text-left px-5 py-3 text-base sm:text-lg font-extrabold text-slate-800 hover:bg-orange-50 hover:text-orange-600 flex items-center gap-2.5 transition-colors">
-                    <ExternalLink className="w-5 h-5 text-sky-500 shrink-0" /> 보도자료
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* 후원·참여 */}
-            <button
-              onClick={() => handleNavClick('donate')}
-              className={`px-2.5 xl:px-3 py-2 rounded-xl transition-all relative flex items-center gap-1.5 ${
-                activeTab === 'donate' ? 'text-orange-700 bg-orange-100/90 font-black' : 'hover:text-orange-700 hover:bg-amber-100/60'
-              }`}
-            >
-              <span>후원·참여</span>
-              {hasNewDonation && (
-                <span className="relative flex h-2.5 w-2.5 shrink-0" title={`신규 후원신청 ${pendingDonationsCount}건`}>
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span>
+            <AcademyLogoSeal className="w-11 h-11 sm:w-12 sm:h-12" />
+            <div className="shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold text-base sm:text-lg lg:text-xl text-slate-900 tracking-tight leading-none group-hover:text-blue-600 transition-colors whitespace-nowrap">
+                  홍천 중앙정보처리학원
                 </span>
-              )}
-            </button>
-
-            {/* 홍천군가족센터 */}
-            <div className="relative group" onMouseEnter={() => setActiveDropdown('family')} onMouseLeave={() => setActiveDropdown(null)}>
-              <button
-                onClick={() => handleNavClick('family-center')}
-                className={`px-3 xl:px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 xl:gap-2 shadow-2xs ${
-                  activeTab === 'family-center'
-                    ? 'text-emerald-900 bg-emerald-200/90 font-black border border-emerald-400'
-                    : 'text-emerald-900 bg-emerald-100/80 hover:bg-emerald-200/80 border border-emerald-300/80'
-                }`}
-              >
-                <Building2 className="w-4 xl:w-5 h-4 xl:h-5 text-emerald-700" />
-                <span>홍천군가족센터</span>
-                <ChevronDown className="w-3.5 xl:w-4 h-3.5 xl:h-4 text-emerald-700 group-hover:rotate-180 transition-transform" />
-              </button>
-
-              {activeDropdown === 'family' && (
-                <div className="absolute top-full right-0 w-72 bg-white rounded-2xl shadow-2xl border border-emerald-200/90 py-2.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                  <button
-                    onClick={() => handleNavClick('family-center')}
-                    className="w-full text-left px-5 py-3 text-base sm:text-lg font-extrabold text-slate-800 hover:bg-emerald-50 hover:text-emerald-700 flex items-center gap-2.5 transition-colors"
-                  >
-                    <Building2 className="w-5 h-5 text-emerald-600 shrink-0" /> 홍천군가족센터 안내
-                  </button>
-                  <a
-                    href="https://hongcheon.familynet.or.kr"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full text-left px-5 py-3 text-base sm:text-lg font-black text-emerald-700 hover:bg-emerald-100/80 flex items-center justify-between border-t border-slate-100 mt-1 pt-3 transition-colors"
-                  >
-                    <span>공식 홈페이지 바로가기</span>
-                    <ExternalLink className="w-5 h-5 text-emerald-600 shrink-0" />
-                  </a>
-                </div>
-              )}
+                <span className="bg-blue-100/80 backdrop-blur-sm text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-200 whitespace-nowrap hidden md:inline-block">
+                  SINCE 1999
+                </span>
+              </div>
+              <p className="text-[11px] sm:text-xs text-slate-500 mt-1 font-medium whitespace-nowrap">
+                고용노동부 국비지원 지정 IT·컴퓨터 교육기관
+              </p>
             </div>
+          </div>
+
+          {/* Desktop Navigation Links - Single Line Strict */}
+          <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1.5 shrink-0">
+            {navItems.map((item) => {
+              const isActive = activeSection === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleNavClick(item.id)}
+                  id={`nav-${item.id}`}
+                  className={`px-2 xl:px-3 py-1.5 rounded-xl text-sm xl:text-base font-semibold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+                    isActive
+                      ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-200'
+                      : 'text-slate-700 hover:text-blue-600 hover:bg-white/70'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
           </nav>
 
-          {/* Quick Donate CTA Button & Mobile Toggle */}
-          <div className="flex items-center gap-2.5 shrink-0">
+          {/* Header Action Buttons */}
+          <div className="hidden sm:flex items-center gap-2 shrink-0">
+            {onOpenAdminModal && (
+              <button
+                onClick={onOpenAdminModal}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-slate-900 hover:bg-slate-800 text-emerald-400 font-black text-xs border shadow-md transition-all whitespace-nowrap cursor-pointer relative ${
+                  pendingInquiryCount > 0
+                    ? 'border-red-500 ring-2 ring-red-500/40 text-white'
+                    : 'border-slate-700'
+                }`}
+                title={
+                  pendingInquiryCount > 0
+                    ? `🚨 신규 수강 상담 신청 ${pendingInquiryCount}건 대기 중!`
+                    : '원장님/관리자 모드 (수강신청, 팝업공지, 공지사항, 실시간 인기강좌 관리)'
+                }
+              >
+                {pendingInquiryCount > 0 ? (
+                  <span className="relative flex h-2.5 w-2.5 shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                  </span>
+                ) : (
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                )}
+                <span>관리자 모드</span>
+                {pendingInquiryCount > 0 && (
+                  <span className="px-1.5 py-0.5 rounded-full bg-red-600 text-white font-black text-[10px] shadow animate-pulse">
+                    신청 {pendingInquiryCount}건
+                  </span>
+                )}
+              </button>
+            )}
             <button
-              onClick={() => handleNavClick('donate', 'donate-form')}
-              className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-sm sm:text-base px-4 sm:px-5 py-2.5 rounded-xl shadow-md shadow-orange-500/20 hover:shadow-lg hover:shadow-orange-500/30 transition-all active:scale-95"
+              onClick={() => handleNavClick('inquiry')}
+              id="header-inquiry-btn"
+              className="inline-flex items-center gap-1.5 px-4 xl:px-5 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs xl:text-sm shadow-lg shadow-blue-200 hover:shadow-blue-300 transition-all whitespace-nowrap"
             >
-              <Heart className="w-4.5 h-4.5 fill-white animate-pulse" />
-              <span>후원하기</span>
+              <FileText className="w-3.5 h-3.5 xl:w-4 xl:h-4" />
+              <span>수강 문의</span>
+            </button>
+          </div>
+
+          {/* Mobile Hamburger Menu Toggle */}
+          <div className="flex items-center gap-2 lg:hidden">
+            <button
+              onClick={onOpenAiModal}
+              className="p-2 text-blue-700 bg-white/80 hover:bg-white rounded-xl text-xs font-semibold flex items-center gap-1 border border-white/60 shadow-sm"
+              title="AI 상담"
+            >
+              <Bot className="w-4 h-4 text-blue-600" />
+              <span className="hidden xs:inline">AI상담</span>
             </button>
 
-            {/* Mobile Menu Toggle Button */}
             <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 transition-colors"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              id="mobile-menu-toggle"
+              className="p-2.5 rounded-xl text-slate-700 bg-white/60 hover:bg-white/90 border border-white/50 focus:outline-none"
               aria-label="메뉴 열기"
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile Drawer Menu */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-slate-100 bg-white/98 backdrop-blur-md px-6 py-4 shadow-xl space-y-4 animate-in slide-in-from-top duration-200">
-          <div className="space-y-1">
-            <button
-              onClick={() => handleNavClick('main')}
-              className={`w-full text-left py-2.5 px-3 rounded-lg text-lg font-extrabold flex items-center justify-between ${
-                activeTab === 'main' ? 'bg-orange-50 text-orange-600' : 'text-slate-800 hover:bg-slate-50'
-              }`}
+      {/* Mobile Navigation Drawer */}
+      {isMobileMenuOpen && (
+        <div className="lg:hidden border-t border-white/60 bg-white/80 backdrop-blur-xl shadow-2xl px-4 pt-3 pb-6 space-y-2 animate-fadeIn">
+          <div className="p-3 bg-white/60 backdrop-blur-md rounded-2xl mb-3 flex items-center justify-between border border-white/80 shadow-sm">
+            <div>
+              <p className="text-xs text-blue-900 font-bold">전화 상담 및 수강 문의</p>
+              <p className="text-sm font-extrabold text-blue-700">{ACADEMY_INFO.phone}</p>
+            </div>
+            <a
+              href={`tel:${ACADEMY_INFO.phoneClean}`}
+              className="px-3.5 py-1.5 bg-blue-600 text-white font-bold text-xs rounded-full shadow-md shadow-blue-200"
             >
-              <span>메인 홈</span>
-              <Waves className="w-5 h-5 text-orange-400" />
-            </button>
+              즉시 통화
+            </a>
+          </div>
 
-            <div className="space-y-1">
+          <div className="grid grid-cols-1 gap-1">
+            {navItems.map((item) => (
               <button
-                onClick={() => handleNavClick('about')}
-                className={`w-full text-left py-2.5 px-3 rounded-lg text-lg font-extrabold flex items-center justify-between ${
-                  activeTab === 'about' ? 'bg-orange-50 text-orange-600' : 'text-slate-800 hover:bg-slate-50'
+                key={item.id}
+                onClick={() => handleNavClick(item.id)}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-left text-sm font-bold transition-colors cursor-pointer ${
+                  activeSection === item.id
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'text-slate-800 hover:bg-white/60'
                 }`}
               >
-                <span>재단소개</span>
-                <Users className="w-5 h-5 text-orange-400" />
+                <span>{item.label}</span>
+                <ChevronRight className="w-4 h-4 opacity-70" />
               </button>
+            ))}
+          </div>
 
-              <div className="pl-4 border-l-2 border-orange-200 space-y-1.5 my-1.5">
-                <button
-                  onClick={() => handleAboutSubTabClick('greeting')}
-                  className="w-full text-left py-2 px-2.5 rounded text-base font-bold text-slate-800 hover:text-orange-600"
-                >
-                  • 이사장 인사말
-                </button>
-                <button
-                  onClick={() => handleAboutSubTabClick('purpose')}
-                  className="w-full text-left py-2 px-2.5 rounded text-base font-bold text-slate-800 hover:text-orange-600"
-                >
-                  • 설립목적 및 정체성
-                </button>
-                <button
-                  onClick={() => handleAboutSubTabClick('history')}
-                  className="w-full text-left py-2 px-2.5 rounded text-base font-bold text-slate-800 hover:text-orange-600"
-                >
-                  • 재단 연혁 (2026~2009)
-                </button>
-                <button
-                  onClick={() => handleAboutSubTabClick('organization')}
-                  className="w-full text-left py-2 px-2.5 rounded text-base font-bold text-slate-800 hover:text-orange-600"
-                >
-                  • 조직도 및 위탁기관
-                </button>
-              </div>
-            </div>
-
+          <div className="pt-2 grid grid-cols-2 gap-2">
             <button
-              onClick={() => handleNavClick('programs')}
-              className={`w-full text-left py-2.5 px-3 rounded-lg text-lg font-extrabold flex items-center justify-between ${
-                activeTab === 'programs' ? 'bg-orange-50 text-orange-600' : 'text-slate-800 hover:bg-slate-50'
-              }`}
+              onClick={() => handleNavClick('inquiry')}
+              className="w-full py-3 bg-blue-600 text-white font-bold text-sm rounded-xl text-center shadow-lg shadow-blue-200 cursor-pointer"
             >
-              <span>주요사업</span>
-              <BookOpen className="w-5 h-5 text-orange-400" />
+              온라인 수강신청
             </button>
-
             <button
-              onClick={() => handleNavClick('news')}
-              className={`w-full text-left py-2.5 px-3 rounded-lg text-lg font-extrabold flex items-center justify-between ${
-                activeTab === 'news' ? 'bg-orange-50 text-orange-600' : 'text-slate-800 hover:bg-slate-50'
-              }`}
+              onClick={onOpenAiModal}
+              className="w-full py-3 bg-slate-900 text-white font-bold text-sm rounded-xl text-center flex items-center justify-center gap-1.5 shadow cursor-pointer"
             >
-              <span>활동소식 (공지&뉴스)</span>
-              <Newspaper className="w-5 h-5 text-orange-400" />
-            </button>
-
-            <button
-              onClick={() => handleNavClick('gallery')}
-              className={`w-full text-left py-2.5 px-3 rounded-lg text-lg font-extrabold flex items-center justify-between ${
-                activeTab === 'gallery' ? 'bg-orange-50 text-orange-600' : 'text-slate-800 hover:bg-slate-50'
-              }`}
-            >
-              <span>활동 갤러리</span>
-              <ImageIcon className="w-5 h-5 text-emerald-500" />
-            </button>
-
-            <button
-              onClick={() => handleNavClick('press')}
-              className={`w-full text-left py-2.5 px-3 rounded-lg text-lg font-extrabold flex items-center justify-between ${
-                activeTab === 'press' ? 'bg-orange-50 text-orange-600' : 'text-slate-800 hover:bg-slate-50'
-              }`}
-            >
-              <span>보도자료</span>
-              <ExternalLink className="w-5 h-5 text-sky-500" />
-            </button>
-
-            <button
-              onClick={() => handleNavClick('donate')}
-              className={`w-full text-left py-2.5 px-3 rounded-lg text-lg font-extrabold flex items-center justify-between ${
-                activeTab === 'donate' ? 'bg-orange-50 text-orange-600' : 'text-slate-800 hover:bg-slate-50'
-              }`}
-            >
-              <span className="flex items-center gap-2">
-                <span>후원·참여</span>
-                {hasNewDonation && (
-                  <span className="relative flex h-2.5 w-2.5 shrink-0" title={`신규 후원신청 ${pendingDonationsCount}건`}>
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span>
-                  </span>
-                )}
-              </span>
-              <Heart className="w-5 h-5 text-orange-500" />
-            </button>
-
-            <button
-              onClick={() => handleNavClick('family-center')}
-              className={`w-full text-left py-2.5 px-3 rounded-lg text-lg font-extrabold flex items-center justify-between ${
-                activeTab === 'family-center' ? 'bg-emerald-50 text-emerald-700' : 'text-emerald-900 bg-emerald-50/50'
-              }`}
-            >
-              <span>홍천군가족센터 (위탁)</span>
-              <Building2 className="w-5 h-5 text-emerald-600" />
-            </button>
-
-            <a
-              href="https://hongcheon.familynet.or.kr"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full text-left py-2.5 px-3 rounded-lg text-base font-extrabold text-emerald-800 bg-emerald-100/80 hover:bg-emerald-100 flex items-center justify-between ml-2"
-            >
-              <span>└ 가족센터 공식 홈페이지 ↗</span>
-              <ExternalLink className="w-4 h-4 text-emerald-700" />
-            </a>
-
-            <button
-              onClick={() => handleNavClick('contact')}
-              className={`w-full text-left py-2.5 px-3 rounded-lg text-sm font-bold flex items-center justify-between ${
-                activeTab === 'contact' ? 'bg-orange-50 text-orange-600' : 'text-slate-800 hover:bg-slate-50'
-              }`}
-            >
-              <span>오시는 길 & 문의하기</span>
-              <MapPin className="w-4 h-4 text-orange-400" />
+              <Bot className="w-4 h-4 text-blue-400" />
+              AI 수강 도우미
             </button>
           </div>
 
-          <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-            <span className="text-xs text-slate-500">관리자 전용 설정</span>
+          {onOpenAdminModal && (
             <button
               onClick={() => {
-                setMobileMenuOpen(false);
-                setAdminOpen(true);
+                setIsMobileMenuOpen(false);
+                onOpenAdminModal();
               }}
-              className="text-xs font-semibold text-orange-600 bg-orange-50 px-3 py-1.5 rounded-lg border border-orange-200 flex items-center gap-1"
+              className={`w-full mt-2 py-2.5 font-extrabold text-xs rounded-xl flex items-center justify-center gap-2 border shadow transition-all ${
+                pendingInquiryCount > 0
+                  ? 'bg-slate-900 text-white border-red-500 ring-2 ring-red-500/30'
+                  : 'bg-slate-900 text-emerald-400 border-slate-700'
+              }`}
             >
-              <Settings className="w-3.5 h-3.5" /> 관리자 모드
+              {pendingInquiryCount > 0 ? (
+                <span className="relative flex h-3 w-3 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
+                </span>
+              ) : (
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              )}
+              <span>원장님/관리자 모드</span>
+              {pendingInquiryCount > 0 && (
+                <span className="px-2 py-0.5 bg-red-600 text-white font-black text-[10px] rounded-full animate-pulse">
+                  신청 {pendingInquiryCount}건 대기
+                </span>
+              )}
             </button>
-          </div>
+          )}
         </div>
       )}
     </header>
