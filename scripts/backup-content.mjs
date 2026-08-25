@@ -1,24 +1,27 @@
-// AUTOMATED CONTENT BACKUP (2026-08 addition), run on a schedule by
-// .github/workflows/backup.yml. Fetches every publicly-readable
-// foundation/{docName} document (settings/programs/notices/press/gallery/
-// popups — see firestore.rules, these are `allow read: if true`) via the
-// Firestore REST API and writes a single dated JSON snapshot into
-// backups/.
+// AUTOMATED CONTENT BACKUP (2026-08 추가), .github/workflows/backup.yml이
+// 매일 정해진 시간에 실행합니다. 공개적으로 읽을 수 있는(firestore.rules상
+// `allow read: if true`) 컬렉션 — notices, courses, popular_courses,
+// settings/opening_popup — 을 Firestore REST API로 읽어와 backups/ 폴더에
+// 날짜별 JSON 스냅샷 하나를 저장합니다.
 //
-// Deliberately does NOT touch donations/inquiries/subscribers: those
-// collections hold donor/inquirer personal data and are only readable by
-// the authenticated admin (see firestore.rules), so an unattended,
-// credential-less script like this one has no way to read them — and
-// shouldn't. For a full backup including that data, use the "전체 데이터
-// 백업 다운로드" button in the admin panel's 시스템 로그 > 백업 tab, which
-// runs client-side with the admin's own Firebase Auth session and is a
-// deliberate, admin-initiated action rather than an unattended job.
+// 재단 홈페이지(nbnhappy.or.kr)의 scripts/backup-content.mjs와 같은
+// 목적·같은 구조입니다. 다만 재단 사이트는 콘텐츠가 foundation/global
+// 문서 하나에 다 들어있는 반면, 이 학원 사이트는 컬렉션별로 나뉘어
+// 있어서(notices, courses, popular_courses는 컬렉션, settings는 문서)
+// 컬렉션 목록 조회(list documents)와 단일 문서 조회(get document) 두
+// 방식을 각각 사용합니다.
+//
+// 의도적으로 다루지 않는 것: applications(수강신청), students(수강생 계정),
+// phoneRegistry — 전부 개인정보를 담고 있고 firestore.rules상 관리자만
+// 읽을 수 있는 컬렉션이라, 자격증명 없는 무인 스크립트가 애초에 읽을 수
+// 없고 읽어서도 안 됩니다. 이런 개인정보까지 포함한 전체 백업이 필요하면
+// 관리자 모드에 로그인한 상태에서 직접 내보내기(엑셀 다운로드 등)를
+// 이용해야 합니다.
 import fs from "fs";
 import path from "path";
 
-const PROJECT_ID = "gen-lang-client-0288068906";
-const DATABASE_ID = "ai-studio-c345f36f-becb-4d51-8f4b-58287995f527";
-const DOC_NAMES = ["settings", "programs", "notices", "press", "gallery", "popups"];
+const PROJECT_ID = "joongang-homepage";
+const PUBLIC_COLLECTIONS = ["notices", "courses", "popular_courses"];
 const BACKUPS_DIR = path.join(process.cwd(), "backups");
 
 function unwrapFirestoreValue(value) {
@@ -38,32 +41,65 @@ function unwrapFirestoreValue(value) {
   return null;
 }
 
-async function fetchDoc(docName) {
-  const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/${DATABASE_ID}/documents/foundation/${docName}`;
-  const res = await fetch(url);
-  if (!res.ok) {
-    console.warn(`[backup-content] Could not fetch foundation/${docName}: HTTP ${res.status}`);
-    return null;
-  }
-  const json = await res.json();
-  const fields = json.fields || {};
-  const out = {};
+function unwrapDoc(doc) {
+  const fields = doc.fields || {};
+  const out = { id: String(doc.name || "").split("/").pop() };
   for (const key of Object.keys(fields)) out[key] = unwrapFirestoreValue(fields[key]);
   return out;
+}
+
+async function fetchCollection(collectionName) {
+  const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/${collectionName}?pageSize=300`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) {
+      console.warn(`[backup-content] Could not fetch ${collectionName}: HTTP ${res.status}`);
+      return null;
+    }
+    const json = await res.json();
+    const docs = json.documents || [];
+    return docs.map(unwrapDoc);
+  } catch (e) {
+    console.warn(`[backup-content] Error fetching ${collectionName}:`, e.message || e);
+    return null;
+  }
+}
+
+async function fetchDoc(docPath) {
+  const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/${docPath}`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) {
+      console.warn(`[backup-content] Could not fetch ${docPath}: HTTP ${res.status}`);
+      return null;
+    }
+    const json = await res.json();
+    const fields = json.fields || {};
+    const out = {};
+    for (const key of Object.keys(fields)) out[key] = unwrapFirestoreValue(fields[key]);
+    return out;
+  } catch (e) {
+    console.warn(`[backup-content] Error fetching ${docPath}:`, e.message || e);
+    return null;
+  }
 }
 
 async function main() {
   const snapshot = { exportedAt: new Date().toISOString(), kind: "public-content-only" };
   let anySucceeded = false;
 
-  for (const docName of DOC_NAMES) {
-    const data = await fetchDoc(docName);
+  for (const collectionName of PUBLIC_COLLECTIONS) {
+    const data = await fetchCollection(collectionName);
     if (data) anySucceeded = true;
-    snapshot[docName] = data;
+    snapshot[collectionName] = data;
   }
 
+  const openingPopup = await fetchDoc("settings/opening_popup");
+  if (openingPopup) anySucceeded = true;
+  snapshot.opening_popup = openingPopup;
+
   if (!anySucceeded) {
-    console.error("[backup-content] Every foundation/* fetch failed — not writing a backup file (would just be all-null).");
+    console.error("[backup-content] Every fetch failed — not writing a backup file (would just be all-null).");
     process.exit(1);
   }
 

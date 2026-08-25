@@ -160,5 +160,27 @@ service cloud.firestore {
       allow update: if isAdmin();
     }
 
+    // 8. 클라이언트 오류 리포트('errorLogs') - 방문자 브라우저에서 발생한
+    // 실제 런타임 오류를 자동으로 수집합니다(2026-08 모니터링 추가).
+    // 누구나(로그인 안 한 일반 방문자 포함) 오류를 생성(create)할 수 있어야
+    // 실제 방문자 화면에서 난 문제를 잡을 수 있지만, 조회/삭제는 관리자만
+    // 가능합니다. 필드 화이트리스트·길이 제한으로 악의적이거나 비정상적으로
+    // 큰 payload가 들어오는 것을 막습니다. 한 번 기록된 로그는 수정할 수
+    // 없고(update 금지) 읽기/삭제만 가능해, 기록의 신뢰성을 유지합니다.
+    match /errorLogs/{id} {
+      allow create: if request.resource.data.keys().hasOnly(['message', 'stack', 'url', 'userAgent', 'context', 'createdAt'])
+        && request.resource.data.keys().hasAll(['message', 'url', 'createdAt'])
+        && request.resource.data.message is string
+        && request.resource.data.message.size() > 0 && request.resource.data.message.size() < 2000
+        && (!request.resource.data.keys().hasAny(['stack']) || (request.resource.data.stack is string && request.resource.data.stack.size() < 4000))
+        && request.resource.data.url is string
+        && request.resource.data.url.size() < 500
+        && (!request.resource.data.keys().hasAny(['userAgent']) || (request.resource.data.userAgent is string && request.resource.data.userAgent.size() < 500))
+        && (!request.resource.data.keys().hasAny(['context']) || (request.resource.data.context is string && request.resource.data.context.size() < 200))
+        && request.resource.data.createdAt is string;
+      allow read, delete: if isAdmin();
+      allow update: if false;
+    }
+
   }
 }

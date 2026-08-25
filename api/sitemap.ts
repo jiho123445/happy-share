@@ -33,8 +33,8 @@ function unwrapFirestoreValue(value: any): any {
   return null;
 }
 
-async function fetchNoticeIds(): Promise<string[]> {
-  const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/notices?pageSize=300`;
+async function fetchDocIds(collectionName: string): Promise<string[]> {
+  const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/${collectionName}?pageSize=300`;
   try {
     const res = await fetch(url);
     if (!res.ok) return [];
@@ -62,12 +62,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     { loc: `${SITE_ORIGIN}/location`, changefreq: "monthly", priority: "0.6" },
   ];
 
-  const noticeIds = await fetchNoticeIds();
+  const [noticeIds, courseIds] = await Promise.all([
+    fetchDocIds("notices"),
+    fetchDocIds("courses"),
+  ]);
+
   for (const id of noticeIds) {
     urls.push({
       loc: `${SITE_ORIGIN}/notices/${encodeURIComponent(id)}`,
       changefreq: "monthly",
       priority: "0.5",
+    });
+  }
+  // 강좌 개별 URL(/courses/:id)도 이제 실제로 존재하므로 sitemap에
+  // 포함시켜, "컴퓨터활용능력 2급 취득반" 같은 개별 강좌명이 검색
+  // 결과에 따로 노출될 수 있게 합니다.
+  for (const id of courseIds) {
+    urls.push({
+      loc: `${SITE_ORIGIN}/courses/${encodeURIComponent(id)}`,
+      changefreq: "monthly",
+      priority: "0.6",
     });
   }
 

@@ -13,7 +13,8 @@
     "lint": "tsc --noEmit",
     "test:e2e": "npx --yes @playwright/test@1.55.0 test",
     "test:e2e:ui": "npx --yes @playwright/test@1.55.0 test --ui",
-    "test:e2e:report": "npx --yes @playwright/test@1.55.0 show-report"
+    "test:e2e:report": "npx --yes @playwright/test@1.55.0 show-report",
+    "backup:content": "node scripts/backup-content.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

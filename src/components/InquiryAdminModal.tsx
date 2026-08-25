@@ -28,8 +28,13 @@ import {
   updateCourseInFirestore,
   deleteCourseFromFirestore,
   ensureCoursesSeeded,
+  subscribeErrorLogsFromFirestore,
+  deleteErrorLog,
+  clearAllErrorLogs,
+  ErrorLogItem,
   DEFAULT_OPENING_POPUP,
   formatReceiptNumber,
+  formatFirestoreTimestamp,
 } from '../lib/firestoreService';
 import {
   X,
@@ -110,8 +115,8 @@ export const InquiryAdminModal: React.FC<InquiryAdminModalProps> = ({
   const [changePwSuccess, setChangePwSuccess] = useState<string>('');
   const [changePwLoading, setChangePwLoading] = useState<boolean>(false);
 
-  // Tab state: 'inquiries' | 'notice' | 'boardNotices' | 'popularCourses' | 'courses'
-  const [activeTab, setActiveTab] = useState<'inquiries' | 'notice' | 'boardNotices' | 'popularCourses' | 'courses' | 'materials' | 'students' | 'accounts'>('inquiries');
+  // Tab state: 'inquiries' | 'notice' | 'boardNotices' | 'popularCourses' | 'courses' | 'errorLogs'
+  const [activeTab, setActiveTab] = useState<'inquiries' | 'notice' | 'boardNotices' | 'popularCourses' | 'courses' | 'errorLogs' | 'materials' | 'students' | 'accounts'>('inquiries');
 
   // Board Notices (공지사항 & 자격시험 일정) State
   const [boardNotices, setBoardNotices] = useState<Notice[]>([]);
@@ -155,6 +160,10 @@ export const InquiryAdminModal: React.FC<InquiryAdminModalProps> = ({
   const [courseFormCurriculum, setCourseFormCurriculum] = useState<string>('');
   const [courseFormFeatured, setCourseFormFeatured] = useState<boolean>(false);
   const [courseSuccessMsg, setCourseSuccessMsg] = useState<string>('');
+
+  // 클라이언트 오류 로그 관리 State
+  const [errorLogs, setErrorLogs] = useState<ErrorLogItem[]>([]);
+  const [expandedErrorLogId, setExpandedErrorLogId] = useState<string | null>(null);
 
   // Edit memo inline state
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -312,6 +321,20 @@ export const InquiryAdminModal: React.FC<InquiryAdminModalProps> = ({
 
     return () => {
       unsubApps();
+    };
+  }, [isOpen, isAuthenticated]);
+
+  // errorLogs(방문자 브라우저 오류 기록)도 applications와 동일하게
+  // Firestore 규칙상 관리자만 읽을 수 있으므로, 로그인 확인 후에만 구독합니다.
+  useEffect(() => {
+    if (!isOpen || !isAuthenticated) return;
+
+    const unsubErrorLogs = subscribeErrorLogsFromFirestore((logs) => {
+      setErrorLogs(logs);
+    });
+
+    return () => {
+      unsubErrorLogs();
     };
   }, [isOpen, isAuthenticated]);
 
@@ -686,6 +709,37 @@ export const InquiryAdminModal: React.FC<InquiryAdminModalProps> = ({
           setTimeout(() => setCourseSuccessMsg(''), 4000);
         } catch (err) {
           console.error('Failed to delete course item:', err);
+          alert('삭제 중 오류가 발생했습니다.');
+        }
+      }
+    );
+  };
+
+  const handleDeleteErrorLog = (id: string) => {
+    requestConfirm(
+      '오류 로그 삭제 확인',
+      '이 오류 로그를 삭제하시겠습니까?',
+      async () => {
+        try {
+          await deleteErrorLog(id);
+        } catch (err) {
+          console.error('Failed to delete error log:', err);
+          alert('삭제 중 오류가 발생했습니다.');
+        }
+      }
+    );
+  };
+
+  const handleClearAllErrorLogs = () => {
+    if (errorLogs.length === 0) return;
+    requestConfirm(
+      '전체 오류 로그 삭제 확인',
+      `현재 기록된 오류 로그 ${errorLogs.length}건을 전부 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`,
+      async () => {
+        try {
+          await clearAllErrorLogs(errorLogs.map((l) => l.id));
+        } catch (err) {
+          console.error('Failed to clear error logs:', err);
           alert('삭제 중 오류가 발생했습니다.');
         }
       }
@@ -1611,6 +1665,20 @@ export const InquiryAdminModal: React.FC<InquiryAdminModalProps> = ({
 
               <button
                 type="button"
+                onClick={() => setActiveTab('errorLogs')}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer ${
+                  activeTab === 'errorLogs'
+                    ? 'bg-rose-600 text-white shadow-md'
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+                }`}
+                title="방문자 화면에서 발생한 오류를 자동으로 모아 보여줍니다"
+              >
+                <AlertTriangle className="w-4 h-4" />
+                <span>오류 로그 ({errorLogs.length}건)</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => setActiveTab('materials')}
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer ${
                   activeTab === 'materials'
@@ -1649,7 +1717,7 @@ export const InquiryAdminModal: React.FC<InquiryAdminModalProps> = ({
               </button>
             </div>
 
-            {activeTab !== 'materials' && activeTab !== 'students' && activeTab !== 'accounts' && activeTab !== 'courses' && (
+            {activeTab !== 'materials' && activeTab !== 'students' && activeTab !== 'accounts' && activeTab !== 'courses' && activeTab !== 'errorLogs' && (
               <button
                 onClick={handleExportToExcel}
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs rounded-xl shadow transition-all cursor-pointer whitespace-nowrap ml-auto"
@@ -2883,6 +2951,93 @@ export const InquiryAdminModal: React.FC<InquiryAdminModalProps> = ({
               )}
             </div>
           </div>
+        ) : activeTab === 'errorLogs' ? (
+          /* 클라이언트(방문자 브라우저) 오류 로그 조회 Tab */
+          <div className="p-4 sm:p-6 overflow-y-auto flex-1 bg-slate-50 space-y-5">
+            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-rose-500" />
+                  <span>오류 로그</span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5 font-medium">
+                  방문자 브라우저에서 실제로 발생한 오류(화면 렌더링 실패, 처리되지 않은 예외 등)를 자동으로 모아 보여줍니다.
+                  방문자에게 별도로 안내하지 않아도 여기서 문제를 미리 확인할 수 있습니다.
+                </p>
+              </div>
+              {errorLogs.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleClearAllErrorLogs}
+                  className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-black text-xs sm:text-sm rounded-2xl shadow-md flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>전체 삭제</span>
+                </button>
+              )}
+            </div>
+
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="p-4 bg-slate-100/80 border-b border-slate-200 flex justify-between items-center text-xs font-bold text-slate-600">
+                <span>기록된 오류 ({errorLogs.length}건)</span>
+              </div>
+
+              {errorLogs.length === 0 ? (
+                <div className="p-12 text-center text-slate-400 text-xs font-medium">
+                  <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
+                  현재까지 기록된 오류가 없습니다.
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {errorLogs.map((log) => {
+                    const isExpanded = expandedErrorLogId === log.id;
+                    return (
+                      <div key={log.id} className="p-4 sm:p-5 hover:bg-slate-50 transition-colors">
+                        <div className="flex items-start justify-between gap-3">
+                          <div
+                            className="flex-1 min-w-0 cursor-pointer"
+                            onClick={() => setExpandedErrorLogId(isExpanded ? null : log.id)}
+                          >
+                            <div className="flex flex-wrap items-center gap-2 mb-1">
+                              {log.context && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold border bg-rose-100 text-rose-800 border-rose-200">
+                                  {log.context}
+                                </span>
+                              )}
+                              <span className="text-[11px] text-slate-400 font-mono">
+                                {formatFirestoreTimestamp(log.createdAt)}
+                              </span>
+                            </div>
+                            <p className="font-bold text-slate-900 text-sm break-words">{log.message}</p>
+                            <p className="text-[11px] text-slate-500 mt-0.5 truncate">{log.url}</p>
+                            {isExpanded && (
+                              <div className="mt-3 space-y-2">
+                                {log.stack && (
+                                  <pre className="p-3 bg-slate-900 text-slate-200 text-[10px] rounded-xl overflow-x-auto whitespace-pre-wrap break-words">
+                                    {log.stack}
+                                  </pre>
+                                )}
+                                {log.userAgent && (
+                                  <p className="text-[10px] text-slate-400 break-words">{log.userAgent}</p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteErrorLog(log.id)}
+                            className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-red-50 text-slate-700 hover:text-red-700 font-bold text-xs border border-slate-200 flex items-center gap-1 transition-colors cursor-pointer shrink-0"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
         ) : activeTab === 'materials' ? (
           <MaterialsAdminPanel />
         ) : activeTab === 'students' ? (
@@ -3226,7 +3381,7 @@ export const InquiryAdminModal: React.FC<InquiryAdminModalProps> = ({
             <span>상담 신청 데이터는 서버에 안전하게 관리·보관됩니다.</span>
           </p>
           <div className="flex items-center gap-3">
-            {isAuthenticated && activeTab !== 'materials' && activeTab !== 'students' && activeTab !== 'accounts' && activeTab !== 'courses' && (
+            {isAuthenticated && activeTab !== 'materials' && activeTab !== 'students' && activeTab !== 'accounts' && activeTab !== 'courses' && activeTab !== 'errorLogs' && (
               <button
                 onClick={handleExportToExcel}
                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow cursor-pointer"

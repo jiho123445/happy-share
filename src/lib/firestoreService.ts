@@ -912,6 +912,99 @@ export async function deleteCourseFromFirestore(id: string): Promise<void> {
 }
 
 // =========================================================================
+// ERROR LOGS COLLECTION (`errorLogs`) - 방문자 브라우저 런타임 오류 자동 수집
+// =========================================================================
+// 재단 홈페이지(nbnhappy.or.kr)와 동일한 패턴입니다. 예전에는 방문자 화면에서
+// 오류가 나도 console.error만 찍고 끝이라, 원장님은 실제로 어떤 문제가
+// 발생했는지 전혀 알 방법이 없었습니다. 이제 ErrorBoundary와 전역
+// window.onerror에서 잡힌 오류를 Firestore에 저장하고, 관리자 모드에서
+// 확인할 수 있습니다.
+
+export interface ErrorLogItem {
+  id: string;
+  message: string;
+  stack?: string;
+  url: string;
+  userAgent?: string;
+  context?: string;
+  createdAt: string;
+}
+
+export async function reportClientError(data: {
+  message: string;
+  stack?: string;
+  url: string;
+  userAgent?: string;
+  context?: string;
+}): Promise<void> {
+  try {
+    const colRef = collection(db, "errorLogs");
+    await addDoc(colRef, {
+      message: (data.message || "알 수 없는 오류").slice(0, 2000),
+      stack: data.stack ? data.stack.slice(0, 4000) : undefined,
+      url: (data.url || "").slice(0, 500),
+      userAgent: data.userAgent ? data.userAgent.slice(0, 500) : undefined,
+      context: data.context ? data.context.slice(0, 200) : undefined,
+      createdAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    // 오류 리포팅 자체가 실패해도 방문자 화면에 영향을 주면 안 되므로,
+    // 조용히 콘솔에만 남기고 절대 throw하지 않습니다.
+    console.warn("reportClientError failed:", err);
+  }
+}
+
+export function subscribeErrorLogsFromFirestore(
+  onUpdate: (logs: ErrorLogItem[]) => void
+): () => void {
+  const colRef = collection(db, "errorLogs");
+  const q = query(colRef, orderBy("createdAt", "desc"));
+
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const items = snapshot.docs.map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          message: data.message || "",
+          stack: data.stack || "",
+          url: data.url || "",
+          userAgent: data.userAgent || "",
+          context: data.context || "",
+          createdAt: data.createdAt || "",
+        } as ErrorLogItem;
+      });
+      onUpdate(items);
+    },
+    (err) => {
+      console.error("subscribeErrorLogsFromFirestore error:", err);
+      onUpdate([]);
+    }
+  );
+}
+
+export async function deleteErrorLog(id: string): Promise<void> {
+  try {
+    await deleteDoc(doc(db, "errorLogs", id));
+  } catch (err) {
+    handleFirestoreError(err, "deleteErrorLog");
+  }
+}
+
+export async function clearAllErrorLogs(ids: string[]): Promise<void> {
+  try {
+    const batch = writeBatch(db);
+    ids.forEach((id) => {
+      batch.delete(doc(db, "errorLogs", id));
+    });
+    await batch.commit();
+  } catch (err) {
+    handleFirestoreError(err, "clearAllErrorLogs");
+  }
+}
+
+// =========================================================================
 // MATERIALS COLLECTION (`materials`) - 자료실 (서식/예제/프로그램 다운로드)
 // =========================================================================
 

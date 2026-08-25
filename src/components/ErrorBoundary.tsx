@@ -1,6 +1,7 @@
 import React from 'react';
 import { AlertTriangle, RefreshCw, Phone } from 'lucide-react';
 import { ACADEMY_INFO } from '../data/coursesData';
+import { reportClientError } from '../lib/firestoreService';
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -14,6 +15,11 @@ interface ErrorBoundaryState {
  * ErrorBoundary - 화면 어딘가에서 예기치 못한 런타임 오류가 나더라도
  * 앱 전체가 흰 화면으로 멈추지 않고, 사용자에게 안내와 함께
  * 새로고침/전화문의 경로를 제공합니다.
+ *
+ * (2026-08 추가) 예전에는 여기서 console.error만 찍고 끝이라 방문자
+ * 화면에서 오류가 나도 원장님은 전혀 알 수 없었습니다. 이제 Firestore의
+ * errorLogs 컬렉션에 오류를 기록해, 관리자 모드의 "오류 로그" 탭에서
+ * 확인할 수 있습니다.
  */
 export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   declare props: ErrorBoundaryProps;
@@ -25,6 +31,14 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
   componentDidCatch(error: unknown, errorInfo: unknown) {
     console.error('앱 렌더링 중 오류가 발생했습니다:', error, errorInfo);
+    const err = error instanceof Error ? error : new Error(String(error));
+    reportClientError({
+      message: err.message,
+      stack: err.stack,
+      url: typeof window !== 'undefined' ? window.location.href : '',
+      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+      context: 'React ErrorBoundary',
+    });
   }
 
   handleReload = () => {
