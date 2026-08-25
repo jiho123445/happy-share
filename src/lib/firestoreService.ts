@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import {
   collection,
   doc,
@@ -22,6 +23,11 @@ import { InquiryRecord, Notice, MaterialItem, Course } from "../types";
 import { ScheduleItem, PopupNoticeConfig } from "../components/NoticePopupModal";
 import { PopularCourseAdminItem } from "../components/InquiryAdminModal";
 import { COURSES_DATA } from "../data/coursesData";
+=======
+// firestoreService.ts intentionally has no Firestore SDK imports of its
+// own now — handleFirestoreError() below is pure logging, and
+// GLOBAL_FOUNDATION_DOC is just a path constant.
+>>>>>>> Stashed changes
 
 // Error Logger Helper
 function handleFirestoreError(error: unknown, actionName: string) {
@@ -64,6 +70,7 @@ export function formatReceiptNumber(
     return `${getYYMMKey()}-1`;
   }
 
+<<<<<<< Updated upstream
   let id = typeof idOrRecord === 'string' ? idOrRecord : idOrRecord.id;
   let receiptNum = typeof idOrRecord === 'object' ? idOrRecord.receiptNumber : undefined;
   let itemCreatedAt = typeof idOrRecord === 'object' ? idOrRecord.createdAt : createdAt;
@@ -1309,3 +1316,14 @@ export async function deleteMaterialFromFirestore(id: string, storagePath: strin
   }
 }
 
+=======
+// BUG FIX (2026-08-24): removed testFirestoreConnection(), which used to
+// run on every page load and read `test/connection` — a path
+// firestore.rules explicitly denies to everyone (`allow read, write: if
+// false;`), on purpose. That made it a guaranteed-to-fail request on
+// every single visit: no functional impact (the failure was silently
+// swallowed), but a wasted round-trip and a steady stream of
+// permission-denied entries in Firebase's usage logs. The onSnapshot
+// listener in FoundationContext.tsx already reports connectivity for
+// real; this separate probe added nothing.
+>>>>>>> Stashed changes
