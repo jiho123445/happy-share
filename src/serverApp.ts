@@ -223,7 +223,18 @@ export function createExpressApp() {
   // served the same way as every other route: the static SPA shell via
   // vercel.json's catch-all rewrite, which is proven to work reliably.
 
-  // Dynamic sitemap: lists the homepage plus every individual notice,
+  // ⚠️ (2026-08 확인) 이 라우트는 실제로는 절대 호출되지 않는 죽은 코드입니다.
+  // vercel.json에는 이 경로에 대한 rewrite가 없고, dist/sitemap.xml이라는
+  // 실제 정적 파일이 빌드 시점에 이미 만들어져 있어서, Vercel은 이 Express
+  // 라우트에 요청이 도달하기도 전에 그 정적 파일을 먼저 서빙합니다(로컬
+  // `npm run dev`에서도 이 서버 대신 vite 미들웨어가 요청을 처리합니다).
+  // sitemap.xml을 실제로 갱신하려면 여기가 아니라 scripts/generate-previews.mjs
+  // 를 고쳐야 합니다(2026-08부터 그 스크립트가 개별 공지/사업/갤러리까지
+  // 포함한 sitemap.xml을 빌드 시점에 만듭니다). 이 라우트도 `foundation/global`
+  // 문서 하나만 읽어 이미 오래된 로직이라, 지우기보다는 그대로 남겨 최소한
+  // 잘못된 정보를 주지 않도록 이 설명만 정정해둡니다.
+  //
+  // (아래는 원래 주석) Dynamic sitemap: lists the homepage plus every individual notice,
   // program, and gallery post URL, read live from the public
   // `foundation/global` Firestore document (see firestore.rules — this
   // document is publicly readable by design). Replaces the old static

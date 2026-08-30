@@ -3,47 +3,55 @@ import { NoticeAttachment, DonationApplication, ContactInquiry, NewsletterSubscr
 
 /**
  * Utility function to download attached files in notices.
- * If file has a data URL, triggers browser download directly.
- * Otherwise, generates a downloadable sample file blob with official foundation metadata.
+ *
+ * (2026-08 버그 수정) 이 함수는 원래 file.url이 "data:"로 시작하는 base64
+ * 첨부파일만 실제로 다운로드하고, 그 외의 경우엔 재단 안내문 흉내를 낸 가짜
+ * 텍스트 파일을 원본 파일명 그대로 내려주고 있었습니다. 그런데 지금 관리자
+ * 페이지에서 올리는 첨부파일은 전부 Firebase Storage의 https 다운로드
+ * 주소(getDownloadURL)로 저장되므로, 실제 서식/공문을 받으려던 방문자가
+ * 매번 엉뚱한 안내문 텍스트만 받고 있었습니다. 이제 실제 http(s) 주소도
+ * 진짜 파일로 다운로드하도록 고칩니다.
  */
-export const downloadNoticeFile = (file: NoticeAttachment) => {
-  const fileName = file.name || '너브내행복나눔재단_첨부서식.hwp';
+export const downloadNoticeFile = async (file: NoticeAttachment) => {
+  const fileName = file.name || '너브내행복나눔재단_첨부서식';
 
-  if (file.url && file.url.startsWith('data:')) {
+  if (!file.url) {
+    console.warn('downloadNoticeFile: 첨부파일 주소가 없습니다.', file);
+    return;
+  }
+
+  if (file.url.startsWith('data:')) {
+    // 예전 방식(base64)으로 저장된 첨부파일 — 그대로 다운로드
     const a = document.createElement('a');
     a.href = file.url;
     a.download = fileName;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-  } else {
-    const content = `================================================
-사단법인 너브내행복나눔재단 공식 첨부문서
-================================================
+    return;
+  }
 
-문서명: ${fileName}
-발행기관: 사단법인 너브내행복나눔재단
-발행일자: ${new Date().toLocaleDateString('ko-KR')}
-
-[안내사항]
-사단법인 너브내행복나눔재단 공지사항 첨부 서식입니다.
-서식을 작성하신 후 구비서류와 함께 재단 사무국으로 제출해주시기 바랍니다.
-
-- 재단 주소: 강원특별자치도 홍천군 홍천읍 송학로3길 26, 2층
-- 문의전화: 033-436-1925
-- 팩스: 033-436-1910
-- 대표 이메일: hcdmh1026@naver.com
-================================================`;
-
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
+  // 실제 첨부파일: Firebase Storage의 https 주소입니다. <a download>는
+  // cross-origin 주소에서는 브라우저가 파일명 지정을 무시하고 그냥 새 탭으로
+  // 열어버릴 수 있어서, 먼저 fetch로 실제 파일 내용을 받아와 blob으로
+  // 다운로드시켜 원래 파일명이 그대로 적용되게 합니다. (Storage 쪽 CORS
+  // 설정 등으로 fetch 자체가 막히는 드문 경우에만 새 탭 열기로 대체합니다 —
+  // 이 경우에도 최소한 진짜 파일은 열립니다.)
+  try {
+    const res = await fetch(file.url);
+    if (!res.ok) throw new Error(`파일을 가져오지 못했습니다 (HTTP ${res.status})`);
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
+    a.href = blobUrl;
     a.download = fileName;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    URL.revokeObjectURL(blobUrl);
+  } catch (err) {
+    console.warn('downloadNoticeFile: fetch 다운로드 실패, 새 탭에서 원본 열기로 대체합니다.', err);
+    window.open(file.url, '_blank', 'noopener,noreferrer');
   }
 };
 

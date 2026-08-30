@@ -1895,9 +1895,21 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     const next = noticesRef.current.map(n => n.id === id ? { ...n, views: n.views + 1 } : n);
     applyNotices(next);
-    // Persist the increment to Firestore so the count is shared across
-    // devices/visitors instead of only living in this browser's state.
-    postMutationToServer('notices', { items: next }, `공지 조회수 증가 (ID: ${id})`);
+    // (2026-08 버그 수정) 이 조회수 증가를 postMutationToServer('notices', ...)로
+    // Firestore에 저장하려던 코드가 있었는데, firestore.rules는 foundation/notices
+    // 문서 쓰기를 관리자(isAdmin)에게만 허용합니다. 방문자는 관리자 로그인 상태가
+    // 아니므로 이 쓰기는 매번 100% 권한 거부로 실패했고, 그 실패가
+    // postMutationToServer의 setSyncError()를 통해 App.tsx 전역 SyncErrorBanner로
+    // 모든 방문자 화면에 빨간 "저장 실패" 오류로 노출되고 있었습니다 — 관리자가
+    // 아닌 일반 방문자에게는 완전히 혼란스러운 오류였습니다.
+    //
+    // 지금은 이 write 자체를 하지 않습니다: 조회수는 이 방문자의 화면에서만
+    // (위 applyNotices로) 즉시 올라가고, 새로고침하거나 다른 기기로 보면 원래
+    // 값으로 돌아갑니다 — 이 write는 애초에 항상 실패해왔으므로 "기기 간 공유
+    // 되던 조회수"가 지금 와서 없어지는 게 아니라, 한 번도 실제로 공유된 적이
+    // 없었습니다. 방문자 조회 시 실제로 기기 간 공유되는 조회수가 필요하시면
+    // 별도의 공개 증가 전용 컬렉션 + 서버 API가 필요한 더 큰 작업이라, 이번
+    // 수정 범위에서는 제외했습니다 — 필요하시면 말씀해주세요.
   };
 
   const goBackFromDetail = (fallbackTab: ActiveTab = 'news') => {

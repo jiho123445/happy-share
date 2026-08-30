@@ -147,15 +147,50 @@ async function main() {
   const programsDir = path.join(DIST_DIR, "programs");
   const galleryDir = path.join(DIST_DIR, "gallery");
 
-  let data;
+  // (2026-08 버그 수정) 이 스크립트는 원래 `foundation/global` 문서 하나만
+  // 읽었는데, 앱은 그 사이 콘텐츠를 `foundation/notices`, `/programs`,
+  // `/gallery` 등 영역별 개별 문서로 나눠 저장하는 방식으로 바뀌었고(위
+  // FoundationContext.tsx의 실시간 리스너와 동일한 마이그레이션 방식),
+  // 관리자가 그 이후 새로 쓰거나 수정한 공지/사업/갤러리 항목은
+  // `foundation/global`에는 반영되지 않습니다. 즉 이 스크립트가 만드는
+  // 카카오톡/문자 링크 미리보기와 sitemap이 마이그레이션 이후 추가·수정된
+  // 항목을 계속 놓치고 있었습니다. FoundationContext.tsx와 완전히 동일한
+  // 규칙(영역별 새 문서를 우선하고, 그 문서가 아직 없으면 예전 global
+  // 문서의 해당 필드로 대체)으로 고칩니다.
+  async function fetchFoundationDoc(docId) {
+    try {
+      const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/${DATABASE_ID}/documents/foundation/${docId}`;
+      const res = await fetch(url);
+      if (res.status === 404) return null;
+      if (!res.ok) throw new Error(`Firestore fetch failed for foundation/${docId}: ${res.status}`);
+      const json = await res.json();
+      const fields = json.fields || {};
+      const out = {};
+      for (const key of Object.keys(fields)) out[key] = unwrapFirestoreValue(fields[key]);
+      return out;
+    } catch (e) {
+      console.warn(`[generate-previews] Could not fetch foundation/${docId}:`, e.message);
+      return null;
+    }
+  }
+
+  let notices = [];
+  let programs = [];
+  let gallery = [];
   try {
-    const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/${DATABASE_ID}/documents/foundation/global`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`Firestore fetch failed: ${res.status}`);
-    const json = await res.json();
-    const fields = json.fields || {};
-    data = {};
-    for (const key of Object.keys(fields)) data[key] = unwrapFirestoreValue(fields[key]);
+    const [legacyDoc, noticesDoc, programsDoc, galleryDoc] = await Promise.all([
+      fetchFoundationDoc("global"),
+      fetchFoundationDoc("notices"),
+      fetchFoundationDoc("programs"),
+      fetchFoundationDoc("gallery"),
+    ]);
+    if (!legacyDoc && !noticesDoc && !programsDoc && !galleryDoc) {
+      throw new Error("모든 foundation/* 문서를 가져오지 못했습니다 (네트워크 차단 또는 빌드 환경 문제일 수 있음)");
+    }
+    const legacy = legacyDoc || {};
+    notices = noticesDoc?.items ?? legacy.notices ?? [];
+    programs = programsDoc?.items ?? legacy.programs ?? [];
+    gallery = galleryDoc?.items ?? legacy.gallery ?? [];
   } catch (e) {
     console.warn("[generate-previews] Could not fetch Firestore data at build time, skipping per-item preview generation:", e.message);
     return;
@@ -163,7 +198,6 @@ async function main() {
 
   let count = 0;
 
-  const notices = data.notices || [];
   for (const notice of notices) {
     if (!notice?.id) continue;
     const imageAttachment = (notice.attachments || []).find(
@@ -179,7 +213,6 @@ async function main() {
     count++;
   }
 
-  const programs = data.programs || [];
   for (const program of programs) {
     if (!program?.id) continue;
     const html = buildPreviewHtml(shellHtml, {
@@ -191,7 +224,6 @@ async function main() {
     count++;
   }
 
-  const gallery = data.gallery || [];
   for (const item of gallery) {
     if (!item?.id) continue;
     const html = buildPreviewHtml(shellHtml, {
@@ -204,7 +236,45 @@ async function main() {
     count++;
   }
 
-  console.log(`[generate-previews] Generated ${count} static preview pages.`);
+  // (2026-08 추가) public/sitemap.xml은 지금까지 상위 9개 경로만 수기로
+  // 적어둔 정적 파일이라, 개별 공지/사업/갤러리 상세 페이지와 privacy/terms
+  // 페이지는 검색엔진이 sitemap만으로는 찾을 수 없었습니다. 위에서 이미
+  // 만든 미리보기 페이지들과 동일한 데이터로 sitemap.xml을 빌드 시점에
+  // 다시 만들어 dist/sitemap.xml로 내보냅니다(vite build가 만든
+  // dist/sitemap.xml — public/의 정적 사본을 복사한 것 — 을 덮어씁니다).
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const sitemapUrls = [
+    { loc: `${SITE_ORIGIN}/`, changefreq: "weekly", priority: "1.0" },
+    ...TOP_LEVEL_ROUTES.map((route) => ({
+      loc: `${SITE_ORIGIN}/${route}`,
+      changefreq: route === "notices" ? "daily" : "monthly",
+      priority: route === "notices" || route === "programs" ? "0.8" : "0.6",
+    })),
+    ...notices.filter((n) => n?.id).map((n) => ({
+      loc: `${SITE_ORIGIN}/notices/${encodeURIComponent(n.id)}`,
+      changefreq: "monthly",
+      priority: "0.6",
+    })),
+    ...programs.filter((p) => p?.id).map((p) => ({
+      loc: `${SITE_ORIGIN}/programs/${encodeURIComponent(p.id)}`,
+      changefreq: "monthly",
+      priority: "0.6",
+    })),
+    ...gallery.filter((g) => g?.id).map((g) => ({
+      loc: `${SITE_ORIGIN}/gallery/${encodeURIComponent(g.id)}`,
+      changefreq: "monthly",
+      priority: "0.5",
+    })),
+  ];
+  const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemapUrls
+    .map(
+      (u) =>
+        `  <url>\n    <loc>${escapeHtml(u.loc)}</loc>\n    <lastmod>${todayIso}</lastmod>\n    <changefreq>${u.changefreq}</changefreq>\n    <priority>${u.priority}</priority>\n  </url>`
+    )
+    .join("\n")}\n</urlset>\n`;
+  fs.writeFileSync(path.join(DIST_DIR, "sitemap.xml"), sitemapXml, "utf-8");
+
+  console.log(`[generate-previews] Generated ${count} static preview pages, sitemap.xml with ${sitemapUrls.length} URLs.`);
 }
 
 main().catch((e) => {
