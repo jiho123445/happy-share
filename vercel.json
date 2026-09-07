@@ -47,5 +47,12 @@
         }
       ]
     }
+  ],
+  "redirects": [
+    {
+      "source": "/notices",
+      "destination": "/news",
+      "permanent": true
+    }
   ]
 }
