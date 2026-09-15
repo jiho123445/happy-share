@@ -650,9 +650,16 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     if (tab !== 'gallery-detail') {
       setSelectedGallery(null);
     }
-    if (tab === 'main') {
-      triggerPopupShow();
-    }
+    // NOTE: this used to call triggerPopupShow() here, which force-reset
+    // PopupModal's session-dismissed-popup tracking (closedPopupIds) every
+    // single time a visitor navigated to the main tab — including just
+    // clicking "메인 홈" in the header/menu. That meant a notice popup the
+    // visitor had already closed would pop right back up the moment they
+    // returned to the homepage, over and over, within the same visit
+    // (reported 2026-09-15: "홈 버튼을 누르면 팝업 메뉴가 계속 실행돼").
+    // Popups still show correctly the first time a visitor lands on the
+    // homepage each session — PopupModal's own `closedPopupIds` state
+    // starts empty on mount — so no reset-on-navigate is needed here.
     setActiveTabState(tab);
   };
 
@@ -735,9 +742,9 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         setSelectedProgram(null);
         setSelectedGallery(null);
         setActiveTabState(targetTab);
-        if (targetTab === 'main') {
-          triggerPopupShow();
-        }
+        // (see the matching note in setActiveTab above — no popup-tracking
+        // reset here either, for the same reason: browser back/forward to
+        // the homepage shouldn't re-show a popup the visitor already closed.)
       }
 
       if (state.aboutSubTab) {
