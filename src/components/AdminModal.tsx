@@ -1108,12 +1108,13 @@ export const AdminModal: React.FC = () => {
                 onClick={async () => {
                   await signOut(auth);
                   setIsAdmin(false);
+                  setAdminOpen(false);
                 }}
-                className="hidden sm:flex items-center gap-1 text-xs text-slate-400 hover:text-orange-400 px-3 py-1.5 rounded-xl hover:bg-slate-800 transition-colors"
+                className="flex items-center gap-1 text-xs text-slate-400 hover:text-orange-400 px-2 sm:px-3 py-1.5 rounded-xl hover:bg-slate-800 transition-colors active:bg-slate-800"
                 title="로그아웃"
               >
                 <LogOut className="w-3.5 h-3.5" />
-                <span>잠금</span>
+                <span className="hidden sm:inline">잠금</span>
               </button>
             )}
             <button
