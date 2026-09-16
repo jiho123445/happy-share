@@ -30,6 +30,23 @@ describe('formatImageUrl', () => {
       'https://cdn.example.com/img.png?x=1&v=7'
     );
   });
+
+  it('leaves firebasestorage.googleapis.com URLs untouched (already uniquely versioned)', () => {
+    const url =
+      'https://firebasestorage.googleapis.com/v0/b/example.appspot.com/o/settings%2F123_abc_hero.jpg?alt=media&token=xyz';
+    expect(formatImageUrl(url, 999)).toBe(url);
+  });
+
+  it('leaves *.firebasestorage.app URLs untouched (already uniquely versioned)', () => {
+    const url =
+      'https://firebasestorage.googleapis.com/v0/b/example.firebasestorage.app/o/activities%2F1_abc.jpg?alt=media&token=xyz';
+    expect(formatImageUrl(url, 999)).toBe(url);
+  });
+
+  it('still cache-busts non-Firebase-Storage external URLs even without an explicit version', () => {
+    const result = formatImageUrl('https://images.unsplash.com/photo-123?auto=format&w=800');
+    expect(result).toMatch(/^https:\/\/images\.unsplash\.com\/photo-123\?auto=format&w=800&v=\d+$/);
+  });
 });
 
 describe('getImageApiFallbackUrl', () => {

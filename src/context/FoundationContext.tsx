@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { doc, onSnapshot, setDoc, getDoc, getDocs, collection, addDoc, updateDoc, deleteDoc, query, orderBy, writeBatch } from 'firebase/firestore';
-import { ref, deleteObject } from 'firebase/storage';
+import { ref, deleteObject, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db, storage } from '../lib/firebase';
 import { GLOBAL_FOUNDATION_DOC, handleFirestoreError, OperationType } from '../lib/firestoreService';
@@ -1849,6 +1849,61 @@ export const FoundationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       return next;
     });
   };
+
+  // ONE-TIME AUTO-MIGRATION (2026-09-16): a few image fields (heroImageUrl
+  // in particular) were saved as giant inline base64 `data:` URLs back
+  // before the admin panel always uploaded photos to Firebase Storage
+  // (processImageFile in AdminModal.tsx now does this correctly for every
+  // new upload). A base64 image can never be cached by the browser like a
+  // normal file, and it bloats this settings document on every load/sync
+  // for no reason. Re-uploading the same photo once through the admin
+  // panel already fixes this — this effect just does that automatically,
+  // the next time an admin is signed in, so nobody has to remember to.
+  // Guarded so it only ever attempts each field once per page load, and
+  // it never touches the field if the upload fails (leaves the slower
+  // base64 value in place rather than risk losing the photo).
+  const base64ImageMigrationAttempted = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    const BASE64_IMAGE_FIELDS: Array<keyof FoundationSettings> = [
+      'heroImageUrl',
+      'chairmanImageUrl',
+      'familyCenterImageUrl'
+    ];
+
+    BASE64_IMAGE_FIELDS.forEach((field) => {
+      const value = settings[field];
+      if (typeof value !== 'string' || !value.startsWith('data:')) return;
+      if (base64ImageMigrationAttempted.current.has(field)) return;
+      base64ImageMigrationAttempted.current.add(field);
+
+      (async () => {
+        try {
+          const blob = await (await fetch(value)).blob();
+          const uniqueName = `${Date.now()}_${crypto.randomUUID()}_${field}.jpg`;
+          const storageRef = ref(storage, `settings/${uniqueName}`);
+          const snapshot = await uploadBytes(storageRef, blob, {
+            contentType: blob.type || 'image/jpeg',
+            cacheControl: 'public,max-age=31536000,immutable'
+          });
+          const downloadUrl = await getDownloadURL(snapshot.ref);
+          updateSettings({ [field]: downloadUrl } as Partial<FoundationSettings>);
+          addDebugLog(
+            'success',
+            `⚡ ${field} 이미지를 base64 저장 방식에서 Firebase Storage로 자동 전환했습니다.`,
+            '이미지 캐싱이 정상 동작하도록 1회성으로 자동 이전되었습니다.'
+          );
+        } catch (err) {
+          // Allow a retry on a future admin session instead of a page
+          // reload — this session's attempt failed, but the field is
+          // still base64, so it's worth trying again later.
+          base64ImageMigrationAttempted.current.delete(field);
+          handleFirestoreError(err, OperationType.WRITE, `${field} base64 자동 이전`);
+        }
+      })();
+    });
+  }, [isAdmin, settings]);
 
   const resetToDefaults = () => {
     // Only resets site content (settings/programs/notices/gallery/popups).
