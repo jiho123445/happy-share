@@ -82,6 +82,9 @@ export const Footer: React.FC = () => {
           <div className="md:col-span-8 space-y-2 leading-relaxed">
             <div className="text-slate-300 font-bold">법인 및 위치 정보</div>
             <p>법인명: {settings.name} ({settings.englishName}) | 대표자: {settings.chairmanName}</p>
+            {settings.businessRegistrationNumber && (
+              <p>고유번호: {settings.businessRegistrationNumber}</p>
+            )}
             <p>소재지: {settings.address}</p>
             <p>전화: {settings.phone} | FAX: {settings.fax} | 이메일: {settings.email} | 운영시간: {settings.operatingHours}</p>
             <p className="text-[11px] text-slate-500 pt-1">

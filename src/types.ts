@@ -29,6 +29,12 @@ export interface GalleryItem {
   date: string;
   imageUrl: string; // 대표 사진 (커버 이미지) - 기존 단일 사진 데이터 100% 호환
   images?: string[]; // 항목 내 여러 장의 사진 목록 (다중 사진 지원)
+  /** 커버 사진의 작은 축소본 (최대 320px). 카드/미리보기처럼 작게 표시되는
+   * 자리에서 원본 고해상도 사진을 통째로 내려받지 않도록 한다.
+   * 없으면(구버전 데이터) imageUrl로 자연스럽게 대체된다. */
+  thumbnailUrl?: string;
+  /** images와 같은 순서/길이의 축소본 목록. */
+  thumbnails?: string[];
   /** Firebase Storage path for primary file uploaded by the gallery manager. */
   storagePath?: string;
   /** Firebase Storage paths for all uploaded files in this gallery post. */
@@ -140,6 +146,9 @@ export interface FoundationSettings {
   address: string;
   phone: string;
   fax: string;
+  /** 고유번호(지정기부금단체 고유번호/사업자등록번호 형식, 예: 223-82-05088).
+   * 기부금 세액공제를 받으려는 후원자에게 신뢰 정보로 노출된다 (Footer.tsx). */
+  businessRegistrationNumber?: string;
   familyCenterPhone?: string;
   familyCenterFax?: string;
   familyCenterAddress?: string;

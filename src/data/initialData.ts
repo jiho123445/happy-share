@@ -54,6 +54,7 @@ export const INITIAL_SETTINGS: FoundationSettings = {
   address: '강원특별자치도 홍천군 홍천읍 송학로3길 26, 2층 (너브내행복나눔재단)',
   phone: '033-436-1925',
   fax: '033-436-1910',
+  businessRegistrationNumber: '223-82-05088',
   familyCenterPhone: '033-433-1925',
   familyCenterFax: '033-433-1910',
   email: 'hcdmh1026@naver.com',

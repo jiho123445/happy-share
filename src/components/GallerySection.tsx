@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useFoundation } from '../context/FoundationContext';
 import { GalleryItem } from '../types';
+import { getGalleryThumbnail } from '../utils/galleryThumbnail';
 import { Pagination } from './Pagination';
 import { YearFilter, extractYears } from './YearFilter';
 import {
@@ -151,7 +152,7 @@ const GalleryCard: React.FC<GalleryCardProps> = ({ item, onViewDetail, onAdminEd
                 title={`${idx + 1}번째 사진 보기`}
               >
                 <img
-                  src={getImageUrl(imgUrl)}
+                  src={getImageUrl(getGalleryThumbnail(item, idx))}
                   alt={`썸네일 ${idx + 1}`}
                   loading="lazy"
                   className="w-full h-full object-cover"

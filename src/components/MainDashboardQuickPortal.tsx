@@ -2,6 +2,7 @@ import React from 'react';
 import { useFoundation } from '../context/FoundationContext';
 import { INITIAL_SETTINGS } from '../data/initialData';
 import { getImageApiFallbackUrl } from '../utils/imageUrl';
+import { getGalleryThumbnail } from '../utils/galleryThumbnail';
 import {
   Newspaper,
   Image as ImageIcon,
@@ -346,7 +347,7 @@ export const MainDashboardQuickPortal: React.FC = () => {
                             className="w-7 h-7 rounded overflow-hidden border border-slate-200 shrink-0 bg-slate-100"
                           >
                             <img
-                              src={getImageUrl(imgUrl)}
+                              src={getImageUrl(getGalleryThumbnail(item, idx))}
                               alt={`미리보기 ${idx + 1}`}
                               className="w-full h-full object-cover"
                             />

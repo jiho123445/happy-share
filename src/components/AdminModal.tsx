@@ -62,6 +62,12 @@ export interface AdminGalleryPhoto {
   fileName?: string;
   storagePath?: string;
   isCover?: boolean;
+  /** Small (<=320px) local data: URL generated at select-time, uploaded
+   * to Storage alongside the full photo when the gallery post is saved. */
+  thumbnailDataUrl?: string;
+  /** Already-uploaded Storage URL for the thumbnail — set once uploaded,
+   * or carried over as-is when editing a photo that was already saved. */
+  thumbnailUrl?: string;
 }
 
 export const AdminModal: React.FC = () => {
@@ -593,12 +599,57 @@ export const AdminModal: React.FC = () => {
   };
 
 
+  // Resizes an already-loaded data: URL down to a small square-ish
+  // thumbnail (<=maxSize on the long edge). Used so grid cards, preview
+  // strips and thumbnail bars don't have to download the full-resolution
+  // original just to show a 26-40px image (see getGalleryThumbnail.ts).
+  // Falls back to returning the input unchanged if canvas isn't usable —
+  // callers already treat a same-as-original thumbnail as harmless.
+  const generateThumbnailDataUrl = (
+    dataUrl: string,
+    maxSize: number = 320,
+    quality: number = 0.7
+  ): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          let width = img.width;
+          let height = img.height;
+          if (width > maxSize || height > maxSize) {
+            if (width > height) {
+              height = Math.round((height * maxSize) / width);
+              width = maxSize;
+            } else {
+              width = Math.round((width * maxSize) / height);
+              height = maxSize;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(dataUrl);
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        } catch {
+          resolve(dataUrl);
+        }
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
+  };
+
   // Gallery File Upload Handlers
   // IMPORTANT: gallery images are compressed in the browser only.
   // They are NOT written to /api/upload or the server filesystem.
   const processGalleryImageFile = (
     file: File,
-    callback: (dataUrl: string, fileName: string) => void
+    callback: (dataUrl: string, fileName: string, thumbnailDataUrl: string) => void
   ) => {
     try {
       validateImageFile(file);
@@ -619,7 +670,7 @@ export const AdminModal: React.FC = () => {
 
       const img = new Image();
 
-      img.onload = () => {
+      img.onload = async () => {
         const canvas = document.createElement('canvas');
         let width = img.width;
         let height = img.height;
@@ -640,7 +691,7 @@ export const AdminModal: React.FC = () => {
 
         const ctx = canvas.getContext('2d');
         if (!ctx) {
-          callback(rawDataUrl, file.name);
+          callback(rawDataUrl, file.name, rawDataUrl);
           return;
         }
 
@@ -648,10 +699,11 @@ export const AdminModal: React.FC = () => {
 
         // JPEG is used for consistent, reasonably small storage files.
         const processedUrl = canvas.toDataURL('image/jpeg', 0.85);
-        callback(processedUrl, file.name);
+        const thumbnailUrl = await generateThumbnailDataUrl(processedUrl);
+        callback(processedUrl, file.name, thumbnailUrl);
       };
 
-      img.onerror = () => callback(rawDataUrl, file.name);
+      img.onerror = () => callback(rawDataUrl, file.name, rawDataUrl);
       img.src = rawDataUrl;
     };
 
@@ -695,6 +747,46 @@ export const AdminModal: React.FC = () => {
     return { imageUrl, storagePath };
   };
 
+  /**
+   * Same as uploadGalleryImageToFirebase, but for the small thumbnail
+   * generated alongside the full photo — stored under its own
+   * `activities/thumbs/` prefix so it's easy to tell apart in Storage.
+   * A failure here is caught by the caller and just means that one
+   * photo falls back to serving its full-size image for thumbnails too
+   * (slower, but never breaks the gallery post itself).
+   */
+  const uploadGalleryThumbnailToFirebase = async (
+    dataUrl: string,
+    originalFileName: string
+  ): Promise<{ imageUrl: string; storagePath: string }> => {
+    const response = await fetch(dataUrl);
+    const blob = await response.blob();
+
+    if (!blob.type.startsWith('image/')) {
+      throw new Error('썸네일 이미지 데이터가 올바르지 않습니다.');
+    }
+
+    const safeExtension = 'jpg';
+    const baseName = originalFileName
+      .replace(/\.[^/.]+$/, '')
+      .replace(/[^a-zA-Z0-9가-힣_-]/g, '_')
+      .slice(0, 60) || 'gallery';
+
+    const uniqueName = `${Date.now()}_${crypto.randomUUID()}_${baseName}_thumb.${safeExtension}`;
+
+    const storagePath = `activities/thumbs/${uniqueName}`;
+    const storageRef = ref(storage, storagePath);
+
+    const snapshot = await uploadBytes(storageRef, blob, {
+      contentType: 'image/jpeg',
+      cacheControl: 'public,max-age=31536000,immutable'
+    });
+
+    const imageUrl = await getDownloadURL(snapshot.ref);
+
+    return { imageUrl, storagePath };
+  };
+
   const handleGalleryMultipleFileUpload = (
     e: React.ChangeEvent<HTMLInputElement>,
     isEdit = false
@@ -706,11 +798,12 @@ export const AdminModal: React.FC = () => {
     const newItems: AdminGalleryPhoto[] = [];
 
     files.forEach((file: File, index: number) => {
-      processGalleryImageFile(file, (dataUrl, fileName) => {
+      processGalleryImageFile(file, (dataUrl, fileName, thumbnailDataUrl) => {
         newItems.push({
           id: `photo-${Date.now()}-${Math.random().toString(36).slice(2, 7)}-${index}`,
           url: dataUrl,
           fileName: fileName,
+          thumbnailDataUrl,
           isCover: false
         });
 
@@ -777,11 +870,12 @@ export const AdminModal: React.FC = () => {
     const newItems: AdminGalleryPhoto[] = [];
 
     files.forEach((file: File, index: number) => {
-      processGalleryImageFile(file, (dataUrl, fileName) => {
+      processGalleryImageFile(file, (dataUrl, fileName, thumbnailDataUrl) => {
         newItems.push({
           id: `photo-${Date.now()}-${Math.random().toString(36).slice(2, 7)}-${index}`,
           url: dataUrl,
           fileName: fileName,
+          thumbnailDataUrl,
           isCover: false
         });
 
@@ -895,7 +989,7 @@ export const AdminModal: React.FC = () => {
     try {
       showToast(`사진 ${newGalPhotos.length}장을 Firebase Storage에 안전하게 저장하는 중입니다...`);
 
-      const uploadedPhotos: Array<{ url: string; storagePath?: string; isCover?: boolean }> = [];
+      const uploadedPhotos: Array<{ url: string; storagePath?: string; thumbnailUrl?: string; isCover?: boolean }> = [];
 
       for (let i = 0; i < newGalPhotos.length; i++) {
         const photo = newGalPhotos[i];
@@ -904,15 +998,32 @@ export const AdminModal: React.FC = () => {
             photo.url,
             photo.fileName || `gallery_${i + 1}.jpg`
           );
+          let thumbnailUrl: string | undefined;
+          if (photo.thumbnailDataUrl) {
+            try {
+              const uploadedThumb = await uploadGalleryThumbnailToFirebase(
+                photo.thumbnailDataUrl,
+                photo.fileName || `gallery_${i + 1}.jpg`
+              );
+              thumbnailUrl = uploadedThumb.imageUrl;
+            } catch (thumbErr) {
+              // A thumbnail upload failure should never block saving the
+              // real photo — the gallery just falls back to serving the
+              // full image in small slots for this one item.
+              console.warn('갤러리 썸네일 업로드 실패 (원본 사진은 정상 저장됨):', thumbErr);
+            }
+          }
           uploadedPhotos.push({
             url: uploaded.imageUrl,
             storagePath: uploaded.storagePath,
+            thumbnailUrl,
             isCover: photo.isCover
           });
         } else {
           uploadedPhotos.push({
             url: photo.url,
             storagePath: photo.storagePath,
+            thumbnailUrl: photo.thumbnailUrl,
             isCover: photo.isCover
           });
         }
@@ -931,6 +1042,10 @@ export const AdminModal: React.FC = () => {
       const finalStoragePath = coverPhoto.storagePath;
       const allImages = orderedPhotos.map(p => p.url);
       const allStoragePaths = orderedPhotos.map(p => p.storagePath).filter(Boolean) as string[];
+      // Thumbnails always line up 1:1 with allImages — falls back to the
+      // full image per-photo when that one thumbnail upload failed, so
+      // readers never need to guard against a shorter/missing array.
+      const allThumbnails = orderedPhotos.map(p => p.thumbnailUrl || p.url);
 
       addGallery({
         title: newGalTitle.trim(),
@@ -938,6 +1053,8 @@ export const AdminModal: React.FC = () => {
         date: newGalDate || new Date().toISOString().split('T')[0],
         imageUrl: finalImageUrl,
         images: allImages,
+        thumbnailUrl: allThumbnails[0],
+        thumbnails: allThumbnails,
         storagePath: finalStoragePath || undefined,
         storagePaths: allStoragePaths.length > 0 ? allStoragePaths : undefined,
         description: newGalDesc.trim() || newGalTitle.trim(),
@@ -974,7 +1091,7 @@ export const AdminModal: React.FC = () => {
 
       showToast(`수정 사진 ${editGalleryPhotos.length}장을 안전하게 저장하는 중입니다...`);
 
-      const uploadedPhotos: Array<{ url: string; storagePath?: string; isCover?: boolean }> = [];
+      const uploadedPhotos: Array<{ url: string; storagePath?: string; thumbnailUrl?: string; isCover?: boolean }> = [];
 
       for (let i = 0; i < editGalleryPhotos.length; i++) {
         const photo = editGalleryPhotos[i];
@@ -983,15 +1100,29 @@ export const AdminModal: React.FC = () => {
             photo.url,
             photo.fileName || `gallery-edit-${id}-${i + 1}.jpg`
           );
+          let thumbnailUrl: string | undefined;
+          if (photo.thumbnailDataUrl) {
+            try {
+              const uploadedThumb = await uploadGalleryThumbnailToFirebase(
+                photo.thumbnailDataUrl,
+                photo.fileName || `gallery-edit-${id}-${i + 1}.jpg`
+              );
+              thumbnailUrl = uploadedThumb.imageUrl;
+            } catch (thumbErr) {
+              console.warn('갤러리 썸네일 업로드 실패 (원본 사진은 정상 저장됨):', thumbErr);
+            }
+          }
           uploadedPhotos.push({
             url: uploaded.imageUrl,
             storagePath: uploaded.storagePath,
+            thumbnailUrl,
             isCover: photo.isCover
           });
         } else {
           uploadedPhotos.push({
             url: photo.url,
             storagePath: photo.storagePath,
+            thumbnailUrl: photo.thumbnailUrl,
             isCover: photo.isCover
           });
         }
@@ -1010,11 +1141,14 @@ export const AdminModal: React.FC = () => {
       const finalStoragePath = coverPhoto.storagePath;
       const allImages = orderedPhotos.map(p => p.url);
       const allStoragePaths = orderedPhotos.map(p => p.storagePath).filter(Boolean) as string[];
+      const allThumbnails = orderedPhotos.map(p => p.thumbnailUrl || p.url);
 
       const updatedData: Partial<GalleryItem> = {
         ...editGalleryData,
         imageUrl: finalImageUrl,
         images: allImages,
+        thumbnailUrl: allThumbnails[0],
+        thumbnails: allThumbnails,
         storagePath: finalStoragePath || undefined,
         storagePaths: allStoragePaths.length > 0 ? allStoragePaths : undefined,
         author: '재단 관리자',
@@ -1533,6 +1667,20 @@ export const AdminModal: React.FC = () => {
                         onChange={(e) => setEditSettings({ ...editSettings, address: e.target.value })}
                         className="w-full p-2.5 bg-slate-50 border rounded-xl"
                       />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">고유번호 (지정기부금단체 고유번호)</label>
+                      <input
+                        type="text"
+                        value={editSettings.businessRegistrationNumber || ''}
+                        onChange={(e) => setEditSettings({ ...editSettings, businessRegistrationNumber: e.target.value })}
+                        placeholder="예: 223-82-05088"
+                        className="w-full p-2.5 bg-slate-50 border rounded-xl font-mono"
+                      />
+                      <p className="text-[11px] text-slate-500 mt-1">
+                        기부금 세액공제를 받으려는 후원자에게 신뢰 정보로 홈페이지 하단(Footer)에 노출됩니다.
+                      </p>
                     </div>
 
                     <div>
@@ -3369,10 +3517,12 @@ export const AdminModal: React.FC = () => {
                                     setEditGalleryData(g);
                                     const existingImages = (g.images && g.images.length > 0) ? g.images : (g.imageUrl ? [g.imageUrl] : []);
                                     const existingPaths = (g.storagePaths && g.storagePaths.length > 0) ? g.storagePaths : (g.storagePath ? [g.storagePath] : []);
+                                    const existingThumbnails = (g.thumbnails && g.thumbnails.length > 0) ? g.thumbnails : (g.thumbnailUrl ? [g.thumbnailUrl] : []);
                                     const initialPhotos: AdminGalleryPhoto[] = existingImages.map((url, idx) => ({
                                       id: `existing-${idx}-${Date.now()}`,
                                       url: url,
                                       storagePath: existingPaths[idx],
+                                      thumbnailUrl: existingThumbnails[idx],
                                       fileName: `사진 ${idx + 1}`,
                                       isCover: idx === 0
                                     }));
