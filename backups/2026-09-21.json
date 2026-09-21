@@ -1,0 +1,862 @@
+{
+  "exportedAt": "2026-09-21T21:36:37.993Z",
+  "kind": "public-content-only",
+  "settings": {
+    "familyCenterAddress": "강원특별자치도 홍천군 홍천읍 산림조합길 12",
+    "operatingHours": "월~금 09:00 - 18:00 (토, 일, 공휴일 휴무)",
+    "reorganizedYear": "2024",
+    "updatedAt": "2026-09-17T07:44:19.479Z",
+    "familyCenterFax": "033-433-1910",
+    "familyCenterDescription": "홍천군가족센터는 다양한 가족 형태(다문화가족, 1인가구, 한부모가족, 조손가족, 맞벌이가족 등)에 맞춰 가족 교육, 상담, 돌봄, 다문화 이중언어 학습, 공동육아나눔터 등 생애주기별 맞춤 통합복지 서비스를 제공하고 있습니다.",
+    "snsLinks": {
+      "facebook": "https://facebook.com",
+      "instagram": "https://instagram.com",
+      "youtube": "https://youtube.com",
+      "naver": "https://blog.naver.com"
+    },
+    "sloganMain": "넓고 깊은 강물처럼, 홍천에 따뜻한 나눔이 흐릅니다.",
+    "phone": "033-436-1925",
+    "englishName": "Nerve-Nae Happiness Sharing Foundation",
+    "chairmanGreeting": "안녕하십니까. 사단법인 너브내행복나눔재단 이사장 윤성일입니다.\n\n먼저 바쁘신 가운데 저희 재단 홈페이지를 찾아주신 너브내행복나눔회원님, 자원봉사자님, 그리고 지역주민 여러분께 진심으로 감사의 인사를 드립니다.\n\n'너브내'라는 이름은 넓고 깊게 흐르는 물줄기를 뜻하는 우리말입니다. 그 이름처럼 이웃을 향한 정과 사랑이 넓고 깊게 흘러, 우리 지역사회 곳곳에 따뜻하게 스며들기를 바라는 마음으로 너브내행복나눔재단은 첫걸음을 내디뎠습니다.\n\n오늘도 복지의 손길이 미처 닿지 못한 곳에서 외로움과 어려움을 겪고 계신 이웃들이 적지 않습니다. 저희 재단은 작은 나눔이 모여 커다란 희망의 물결을 이룬다는 믿음으로, 그러한 이웃들의 곁을 지키는 든든한 버팀목이 되고자 합니다.\n\n저희 재단은 다음과 같은 마음으로 걸어가고 있습니다.\n\n• 소외된 이웃과의 동행: 어르신, 다문화 가정, 취약계층 아동·청소년 등 복지 사각지대에 놓인 이웃들을 꾸준히 찾아 나서고, 실질적인 도움을 드리기 위해 노력하고 있습니다.\n• 투명하고 성실한 법인 운영: 여러분께서 보내주신 따뜻한 정성이 가장 필요한 곳에 정직하게 전달될 수 있도록, 투명성과 공정성을 최우선 가치로 삼고 있습니다.\n• 지역사회와 함께하는 나눔 문화 확산: 모두가 서로를 돌보고 온기를 나누는 행복한 공동체를 만드는 일에 앞장서고자 합니다.\n\n혼자 가면 빠른 길이 될 수 있지만, 함께 가면 더 멀리, 그리고 더 따뜻하게 갈 수 있습니다. 여러분의 관심과 참여 하나하나가 우리 이웃들에게는 삶을 살아갈 큰 용기와 희망이 됩니다.\n\n너브내행복나눔재단이 지역사회의 빛과 소금이 되는 그 여정에 앞으로도 늘 함께해 주시기를 부탁드리며, 이 자리를 찾아주신 모든 분들의 가정에 건강과 행복이 가득하시기를 진심으로 기원합니다.\n\n감사합니다.\n\n사단법인 너브내행복나눔재단 이사장 윤성일 올림",
+    "familyCenterFeatures": [
+      {
+        "title": "다문화가족 정착지원",
+        "description": "한국어 교육, 방문교육, 통번역 서비스, 모국 방문 및 정주여건 개선"
+      },
+      {
+        "title": "가족상담 및 소통",
+        "description": "부부상담, 부모-자녀 소통교육, 다문화 이중언어 교실 및 가족 캠프"
+      },
+      {
+        "title": "공동육아나눔터",
+        "description": "이웃과 함께하는 아동 돌봄 공간 및 자녀 돌봄 품앗이 활동"
+      },
+      {
+        "title": "맞춤형 가족 지원",
+        "description": "1인가구 식생활 및 사회적 관계망 형성, 취약가구 긴급 자원 연계"
+      }
+    ],
+    "name": "사단법인 너브내행복나눔재단",
+    "familyCenterQuote": "다문화가족 지원을 넘어 홍천군 전체 가족을 보듬는 통합 가족복지 전문기관",
+    "familyCenterPhone": "033-433-1925",
+    "heroImageUrl": "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/settings%2F1789631057246_658ee3d5-93cc-4294-8894-0916bb130333_heroImageUrl.jpg?alt=media&token=6b60ac90-0f9e-483c-8dd5-dda4a30672f6",
+    "chairmanName": "윤성일",
+    "businessRegistrationNumber": "223-82-05088",
+    "address": "강원특별자치도 홍천군 홍천읍 송학로3길 26, 2층 (너브내행복나눔재단)",
+    "bankAccounts": [
+      {
+        "holder": "(사)너브내행복나눔재단",
+        "bank": "농협",
+        "accountNumber": "351-1040-2310-53"
+      }
+    ],
+    "chairmanImageUrl": "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/settings%2F1789535775723_65ba24f1-dc98-4529-9055-f98ac63656c3_chairmanImageUrl.jpg?alt=media&token=ee0ae3a0-1c3f-4b47-be69-1d1a31afacab",
+    "email": "hcdmh1026@naver.com",
+    "familyCenterImageUrl": "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/settings%2F1787263735411_14a2481d-c401-4248-9981-d77ed01b364f_familycenter.jpg?alt=media&token=70dbd414-ceb3-41c9-b809-5cb4f7d49636",
+    "galleryCategories": [
+      "장학금 전달",
+      "교육지원",
+      "명절 나눔",
+      "삼계탕 나눔",
+      "주거환경 개선",
+      "복지시설 지원",
+      "다문화지원"
+    ],
+    "establishedYear": "2009",
+    "fax": "033-436-1910",
+    "sloganSub": "2009년부터 이어온 나눔, 이제 홍천군민 모두의 행복으로 이어갑니다."
+  },
+  "programs": null,
+  "notices": {
+    "updatedAt": "2026-09-17T09:25:28.037Z",
+    "items": [
+      {
+        "id": "not-1789637073525-a3l3g",
+        "author": "관리자",
+        "date": "2026-09-17",
+        "views": 2,
+        "attachments": [],
+        "content": "사단법인 너브내행복나눔재단 홈페이지 개설\n\nhttps://nbnhappy.or.kr/\n\n  ㅁ 홈페이지: https://nbnhappy.or.kr/\n  ㅁ 회원 여러분 홈페이지를 방문하시어 재단의 다양한 소식과 활동을 함께 살펴봐 주시고,\n수정·보완이 필요한 사항이나 좋은 의견이 있으시면 언제든지 사무국으로 알려주시기 바랍니다.\n",
+        "category": "재단소식",
+        "isImportant": false,
+        "title": "(사)너브내행복나눔재단 홈페이지 개설"
+      },
+      {
+        "content": "2026년 세계문화축제 부스 참가\n\n  ㅁ 일  시: 2026. 9. 19.(토) 10:30~\n  ㅁ 장  소: 홍천군도시산림공원 토리숲\n  ㅁ 내  용: 너브내상회 부스 참가",
+        "id": "not-1789636848575-y4a0p",
+        "title": "세계문화축제 부스 참가",
+        "isImportant": false,
+        "attachments": [],
+        "date": "2026-09-17",
+        "views": 1,
+        "category": "재단소식",
+        "author": "관리자"
+      },
+      {
+        "title": "2026년 3분기 이사회의 실시",
+        "category": "재단소식",
+        "attachments": [],
+        "date": "2026-09-04",
+        "author": "관리자",
+        "id": "not-1788509845010-ejn75",
+        "content": "2026년 3분기（사)너브내행복나눔재단 정기 이사회의 실시\n\n ㅁ 일  시: 2026. 9. 16. (수) 18:30\n ㅁ 장  소: 홍천군가족센터 3층 강당",
+        "views": 2,
+        "isImportant": false
+      },
+      {
+        "title": "제7회 강원특별자치도 내 유아동·청소년 다문화인식개선 콘테스트 그림공모전 시상식 성료",
+        "attachments": [],
+        "author": "관리자",
+        "date": "2026-08-20",
+        "category": "공지사항",
+        "views": 1,
+        "isImportant": false,
+        "content": "안녕하세요, 너브내행복나눔재단 입니다.\n\n지난 8월 19일(수), 「2026년 다양한가족이해교육사업 - 제7회 강원특별자치도 내 유아동·청소년 다문화인식개선 콘테스트(그림공모전) 시상식」이 많은 분들의 따뜻한 관심과 참여 속에 성황리에 개최되었습니다.\n\n다문화에 대한 편견을 없애고 서로를 존중하며 함께 살아가는 세상을 담아낸 수상자 여러분 진심으로 축하드립니다. 더불어 행사에 함께해 주신 수상자 가족 및 내외빈 여러분께도 깊은 감사의 말씀을 전합니다.\n\n앞으로도 서로의 다름을 존중하고 다 함께 행복한 지역사회를 만들어 갈 수 있도록 많은 관심과 응원 부탁드립니다.\n\n그리고 행사사진은 갤러리에 등록해놓겠습니다.",
+        "id": "not-1787187978644-j8kyv"
+      },
+      {
+        "category": "공지사항",
+        "views": 0,
+        "isImportant": true,
+        "attachments": [],
+        "id": "not-1787109952075-vion3",
+        "content": "홍천군 사회복지 발전을 위한 도의원 초청 간담회를 개최합니다.\n1.  일 자 : 2026년 9월 2일\n2. 시 간 : 18시 30분\n3. 장 소 : 홍천군가족센터 3층 대강의실\n4. 안 건 : \n    - 미래의 홍천군 사회복지의 방향\n    - 건강한 사회와 사회복지의 연관성",
+        "author": "관리자",
+        "date": "2026-09-02",
+        "title": "홍천군 사회복지 발전을 위한 도의원 초청 간담회"
+      },
+      {
+        "date": "2026-08-19",
+        "author": "관리자",
+        "views": 0,
+        "id": "not-1787106096671",
+        "attachments": [
+          {
+            "name": "시상식1.jpg",
+            "size": "438 KB",
+            "type": "JPG",
+            "url": "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/notices%2F1787106090691_98a2ab3c-7c83-497f-b907-9e673efd40d1_%EC%8B%9C%EC%83%81%EC%8B%9D1.jpg.jpg?alt=media&token=8d861f38-64a6-488f-8039-4b0304d06475"
+          },
+          {
+            "type": "JPG",
+            "name": "시상식2.jpg",
+            "url": "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/notices%2F1787106090692_0a778ebb-4a9f-44e1-bae4-05f6e721baeb_%EC%8B%9C%EC%83%81%EC%8B%9D2.jpg.jpg?alt=media&token=eecc7df8-50ab-4086-a437-d6c3ed6b014f",
+            "size": "249 KB"
+          }
+        ],
+        "attachmentName": "시상식1.jpg",
+        "isImportant": false,
+        "title": "제7회 인식개선콘테스트 시상식 안내",
+        "category": "공지사항",
+        "content": "제7회 안식개선콘테스트 시상식을 아래와 같이 아내드립니다.\n1. 일시 : 2026년 8월 19일 18시 30분\n2. 장소 : 홍천축협 하나로마트 2층 대회의실"
+      },
+      {
+        "date": "2026-02-10",
+        "attachments": [],
+        "content": "안녕하세요, 사단법인 너브내행복나눔재단 사무국입니다.\n\n재단에서는 2026년도 상반기 홍천 관내 다문화가정 및 취약계층 자녀들의 학업 지속과 미래 성장을 돕기 위해 장학생을 다음과 같이 모집합니다.\n\n■ 신청 대상\n- 홍천군 관내 거주 초·중·고등학생 및 대학생 (다문화가정 및 저소득 취약계층)\n\n■ 지원 내용\n- 초등학생: 50만 원\n- 중·고등학생: 100만 원\n- 대학생: 200만 원\n\n■ 접수 기간\n- 2026년 3월 2일(월) ~ 3월 20일(금) 18:00까지\n\n■ 제출 서류\n- 장학생 추천 및 신청서 (첨부파일)\n- 주민등록등본 및 가구 소득증빙 서류\n- 재학증명서 및 성적증명서\n\n자세한 사항은 재단 사무국([관리자 입력 필요 - 전화번호])으로 문의해 주시기 바랍니다.",
+        "views": 0,
+        "id": "not-01",
+        "category": "모집공고",
+        "author": "재단 사무국",
+        "title": "2026년도 사단법인 너브내행복나눔재단 상반기 장학생 모집 안내",
+        "isImportant": true
+      },
+      {
+        "isImportant": false,
+        "date": "2026-01-22",
+        "id": "not-03",
+        "content": "너브내행복나눔재단은 민족 대명절 설을 맞아 홍천 관내 독거어르신, 다문화가정, 장애인 가구 등 300가구에 사랑의 떡국떡과 생필품 선물세트를 전달했습니다.\n\n이번 나눔 행사에는 재단 이사진과 지역 자원봉사자들이 함께 참여하여 홍천읍 및 9개 면 지역 소외 이웃들의 가정을 직접 방문하여 전달하였습니다.",
+        "category": "재단소식",
+        "views": 0,
+        "title": "설 명절 맞아 홍천 관내 취약계층 300가구 생필품 나눔 전달식 개최",
+        "author": "재단 홍보팀"
+      },
+      {
+        "content": "(사)너브내행복나눔재단과 홍천군가족센터가 공동 주최·주관한 '제13회 홍천 다문화가족 한마음 축제'가 600여 명의 다문화가족과 지역 군민들이 참여한 가운데 성황리에 개최되었습니다.\n\n세계 전통요리 및 문화 체험관, 명랑운동회, 다문화가족 장기자랑 및 모범가족 표창 등 화합과 나눔의 풍성한 프로그램이 진행되었습니다.",
+        "id": "not-04",
+        "views": 0,
+        "title": "제13회 홍천 다문화가족 한마음 축제 성황리 개최 안내",
+        "category": "재단소식",
+        "author": "다문화사업팀",
+        "date": "2026-01-08",
+        "isImportant": true
+      },
+      {
+        "date": "2026-01-05",
+        "category": "후원소식",
+        "id": "not-05",
+        "isImportant": false,
+        "title": "2025년도 후원금 집행 및 재정 투명성 기부금 영수증 안내",
+        "views": 0,
+        "content": "소중한 마음을 모아주신 후원자 여러분께 감사드립니다.\n2025년 한 해 동안 기부해 주신 기부금 영수증은 국세청 홈택스 연말정산 간소화 서비스를 통해 확인하실 수 있습니다.",
+        "author": "재정관리팀"
+      }
+    ]
+  },
+  "press": {
+    "updatedAt": "2026-09-07T00:32:12.606Z",
+    "items": [
+      {
+        "date": "2026-09-03",
+        "url": "http://www.hcinews.co.kr/front/news/view.do?articleId=ARTICLE_00030686",
+        "title": "홍천 복지현안, 도의원들과 머리 맞대다",
+        "outlet": "홍천인터넷뉴스",
+        "summary": "(사)너브내행복나눔재단(이사장: 윤성일)과 홍천군가족센터(센터장: 이상훈)는 지난 9월 2일 홍천군가족센터 3층 대강당에서 홍천군 사회복지 발전을 위한 도의원 초청 간담회를 개최했다.",
+        "id": "press-1788741132606-1owa8"
+      },
+      {
+        "outlet": "홍천리버뉴스",
+        "date": "2025-12-11",
+        "summary": "사단법인 너브내행복나눔재단(이사장 윤성일)은 지난 12월 10일 오후 7시 크리스탈웨딩홀 4층에서 ‘2025년 (사)너브내행복나눔재단 송년의 밤’을 성황리에 개최했다.\n출처: 사단법인 너브내행복나눔재단, ‘2025년 송년의 밤’성황리 개최-홍천리버뉴스 - https://www.hcrivernews.com/1685",
+        "url": "https://www.hcrivernews.com/1685",
+        "id": "press-1788160013107-gsjzm",
+        "title": "사단법인 너브내행복나눔재단, ‘2025년 송년의 밤’성황리 개최"
+      },
+      {
+        "title": "가족센터, 다문화 인식 개선 콘테스트 시상식 개최",
+        "summary": "홍천군가족센터(센터장: 이상훈)는 지난 19일 홍천축협 갈마로지점 2층 대회의실에서 제7회 다문화 인식 개선 콘테스트(그림 공모전) 시상식을 개최했다.",
+        "id": "press-1787219476891-t28hy",
+        "outlet": "홍천인터넷뉴",
+        "date": "2026-08-20",
+        "url": "http://www.hcinews.co.kr/front/news/view.do?articleId=ARTICLE_00030539"
+      },
+      {
+        "summary": "사단법인 너브내행복나눔재단(이사장 윤성일)은 지난 12월 10일 오후 7시 크리스탈웨딩홀 4층에서 2025년 (사)너브내행복나눔재단 송년의 밤을 성황리에 개최했다.",
+        "title": "(사)너브내행복나눔재단, 송년의 밤 성황리 개최",
+        "url": "http://hcinews.co.kr/index.do?menu_id=00000523&menu_link=/front/news/icmsNews/view.do&articleId=ARTICLE_00028211",
+        "date": "2025-12-11",
+        "id": "press-1787117655036-yvwdc",
+        "outlet": "홍천인터넷뉴스"
+      },
+      {
+        "id": "press-1787117592312-g9jmm",
+        "summary": "(사)너브내행복나눔재단(이사장: 윤성일)은 지난 2월 9일 홍천군 관내 취약계층의 동절기 난방 문제를 해결하기 위해 지역 사회단체 및 기업과 손을 잡고 땔감 지원에 나섰다.",
+        "title": "너브내행복나눔재단, 취약계층 사랑의 화목 지원",
+        "outlet": "홍천인터넷뉴스",
+        "date": "2026-02-10",
+        "url": "http://hcinews.co.kr/index.do?menu_id=00000523&menu_link=/front/news/icmsNews/view.do&articleId=ARTICLE_00028755"
+      },
+      {
+        "summary": "(사)홍천유도스포츠클럽(이사장: 박태원)은 최근 클럽 회의실에서 윤성일정형외과의원(원장: 윤성일)와 상호협력 업무협약을 체결했다.",
+        "url": "http://hcinews.co.kr/index.do?menu_id=00000523&menu_link=/front/news/icmsNews/view.do&articleId=ARTICLE_00028819",
+        "outlet": "홍천인터넷뉴스",
+        "date": "2026-02-19",
+        "id": "press-1787117531421-6vzjg",
+        "title": "홍천유도스포츠클럽-윤성일정 형외과, MOU체결"
+      },
+      {
+        "date": "2026-04-21",
+        "outlet": "홍천인터넷뉴스",
+        "summary": "홍천군가족센터(센터장: 이상훈)는 지난 4월 18일부터 19일까지 1박 2일간 강원특별자치도 삼척시 일원에서 소속 임직원이 함께하는 2026년 직원교육 프로그램 행복한 쉼, 건강한 일터 만들기를 성황리에 마쳤다고 밝혔다.",
+        "url": "http://hcinews.co.kr/index.do?menu_id=00000523&menu_link=/front/news/icmsNews/view.do&articleId=ARTICLE_00029387",
+        "title": "너브내행복나눔재단-홍천군가족센터, 워크숍 개최",
+        "id": "press-1787117445083-fblno"
+      },
+      {
+        "url": "http://hcinews.co.kr/index.do?menu_id=00000562&menu_link=/front/news/icmsNews/view.do&articleId=ARTICLE_00029489",
+        "date": "2026-04-30",
+        "id": "press-1787117365655-nb19l",
+        "title": "너브내행복나눔재단 배분사업 후원금 전달식 개최",
+        "summary": "홍천군장애인복지관(관장: 허종국)은 지난 4월 28일 사단법인 너브내행복나눔재단(이사장: 윤성일)과 총 500만원 상당의 후원금과 후원품 전달식을 진행했다.",
+        "outlet": "홍천인터넷뉴스"
+      },
+      {
+        "id": "press-1787117126160-hyxsq",
+        "summary": "홍천군 관내 복지·교육 전문기관들이 지역사회 발전과 다문화가족 및 취약계층의 안정적인 정착 지원을 위해 손을 맞잡았다.",
+        "outlet": "홍천인터넷뉴스",
+        "date": "2026-06-12",
+        "title": "홍천 복지·교육기관, 지역 발전 위한 협력체계 구축",
+        "url": "http://hcinews.co.kr/index.do?menu_id=00000523&menu_link=/front/news/icmsNews/view.do&articleId=ARTICLE_00029888"
+      },
+      {
+        "date": "2026-06-18",
+        "summary": "(사)너브내행복나눔재단(이사장: 윤성일)은 지난 17일 홍천군가족센터 3층 대강당에서 2026년 호국보훈의 달 기념 헌신을 기억하는 나눔 행사를 개최했다.",
+        "url": "http://hcinews.co.kr/index.do?menu_id=00000523&menu_link=/front/news/icmsNews/view.do&articleId=ARTICLE_00029947",
+        "title": "너브내행복나눔재단 헌신을 기억하는 나눔행사 개최",
+        "outlet": "홍천인터넷뉴스",
+        "id": "press-1787117016203-eqx12"
+      },
+      {
+        "summary": "(사)너브내행복나눔재단(이사장: 윤성일)은 지난 7월 29일 오후 6시 30분 보혜사 대법당 2층에서 보혜사 신도회와 함께 2026 사랑 가득 장학금 전달식을 개최했다.",
+        "title": "너브내행복나눔재단·보혜사, 사랑 가득 장학금 전달",
+        "url": "http://hcinews.co.kr/index.do?menu_id=00000523&menu_link=/front/news/icmsNews/view.do&articleId=ARTICLE_00030358",
+        "date": "2026-07-30",
+        "outlet": "홍천인터넷뉴스",
+        "id": "press-1787116710277-nhaxz"
+      },
+      {
+        "id": "press-2026-04-01",
+        "date": "2026-04-09",
+        "url": "https://www.kwnews.co.kr/page/view/2026040815203813560",
+        "title": "[포토뉴스] 너브내행복나눔재단 홍천교육청에 장학금 전달",
+        "summary": "재단이 홍천교육지원청을 방문해 초등학생 대상 제3회 꿈나무 장학금 3,000만원을 전달한 소식을 사진과 함께 전했습니다.",
+        "outlet": "강원일보"
+      },
+      {
+        "date": "2026-02-27",
+        "outlet": "신아일보",
+        "url": "https://www.shinailbo.co.kr/news/articleView.html?idxno=2196797",
+        "summary": "재단이 2026년 제17차 정기총회를 열어 2025년도 사업실적과 결산을 승인하고, 지역 복지 유공자에게 감사패와 표창을 전달한 소식을 다뤘습니다.",
+        "title": "너브내행복나눔재단, 제17차 정기총회 개최",
+        "id": "press-2026-02-27"
+      },
+      {
+        "id": "press-2026-02-26",
+        "summary": "2026년 제17차 정기총회 소식을 다루며, 재단이 취약계층 지원과 지역 복지 네트워크 강화를 중심으로 2026년 사업계획을 보고했다고 전했습니다.",
+        "date": "2026-02-26",
+        "title": "너브내행복나눔재단, 2026년 정기총회 열어 2025년 결산 승인",
+        "outlet": "한국다문화인터넷신문",
+        "url": "https://www.xn--3e0bx5e0sbx9qba378ifzhyiursi7oc.com/bbs/board.php?bo_table=news&wr_id=4921"
+      },
+      {
+        "url": "https://www.smartfn.co.kr/news/articleView.html?idxno=129608",
+        "summary": "대명소노그룹이 2011년부터 이어온 홍천군 취약계층 학생 후원이 15년째를 맞았다며, 이번 후원금 1,000만원 전달식 소식을 전했습니다.",
+        "date": "2025-12-16",
+        "title": "대명소노그룹, 홍천 취약계층 학생에 1천만원 후원···15년째 나눔",
+        "outlet": "스마트에프엔",
+        "id": "press-2025-12-16-b"
+      },
+      {
+        "title": "홍천도시산림공원 토리숲 '2025년 제4회 세계문화축제'",
+        "url": "https://localsegye.co.kr/news/view/1065605576380983",
+        "id": "press-2025-09-27",
+        "date": "2025-09-27",
+        "summary": "재단 윤성일 이사장이 참석한 가운데 열린 제4회 세계문화축제에서 드론축구대회와 다문화 화합 프로그램이 진행된 현장을 소개했습니다.",
+        "outlet": "로컬세계"
+      },
+      {
+        "date": "2025-08-21",
+        "url": "https://www.naewoeilbo.com/news/articleView.html?idxno=2164766",
+        "summary": "재단 윤성일 이사장이 참석한 제6회 다문화인식개선 그림 공모전 시상식에서 어린이·청소년 150명이 수상한 소식을 전했습니다.",
+        "title": "홍천군, 다문화 사회 의식 고취하는 제6회 다문화인식개선 콘테스트 시상식 개최",
+        "outlet": "내외일보",
+        "id": "press-2025-08-21"
+      },
+      {
+        "id": "press-2025-08-14",
+        "summary": "강원도 양성평등기금 지원사업의 일환으로 재단이 지역 여성을 대상으로 운영 중인 K-POP 댄스교실 '댄스 ON' 등 여성 역량 강화 프로그램을 소개했습니다.",
+        "url": "https://www.womennews.co.kr/news/articleView.html?idxno=266085",
+        "title": "[강원도 양성평등기금 지원사업] 홍천군, 다양한 사업 추진 통해 여성 역량 강화 및 사회 참여 도모",
+        "date": "2025-08-14",
+        "outlet": "여성신문"
+      },
+      {
+        "outlet": "강원도민일보",
+        "date": "2025-03-14",
+        "title": "너브내행복나눔재단, 홍천교육지원청에 장학금 전달",
+        "id": "press-2025-03-14",
+        "summary": "재단과 홍천군가족센터가 공동으로 지역 초등학생 50명을 선발해 1인당 60만원씩 '꿈나무 장학금'을 지원한 소식을 다뤘습니다.",
+        "url": "https://www.kado.net/news/articleView.html?idxno=1298821"
+      },
+      {
+        "outlet": "강원일보",
+        "summary": "학업 의지가 강하거나 예체능 분야에 재능이 있는 초등학생 50명에게 장학증서를 전달한 꿈나무 장학금 사업 현장을 사진으로 전했습니다.",
+        "date": "2025-03-14",
+        "title": "[포토뉴스] 홍천 너브내행복나눔재단 꿈나무 장학금 전달",
+        "url": "https://www.kwnews.co.kr/page/view/2025031311442762611",
+        "id": "press-2025-03-13"
+      }
+    ]
+  },
+  "gallery": {
+    "updatedAt": "2026-09-17T14:05:39.607Z",
+    "categories": [
+      "장학금 전달 및 장학 사업",
+      "재단 사업, 행사 및 지역축제 연게",
+      "나눔행사 물품지원  배분사업 등",
+      "워크숍 및 야유회",
+      "다문화지원 지역사회 지원",
+      "월례회의 및 이사회의",
+      "지역현안 사업 등 간담회",
+      "재단 행사"
+    ],
+    "items": [
+      {
+        "storagePaths": [
+          "activities/1789633202528_5da925cb-4d01-4253-b313-9585c6df0868_KakaoTalk_20260917_170730228_05.jpg",
+          "activities/1789633195888_76ef7bb6-32f8-4dc2-b3b1-bbf498a3f3fa_KakaoTalk_20260917_170730228_01.jpg",
+          "activities/1789633199407_49fcdfcc-3a0e-42d9-a683-95869b88b4a8_KakaoTalk_20260917_170730228_03.jpg",
+          "activities/1789633206201_8a16b5e4-de62-4c78-8d53-c20a04bcf2a5_KakaoTalk_20260917_170730228_11.jpg",
+          "activities/1789633209453_6a82fa0b-7fe2-4a9f-a840-0fcbb1d1a2ba_KakaoTalk_20260917_170730228_16.jpg",
+          "activities/1789633212968_e176c7d0-746d-4ffe-8c59-7e49c8c1e8fd_KakaoTalk_20260917_170730228_15.jpg"
+        ],
+        "id": "gal-1789633216715",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1789633202528_5da925cb-4d01-4253-b313-9585c6df0868_KakaoTalk_20260917_170730228_05.jpg?alt=media&token=ab427665-70b7-4cff-9b8f-8dc251b2c99f",
+        "images": [
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1789633202528_5da925cb-4d01-4253-b313-9585c6df0868_KakaoTalk_20260917_170730228_05.jpg?alt=media&token=ab427665-70b7-4cff-9b8f-8dc251b2c99f",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1789633195888_76ef7bb6-32f8-4dc2-b3b1-bbf498a3f3fa_KakaoTalk_20260917_170730228_01.jpg?alt=media&token=8682bdaa-9c2e-46b6-b2ae-53e710c328e5",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1789633199407_49fcdfcc-3a0e-42d9-a683-95869b88b4a8_KakaoTalk_20260917_170730228_03.jpg?alt=media&token=3eb585f9-4cc8-4390-b9a5-1a137234d6a4",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1789633206201_8a16b5e4-de62-4c78-8d53-c20a04bcf2a5_KakaoTalk_20260917_170730228_11.jpg?alt=media&token=e85471f5-fc86-4c30-9f69-35a45e1eb5ac",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1789633209453_6a82fa0b-7fe2-4a9f-a840-0fcbb1d1a2ba_KakaoTalk_20260917_170730228_16.jpg?alt=media&token=cd11b2a1-c19f-4175-b0fb-d778ec799217",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1789633212968_e176c7d0-746d-4ffe-8c59-7e49c8c1e8fd_KakaoTalk_20260917_170730228_15.jpg?alt=media&token=550f8f27-ef53-46bb-b380-7d54231b3768"
+        ],
+        "location": "홍천군 관내",
+        "title": "2026년 3분기 이사회의 실시",
+        "category": "월례회의 및 이사회의",
+        "date": "2026-09-16",
+        "author": "재단 관리자",
+        "storagePath": "activities/1789633202528_5da925cb-4d01-4253-b313-9585c6df0868_KakaoTalk_20260917_170730228_05.jpg",
+        "thumbnailUrl": "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2Fthumbs%2F1789633205361_9a89a665-ade4-495d-845b-a4854cd3ff5d_KakaoTalk_20260917_170730228_05_thumb.jpg?alt=media&token=1d72a672-66d4-424d-bed5-777593f2eea1",
+        "thumbnails": [
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2Fthumbs%2F1789633205361_9a89a665-ade4-495d-845b-a4854cd3ff5d_KakaoTalk_20260917_170730228_05_thumb.jpg?alt=media&token=1d72a672-66d4-424d-bed5-777593f2eea1",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2Fthumbs%2F1789633198283_c747424b-f56a-41ed-8b50-cf4232d0703c_KakaoTalk_20260917_170730228_01_thumb.jpg?alt=media&token=b4009e64-ef9a-482e-8b38-8dd121bffddf",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2Fthumbs%2F1789633201449_ed0b708b-69c0-45a0-96af-a218fe546435_KakaoTalk_20260917_170730228_03_thumb.jpg?alt=media&token=2b36cebb-061a-493d-aad5-7d9e5290f3d9",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2Fthumbs%2F1789633208308_7e54ad03-73f0-4a79-b5ae-af3f59e931e6_KakaoTalk_20260917_170730228_11_thumb.jpg?alt=media&token=5f7da19b-94f9-4509-a85e-148d6f38fc2a",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2Fthumbs%2F1789633212121_78706241-00b5-4a0c-bc59-81120752c431_KakaoTalk_20260917_170730228_16_thumb.jpg?alt=media&token=674fc29f-a610-4d27-b2c5-9e26a36bcbf4",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2Fthumbs%2F1789633215435_88eeda2b-867d-4c51-8a4f-5670852cf882_KakaoTalk_20260917_170730228_15_thumb.jpg?alt=media&token=b4ff2060-8d95-4e2a-b84c-1dd87df56a58"
+        ],
+        "isProtected": true,
+        "description": "2026년 3분기 이사회의 실시\n\n  ㅁ 일  시: 2026. 9. 16.(수)\n  ㅁ 장  소: 홍천군가족센터 3층 강당\n  ㅁ 내  용: 사단법인 너브내행복나눔재단 3분기 이사회의"
+      },
+      {
+        "id": "gal-1788508878681",
+        "category": "지역현안 사업 등 간담회",
+        "storagePath": "activities/1788508866181_af054c13-50d1-4cfe-87c4-0a59dffdc630_KakaoTalk_20260903_134513188_01.jpg",
+        "images": [
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788508866181_af054c13-50d1-4cfe-87c4-0a59dffdc630_KakaoTalk_20260903_134513188_01.jpg?alt=media&token=9e5451ce-9a0b-4df6-a74b-6ebce3954c32",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788508868073_1c50a710-2691-43e1-8abb-7d21e8b33b3c_KakaoTalk_20260903_134513188_03.jpg?alt=media&token=f178898d-68df-4bdb-9f9f-012aba5696cb",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788508870460_aa4b561f-1fca-492d-8a80-25dd7c93272b_KakaoTalk_20260903_134513188.jpg?alt=media&token=1cd68a13-ba2e-4b2b-957b-a0a9d381e844",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788508872546_a3b77959-3d48-415d-8660-8f3a4c865663_KakaoTalk_20260903_140635122.jpg?alt=media&token=085af2b8-cb73-42a4-bcac-70e5b71f5d7f",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788508874635_4f5a8a7a-f5b7-4176-92b1-0deb06e81a0c_KakaoTalk_20260903_134513188_04.jpg?alt=media&token=52a8d34f-6612-4bb5-8eb7-f3fc11d1a640",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788508877257_69a8a603-bdc4-4757-823c-95bdc6262307_KakaoTalk_20260903_134513188_05.jpg?alt=media&token=7648a4b1-8173-423c-8d07-614e8be2a904"
+        ],
+        "storagePaths": [
+          "activities/1788508866181_af054c13-50d1-4cfe-87c4-0a59dffdc630_KakaoTalk_20260903_134513188_01.jpg",
+          "activities/1788508868073_1c50a710-2691-43e1-8abb-7d21e8b33b3c_KakaoTalk_20260903_134513188_03.jpg",
+          "activities/1788508870460_aa4b561f-1fca-492d-8a80-25dd7c93272b_KakaoTalk_20260903_134513188.jpg",
+          "activities/1788508872546_a3b77959-3d48-415d-8660-8f3a4c865663_KakaoTalk_20260903_140635122.jpg",
+          "activities/1788508874635_4f5a8a7a-f5b7-4176-92b1-0deb06e81a0c_KakaoTalk_20260903_134513188_04.jpg",
+          "activities/1788508877257_69a8a603-bdc4-4757-823c-95bdc6262307_KakaoTalk_20260903_134513188_05.jpg"
+        ],
+        "author": "재단 관리자",
+        "date": "2026-09-02",
+        "title": "2026년 지역 현안사업 도의원 초청 간담회 및 재단.센터 간 소통회의",
+        "description": "2026년 지역 현안사업 도의원 초청 간담회 및 (사)너브내행복나눔재단과 홍천군가족센터 간 소통회의",
+        "isProtected": true,
+        "location": "홍천군 관내",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788508866181_af054c13-50d1-4cfe-87c4-0a59dffdc630_KakaoTalk_20260903_134513188_01.jpg?alt=media&token=9e5451ce-9a0b-4df6-a74b-6ebce3954c32"
+      },
+      {
+        "thumbnails": [
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788508641263_6b958729-b7c4-4808-a338-23d3a8946539_KakaoTalk_20260903_154841958.jpg?alt=media&token=8d34b44b-f6f1-431e-a0d2-b8e80cf4bc62",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788508636407_60988775-e0e6-46c9-bbcc-7d9017f75dce_KakaoTalk_20260903_154841958_01.jpg?alt=media&token=edf6d522-e7a0-4c09-b906-d6d20bc368e1",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788508639712_1de525a4-b3fa-4bc6-8c52-edc7c681682e_KakaoTalk_20260903_154841958_02.jpg?alt=media&token=ef0194d3-a2b7-4f9a-ac5a-c64e742f53c8"
+        ],
+        "isProtected": true,
+        "description": "제46회 장애인의 날 기념 시각장애인연합회 장학후원금 및 장학증서 전달",
+        "images": [
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788508641263_6b958729-b7c4-4808-a338-23d3a8946539_KakaoTalk_20260903_154841958.jpg?alt=media&token=8d34b44b-f6f1-431e-a0d2-b8e80cf4bc62",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788508636407_60988775-e0e6-46c9-bbcc-7d9017f75dce_KakaoTalk_20260903_154841958_01.jpg?alt=media&token=edf6d522-e7a0-4c09-b906-d6d20bc368e1",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788508639712_1de525a4-b3fa-4bc6-8c52-edc7c681682e_KakaoTalk_20260903_154841958_02.jpg?alt=media&token=ef0194d3-a2b7-4f9a-ac5a-c64e742f53c8"
+        ],
+        "storagePath": "activities/1788508641263_6b958729-b7c4-4808-a338-23d3a8946539_KakaoTalk_20260903_154841958.jpg",
+        "thumbnailUrl": "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788508641263_6b958729-b7c4-4808-a338-23d3a8946539_KakaoTalk_20260903_154841958.jpg?alt=media&token=8d34b44b-f6f1-431e-a0d2-b8e80cf4bc62",
+        "category": "장학금 전달 및 장학 사업",
+        "id": "gal-1788508644259",
+        "title": "장학후원금 전달(시각장애인연합회 장학후원금 증서 전달)",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788508641263_6b958729-b7c4-4808-a338-23d3a8946539_KakaoTalk_20260903_154841958.jpg?alt=media&token=8d34b44b-f6f1-431e-a0d2-b8e80cf4bc62",
+        "location": "홍천군 관내",
+        "date": "2026-08-26",
+        "storagePaths": [
+          "activities/1788508641263_6b958729-b7c4-4808-a338-23d3a8946539_KakaoTalk_20260903_154841958.jpg",
+          "activities/1788508636407_60988775-e0e6-46c9-bbcc-7d9017f75dce_KakaoTalk_20260903_154841958_01.jpg",
+          "activities/1788508639712_1de525a4-b3fa-4bc6-8c52-edc7c681682e_KakaoTalk_20260903_154841958_02.jpg"
+        ],
+        "author": "재단 관리자"
+      },
+      {
+        "location": "홍천군 관내",
+        "images": [
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788508353873_608fc9a9-2575-4656-9da8-da5e94be01cc_KakaoTalk_20260827_100633459.jpg?alt=media&token=92905840-2f25-44ff-bb64-d159904ac9b3",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788508355692_6221396d-70ca-4645-a6c0-861a7c51e547_KakaoTalk_20260827_100658688.jpg?alt=media&token=b85ae6d4-6a65-40e4-a51a-bbf960cb2be8",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788508357151_ef6cb0a5-b846-4464-8343-fc36b05616bc_KakaoTalk_20260827_100633459_02.jpg?alt=media&token=084961a8-796c-42e0-8151-64eeb8974532",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788508359649_d3866af4-6f59-40ea-a20d-655c40dbef2c_KakaoTalk_20260827_100633459_01.jpg?alt=media&token=0c2df7b6-492f-48bb-9b01-d1b9df790f58"
+        ],
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788508353873_608fc9a9-2575-4656-9da8-da5e94be01cc_KakaoTalk_20260827_100633459.jpg?alt=media&token=92905840-2f25-44ff-bb64-d159904ac9b3",
+        "storagePath": "activities/1788508353873_608fc9a9-2575-4656-9da8-da5e94be01cc_KakaoTalk_20260827_100633459.jpg",
+        "storagePaths": [
+          "activities/1788508353873_608fc9a9-2575-4656-9da8-da5e94be01cc_KakaoTalk_20260827_100633459.jpg",
+          "activities/1788508355692_6221396d-70ca-4645-a6c0-861a7c51e547_KakaoTalk_20260827_100658688.jpg",
+          "activities/1788508357151_ef6cb0a5-b846-4464-8343-fc36b05616bc_KakaoTalk_20260827_100633459_02.jpg",
+          "activities/1788508359649_d3866af4-6f59-40ea-a20d-655c40dbef2c_KakaoTalk_20260827_100633459_01.jpg"
+        ],
+        "date": "2026-08-19",
+        "isProtected": true,
+        "description": "제7회 인식개선콘테스트 시상식, 홍천군어린이집연합회 업무협약식, 보혜사 장학금 전달식",
+        "id": "gal-1788508362246",
+        "author": "재단 관리자",
+        "category": "재단 사업, 행사 및 지역축제 연게",
+        "title": "인식개선 콘테스트 및 보혜사 장학금 전달식"
+      },
+      {
+        "category": "재단 사업, 행사 및 지역축제 연게",
+        "isProtected": true,
+        "description": "2026년 별빛음악 맥주축제 전야제 및 8월 월례회의 연계",
+        "images": [
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788506551956_fd968454-2262-4c1c-a178-e36ac14eac7e_KakaoTalk_20260810_154059294_08.jpg?alt=media&token=7efcf007-fe76-4704-a62e-ae14bdea663f",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788506553850_74eb6b04-a560-4a5f-ae0f-7d99faab34f0_KakaoTalk_20260810_154059294_11.jpg?alt=media&token=6365f7a8-3dc4-4c8b-ba49-1fadecf494f9",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788506555615_d4bf3bbb-27ea-433b-ac49-e3066a1e64e4_KakaoTalk_20260810_154059294_13.jpg?alt=media&token=dce13691-c135-4ced-a9df-4ae629248495",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788506568246_7f3c7998-3df4-45a8-8b0e-58ba4a0afa4b_KakaoTalk_20260810_154059294_23.jpg?alt=media&token=a71ccd21-a720-4466-a590-21e620d70c04",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788506570027_2b6c4e3f-4781-4496-9298-7d7e6ea1f34e_KakaoTalk_20260810_154059294_12.jpg?alt=media&token=0ea957a1-54fc-49f3-b6ae-9b7a5da2fa18",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788506571945_b3f375cd-1586-4c45-9126-977d2fc8e995_KakaoTalk_20260810_154059294_20.jpg?alt=media&token=53dc321d-fa74-42a2-9ff0-bdaa8023ecf6",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788506574274_1f32117d-f799-48b7-8b66-a6540b9bba9a_KakaoTalk_20260810_154059294_27.jpg?alt=media&token=948844e4-8fd8-4051-b8cd-778a69edf05c"
+        ],
+        "title": "2026년 별빛음악 맥주축제 및 8월 월례회의",
+        "author": "재단 관리자",
+        "storagePath": "activities/1788506551956_fd968454-2262-4c1c-a178-e36ac14eac7e_KakaoTalk_20260810_154059294_08.jpg",
+        "date": "2026-08-05",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788506551956_fd968454-2262-4c1c-a178-e36ac14eac7e_KakaoTalk_20260810_154059294_08.jpg?alt=media&token=7efcf007-fe76-4704-a62e-ae14bdea663f",
+        "storagePaths": [
+          "activities/1788506551956_fd968454-2262-4c1c-a178-e36ac14eac7e_KakaoTalk_20260810_154059294_08.jpg",
+          "activities/1788506553850_74eb6b04-a560-4a5f-ae0f-7d99faab34f0_KakaoTalk_20260810_154059294_11.jpg",
+          "activities/1788506555615_d4bf3bbb-27ea-433b-ac49-e3066a1e64e4_KakaoTalk_20260810_154059294_13.jpg",
+          "activities/1788506568246_7f3c7998-3df4-45a8-8b0e-58ba4a0afa4b_KakaoTalk_20260810_154059294_23.jpg",
+          "activities/1788506570027_2b6c4e3f-4781-4496-9298-7d7e6ea1f34e_KakaoTalk_20260810_154059294_12.jpg",
+          "activities/1788506571945_b3f375cd-1586-4c45-9126-977d2fc8e995_KakaoTalk_20260810_154059294_20.jpg",
+          "activities/1788506574274_1f32117d-f799-48b7-8b66-a6540b9bba9a_KakaoTalk_20260810_154059294_27.jpg"
+        ],
+        "id": "gal-1788506575566",
+        "location": "홍천군 관내"
+      },
+      {
+        "location": "홍천군 관내",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788506077712_acd36629-3c12-499b-b302-ec5dbf4ffda4_KakaoTalk_20260730_150010265_09.jpg?alt=media&token=016e0d7c-64da-4d38-af1d-14fb9cf74dec",
+        "images": [
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788506077712_acd36629-3c12-499b-b302-ec5dbf4ffda4_KakaoTalk_20260730_150010265_09.jpg?alt=media&token=016e0d7c-64da-4d38-af1d-14fb9cf74dec",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788506079617_6daa5b04-0d4f-460d-b754-c4cec171992d_KakaoTalk_20260730_150010265_10.jpg?alt=media&token=5de95bf9-e4d9-4aca-ad25-567b0d3fe24d",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788506082286_02d3e990-575d-44c3-b02a-785a263b2eb9_KakaoTalk_20260730_150010265_11.jpg?alt=media&token=63d2a005-1827-4553-a36a-e80900b93083",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788506083909_b52a539d-73fd-4f06-b3a3-31da55ec26b0_KakaoTalk_20260730_150010265_23.jpg?alt=media&token=e5a7c90f-8d0b-41ca-bcae-6c28f944f175",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788506085405_ed555869-ce68-4023-a6c6-cac182926aed_KakaoTalk_20260730_150010265_14.jpg?alt=media&token=33901a0e-178e-45c5-8023-6ee1cc8f4b65",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788506087602_d7a7e967-64a8-4ba8-9b73-43400eab7eb5_KakaoTalk_20260730_150023803_01.jpg?alt=media&token=bd0f04ae-7fbe-43d3-9762-0f9c187a29fc",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788506099900_c0247b57-1204-47ad-8b6c-de2797e0ae3e_KakaoTalk_20260730_150023803_03.jpg?alt=media&token=62afad28-6559-40f7-88e6-7bf31e86f562",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788506102019_809e2286-fab3-45a4-bc66-d65c0f7137ee_KakaoTalk_20260730_150023803_07.jpg?alt=media&token=4daecf71-5468-4d08-8c03-628fdf3d2cb2"
+        ],
+        "isProtected": true,
+        "description": "보혜사 장학금 전달식 및 7월 월례회의 연계",
+        "storagePaths": [
+          "activities/1788506077712_acd36629-3c12-499b-b302-ec5dbf4ffda4_KakaoTalk_20260730_150010265_09.jpg",
+          "activities/1788506079617_6daa5b04-0d4f-460d-b754-c4cec171992d_KakaoTalk_20260730_150010265_10.jpg",
+          "activities/1788506082286_02d3e990-575d-44c3-b02a-785a263b2eb9_KakaoTalk_20260730_150010265_11.jpg",
+          "activities/1788506083909_b52a539d-73fd-4f06-b3a3-31da55ec26b0_KakaoTalk_20260730_150010265_23.jpg",
+          "activities/1788506085405_ed555869-ce68-4023-a6c6-cac182926aed_KakaoTalk_20260730_150010265_14.jpg",
+          "activities/1788506087602_d7a7e967-64a8-4ba8-9b73-43400eab7eb5_KakaoTalk_20260730_150023803_01.jpg",
+          "activities/1788506099900_c0247b57-1204-47ad-8b6c-de2797e0ae3e_KakaoTalk_20260730_150023803_03.jpg",
+          "activities/1788506102019_809e2286-fab3-45a4-bc66-d65c0f7137ee_KakaoTalk_20260730_150023803_07.jpg"
+        ],
+        "date": "2026-07-29",
+        "author": "재단 관리자",
+        "title": "2026년 보혜사 장학금 전달 및 7월 월례회의 연계",
+        "id": "gal-1788506104297",
+        "storagePath": "activities/1788506077712_acd36629-3c12-499b-b302-ec5dbf4ffda4_KakaoTalk_20260730_150010265_09.jpg",
+        "category": "명절 나눔"
+      },
+      {
+        "id": "gal-1788488004767",
+        "author": "재단 관리자",
+        "storagePath": "activities/1788505238559_42b398e7-1e81-473d-9a16-24da97d60feb_KakaoTalk_20260727_165331544_20.jpg",
+        "category": "워크숍 및 야유회",
+        "storagePaths": [
+          "activities/1788505238559_42b398e7-1e81-473d-9a16-24da97d60feb_KakaoTalk_20260727_165331544_20.jpg",
+          "activities/1788505240426_ef41fdda-7435-4c7e-9e37-3c5bdd070422_KakaoTalk_20260727_165331544_24.jpg",
+          "activities/1788505242637_778e7a9c-8b8c-4b7c-8568-213624a198e6_KakaoTalk_20260727_165331544_11.jpg",
+          "activities/1788505245119_439de7dc-dc80-40bd-a49b-aeadf0ff2ebc_KakaoTalk_20260727_165331544_25.jpg",
+          "activities/1788505246982_ddd88b87-a32b-44b3-b25c-ad802240e6d5_KakaoTalk_20260727_165331544_27.jpg",
+          "activities/1788505248818_9a6dff67-24c9-4328-8a05-99b3c1e9171a_KakaoTalk_20260727_165343495_23.jpg",
+          "activities/1788505250530_521fb76d-24cd-40e3-b46e-7ff9825e1510_KakaoTalk_20260727_165343495_03.jpg",
+          "activities/1788505251863_0df800dc-844c-4c57-9711-0234fe683fcc_KakaoTalk_20260727_165331544_28.jpg"
+        ],
+        "location": "홍천군 관내 홍천38민박",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788505238559_42b398e7-1e81-473d-9a16-24da97d60feb_KakaoTalk_20260727_165331544_20.jpg?alt=media&token=e49900ee-8309-4cf1-b915-dbc2178d6f0b",
+        "date": "2026-07-24",
+        "images": [
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788505238559_42b398e7-1e81-473d-9a16-24da97d60feb_KakaoTalk_20260727_165331544_20.jpg?alt=media&token=e49900ee-8309-4cf1-b915-dbc2178d6f0b",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788505240426_ef41fdda-7435-4c7e-9e37-3c5bdd070422_KakaoTalk_20260727_165331544_24.jpg?alt=media&token=9f90c6c9-0947-4423-9ba2-d407f66512e8",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788505242637_778e7a9c-8b8c-4b7c-8568-213624a198e6_KakaoTalk_20260727_165331544_11.jpg?alt=media&token=d25832c9-ff0a-4ee4-8b0f-076558ad9e73",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788505245119_439de7dc-dc80-40bd-a49b-aeadf0ff2ebc_KakaoTalk_20260727_165331544_25.jpg?alt=media&token=7b799b4c-1f36-4607-abc1-e06e98c98f29",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788505246982_ddd88b87-a32b-44b3-b25c-ad802240e6d5_KakaoTalk_20260727_165331544_27.jpg?alt=media&token=10c4f032-2316-4e69-9c6a-9d866756e1bc",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788505248818_9a6dff67-24c9-4328-8a05-99b3c1e9171a_KakaoTalk_20260727_165343495_23.jpg?alt=media&token=0169461c-fd70-4c73-84bb-39f307bff407",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788505250530_521fb76d-24cd-40e3-b46e-7ff9825e1510_KakaoTalk_20260727_165343495_03.jpg?alt=media&token=1a4932e4-1978-4692-9425-1e16bcff6101",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788505251863_0df800dc-844c-4c57-9711-0234fe683fcc_KakaoTalk_20260727_165331544_28.jpg?alt=media&token=673d432f-31f5-4601-bc9c-3e096204b58a"
+        ],
+        "description": "2026년 하계 야유회",
+        "isProtected": true,
+        "title": "2026년 야유회"
+      },
+      {
+        "category": "나눔행사 물품지원  배분사업 등",
+        "author": "재단 관리자",
+        "title": "2026년 삼계탕 나눔봉사",
+        "date": "2026-07-11",
+        "storagePaths": [
+          "activities/1788504501577_ca52ab8d-5209-481f-a75d-e3d700f80271_KakaoTalk_20260728_150305039_03.jpg",
+          "activities/1788504503168_1a3999d8-4267-4188-82a4-19fa761d02bc_KakaoTalk_20260728_150305039_28.jpg",
+          "activities/1788504504406_24a5e103-2d30-4c0f-a086-fa7db3e44d58_KakaoTalk_20260728_150305039_23.jpg",
+          "activities/1788504506576_3e5b986b-73a2-4689-be75-93f35a57129a_KakaoTalk_20260728_150308674_01.jpg",
+          "activities/1788504509178_e423bc81-e1fe-41e7-b121-c7c3b87ba3f0_KakaoTalk_20260728_150305039_19.jpg",
+          "activities/1788504511167_348f8f3c-cb5b-4b04-b6de-ed5b0c91fc3a_KakaoTalk_20260728_150308674_04.jpg",
+          "activities/1788504513395_0766d2b1-9e42-4ab3-95ef-da81a5e9842a_KakaoTalk_20260728_150308674_02.jpg",
+          "activities/1788504514932_ce2959e2-6a38-4c4e-8314-ad8f0ac554c1_KakaoTalk_20260728_150308674_06.jpg",
+          "activities/1788504516155_6d172211-ee31-4d3a-8698-a29ba43eedcc_KakaoTalk_20260728_162128578_01.jpg"
+        ],
+        "description": "2026년 무더위에 취약한 어르신들과 이웃들을 위해 자원봉사자들과 삼계탕 250인분 나눔 전달",
+        "isProtected": true,
+        "id": "gal-1788487985356",
+        "storagePath": "activities/1788504501577_ca52ab8d-5209-481f-a75d-e3d700f80271_KakaoTalk_20260728_150305039_03.jpg",
+        "images": [
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788504501577_ca52ab8d-5209-481f-a75d-e3d700f80271_KakaoTalk_20260728_150305039_03.jpg?alt=media&token=68b64c34-7b96-463d-b147-99f03759296d",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788504503168_1a3999d8-4267-4188-82a4-19fa761d02bc_KakaoTalk_20260728_150305039_28.jpg?alt=media&token=7308f09f-e293-4d0b-988c-185b1198e49c",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788504504406_24a5e103-2d30-4c0f-a086-fa7db3e44d58_KakaoTalk_20260728_150305039_23.jpg?alt=media&token=4ac1d648-05c3-474e-b09b-3b83a6f6169a",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788504506576_3e5b986b-73a2-4689-be75-93f35a57129a_KakaoTalk_20260728_150308674_01.jpg?alt=media&token=e4171549-4f4b-4b0f-9454-57efde224ce1",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788504509178_e423bc81-e1fe-41e7-b121-c7c3b87ba3f0_KakaoTalk_20260728_150305039_19.jpg?alt=media&token=004b5111-0a3b-45b4-b0ff-d194c44ee54d",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788504511167_348f8f3c-cb5b-4b04-b6de-ed5b0c91fc3a_KakaoTalk_20260728_150308674_04.jpg?alt=media&token=253dfff5-2f9a-413c-a713-ccdb0154b8f9",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788504513395_0766d2b1-9e42-4ab3-95ef-da81a5e9842a_KakaoTalk_20260728_150308674_02.jpg?alt=media&token=b8476c4d-1972-473d-847d-9fe8f4f99609",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788504514932_ce2959e2-6a38-4c4e-8314-ad8f0ac554c1_KakaoTalk_20260728_150308674_06.jpg?alt=media&token=c66156c5-ddf7-4049-910b-7678e916e510",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788504516155_6d172211-ee31-4d3a-8698-a29ba43eedcc_KakaoTalk_20260728_162128578_01.jpg?alt=media&token=6c7f6673-acab-4297-b02d-b8eae8f060b9"
+        ],
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788504501577_ca52ab8d-5209-481f-a75d-e3d700f80271_KakaoTalk_20260728_150305039_03.jpg?alt=media&token=68b64c34-7b96-463d-b147-99f03759296d",
+        "location": "북방면 복지회관"
+      },
+      {
+        "author": "재단 관리자",
+        "category": "월례회의 및 이사회의",
+        "title": "2026년 6월 월례회의",
+        "isProtected": true,
+        "description": "(사)너브내행복나눔재단 6월 월례회의",
+        "date": "2026-06-24",
+        "id": "gal-1787185630326",
+        "storagePath": "activities/1788504179297_39bd4c13-d727-4630-9b0c-409d302a0b5b_KakaoTalk_20260625_161446142_05.jpg",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788504179297_39bd4c13-d727-4630-9b0c-409d302a0b5b_KakaoTalk_20260625_161446142_05.jpg?alt=media&token=c7723984-5bd7-41a8-9d7e-e8d041dd2465",
+        "storagePaths": [
+          "activities/1788504179297_39bd4c13-d727-4630-9b0c-409d302a0b5b_KakaoTalk_20260625_161446142_05.jpg",
+          "activities/1788504180842_d5b1a6bd-ee2d-4539-83ad-e9bc8e0acecf_KakaoTalk_20260625_161446142_03.jpg",
+          "activities/1788504182387_25a9d80d-c78f-41ef-b023-6a70b5cca0b1_KakaoTalk_20260625_161446142_10.jpg",
+          "activities/1788504183521_8d2d012f-597b-436d-96ea-b74424633d18_KakaoTalk_20260625_161446142.jpg"
+        ],
+        "images": [
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788504179297_39bd4c13-d727-4630-9b0c-409d302a0b5b_KakaoTalk_20260625_161446142_05.jpg?alt=media&token=c7723984-5bd7-41a8-9d7e-e8d041dd2465",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788504180842_d5b1a6bd-ee2d-4539-83ad-e9bc8e0acecf_KakaoTalk_20260625_161446142_03.jpg?alt=media&token=8e1b3d0a-0224-416d-887c-91e60ec34e85",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788504182387_25a9d80d-c78f-41ef-b023-6a70b5cca0b1_KakaoTalk_20260625_161446142_10.jpg?alt=media&token=12be0ce5-c8b7-413c-ac2e-4de105a94ad8",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788504183521_8d2d012f-597b-436d-96ea-b74424633d18_KakaoTalk_20260625_161446142.jpg?alt=media&token=e9cab9ea-be55-4e29-a0d2-7f6fb929f7cc"
+        ],
+        "location": "홍천군가족센터 3층 강당"
+      },
+      {
+        "author": "재단 관리자",
+        "id": "gal-1787105477436",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788503745472_722fa891-d7be-49b4-90d9-fc47d7832bc3_%ED%99%88%ED%94%BC_%EC%97%85%EB%A1%9C%EB%93%9C%EC%9A%A9_%EC%82%AC%EC%A7%84_1.jpg?alt=media&token=36f3ebd2-d195-4f9e-8bd7-1f7399eb9979",
+        "storagePaths": [
+          "activities/1788503745472_722fa891-d7be-49b4-90d9-fc47d7832bc3_홈피_업로드용_사진_1.jpg",
+          "activities/1788503747394_732ec1ad-3ecc-41d3-940b-c12c93f11f09_홈피_업로드용_사진_2.jpg",
+          "activities/1788503749076_8d29b1d9-8947-4d6f-bc07-342721c4c4d8_홈피_업로드용_사진_3.jpg",
+          "activities/1788503751052_33808c51-d8d6-44a7-95a0-bf7b38e0802a_홈피_업로드용_사진_4.jpg"
+        ],
+        "location": "홍천군가족센터 3층 강당",
+        "description": "2026년 호국보훈의 달을 맞아 국가를 위해 헌신하신 분들의 숭고한 희생과 공헌에 감사의 뜻 전달",
+        "isProtected": true,
+        "title": "2026년 호국보훈의 달 기념 생필품지원 전달식",
+        "storagePath": "activities/1788503745472_722fa891-d7be-49b4-90d9-fc47d7832bc3_홈피_업로드용_사진_1.jpg",
+        "category": "나눔행사 물품지원  배분사업 등",
+        "date": "2026-06-17",
+        "images": [
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788503745472_722fa891-d7be-49b4-90d9-fc47d7832bc3_%ED%99%88%ED%94%BC_%EC%97%85%EB%A1%9C%EB%93%9C%EC%9A%A9_%EC%82%AC%EC%A7%84_1.jpg?alt=media&token=36f3ebd2-d195-4f9e-8bd7-1f7399eb9979",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788503747394_732ec1ad-3ecc-41d3-940b-c12c93f11f09_%ED%99%88%ED%94%BC_%EC%97%85%EB%A1%9C%EB%93%9C%EC%9A%A9_%EC%82%AC%EC%A7%84_2.jpg?alt=media&token=b24c7523-c454-417e-ab72-97ef2fffe5e9",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788503749076_8d29b1d9-8947-4d6f-bc07-342721c4c4d8_%ED%99%88%ED%94%BC_%EC%97%85%EB%A1%9C%EB%93%9C%EC%9A%A9_%EC%82%AC%EC%A7%84_3.jpg?alt=media&token=1288e3d7-2fef-4eb2-8d5c-a7981d97e087",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788503751052_33808c51-d8d6-44a7-95a0-bf7b38e0802a_%ED%99%88%ED%94%BC_%EC%97%85%EB%A1%9C%EB%93%9C%EC%9A%A9_%EC%82%AC%EC%A7%84_4.jpg?alt=media&token=622a3cca-d38d-4610-8bed-afb4b9d54e0d"
+        ]
+      },
+      {
+        "storagePath": "activities/1788502982479_04f23993-3f86-4913-9696-a40e30a025b9_KakaoTalk_20260622_163923897_29.jpg",
+        "category": "월례회의 및 이사회의",
+        "title": "2026년 2분기 정기이사회(호국보훈의달 기념 연계)",
+        "images": [
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788502982479_04f23993-3f86-4913-9696-a40e30a025b9_KakaoTalk_20260622_163923897_29.jpg?alt=media&token=487de657-bd7d-48fa-b105-71f7fde605d8",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788502983814_f60fb7a2-359f-472c-80ca-1b1d2e793590_KakaoTalk_20260622_163944149_22.jpg?alt=media&token=9ed45823-e250-4f9a-a028-412055f87f9e",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788502985720_2bde6e3e-d102-40c8-822a-576ba771712f_KakaoTalk_20260622_163944149_23.jpg?alt=media&token=89d5dd43-e7ea-48fc-ba2d-81a3567d91e0",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788502988249_8f2ac792-0530-411b-86d8-5c4e6f60714a_KakaoTalk_20260622_163944149_24.jpg?alt=media&token=81e56819-e519-4db7-8761-469a0dac60b3"
+        ],
+        "storagePaths": [
+          "activities/1788502982479_04f23993-3f86-4913-9696-a40e30a025b9_KakaoTalk_20260622_163923897_29.jpg",
+          "activities/1788502983814_f60fb7a2-359f-472c-80ca-1b1d2e793590_KakaoTalk_20260622_163944149_22.jpg",
+          "activities/1788502985720_2bde6e3e-d102-40c8-822a-576ba771712f_KakaoTalk_20260622_163944149_23.jpg",
+          "activities/1788502988249_8f2ac792-0530-411b-86d8-5c4e6f60714a_KakaoTalk_20260622_163944149_24.jpg"
+        ],
+        "author": "재단 관리자",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788502982479_04f23993-3f86-4913-9696-a40e30a025b9_KakaoTalk_20260622_163923897_29.jpg?alt=media&token=487de657-bd7d-48fa-b105-71f7fde605d8",
+        "id": "gal-1786923448210",
+        "location": "홍천군가족센터 3층 강당",
+        "date": "2026-06-17",
+        "description": "(사)너브내행복나눔재단 2분기 정기 이사회",
+        "isProtected": true
+      },
+      {
+        "storagePath": "activities/1788502833250_dc5fb520-9f6f-45e7-89a5-cb1b120f7993_260527_월례회의_01.jpg",
+        "author": "재단 관리자",
+        "id": "gal-1786739985424",
+        "category": "월례회의 및 이사회의",
+        "title": "2026년 5월 월례회의",
+        "storagePaths": [
+          "activities/1788502833250_dc5fb520-9f6f-45e7-89a5-cb1b120f7993_260527_월례회의_01.jpg",
+          "activities/1788502835509_6b6709c8-8205-42b8-810e-3695344d7a77_KakaoTalk_20260528_111428722_08.jpg",
+          "activities/1788502837683_7036fcca-dffa-4d98-b93f-210892bef621_KakaoTalk_20260528_111446346_27.jpg",
+          "activities/1788502840033_2df4a031-5e25-4d00-89f6-e3a7537ff6ca_KakaoTalk_20260528_111450401_01.jpg"
+        ],
+        "date": "2026-05-27",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788502833250_dc5fb520-9f6f-45e7-89a5-cb1b120f7993_260527_%EC%9B%94%EB%A1%80%ED%9A%8C%EC%9D%98_01.jpg?alt=media&token=5b3e02af-9eb3-4e04-a54b-e0d20513c962",
+        "location": "홍천군가족센터 3층 강당",
+        "isProtected": true,
+        "description": "(사)너브내행복나눔재단 5월 월례회의",
+        "images": [
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788502833250_dc5fb520-9f6f-45e7-89a5-cb1b120f7993_260527_%EC%9B%94%EB%A1%80%ED%9A%8C%EC%9D%98_01.jpg?alt=media&token=5b3e02af-9eb3-4e04-a54b-e0d20513c962",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788502835509_6b6709c8-8205-42b8-810e-3695344d7a77_KakaoTalk_20260528_111428722_08.jpg?alt=media&token=f19906ba-ebc6-417b-bf9e-dc545446a702",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788502837683_7036fcca-dffa-4d98-b93f-210892bef621_KakaoTalk_20260528_111446346_27.jpg?alt=media&token=b3f8ef23-9bde-487f-81a0-f22dd25d352d",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788502840033_2df4a031-5e25-4d00-89f6-e3a7537ff6ca_KakaoTalk_20260528_111450401_01.jpg?alt=media&token=199f552d-d87d-499d-b98c-d1cfba5c373c"
+        ]
+      },
+      {
+        "author": "재단 관리자",
+        "storagePaths": [
+          "activities/1788502603417_b0b001ef-119e-4ca7-806c-7ac57856f803_KakaoTalk_20260810_170838679.jpg",
+          "activities/1788502605439_58bc7c1f-b3e5-429f-a56e-6e830db289dd_KakaoTalk_20260810_170853959_14.jpg",
+          "activities/1788502607609_a680059f-41ca-442e-a58b-83d112c8d139_KakaoTalk_20260810_170853959_18.jpg",
+          "activities/1788502609133_aaf44aff-14cf-4f30-b9e1-2cd258b3869a_KakaoTalk_20260810_170911684_07.jpg",
+          "activities/1788502610500_0b5db0d2-0d5f-42fb-b0d7-6748eb824bbd_KakaoTalk_20260810_170853959_29.jpg"
+        ],
+        "description": "6월 월례회의",
+        "isProtected": true,
+        "id": "gal-1786737658605",
+        "location": "삼척일원",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788502603417_b0b001ef-119e-4ca7-806c-7ac57856f803_KakaoTalk_20260810_170838679.jpg?alt=media&token=31619bf7-450a-4d6c-9fb9-98b8a7332d82",
+        "storagePath": "activities/1788502603417_b0b001ef-119e-4ca7-806c-7ac57856f803_KakaoTalk_20260810_170838679.jpg",
+        "category": "워크숍 및 야유회",
+        "images": [
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788502603417_b0b001ef-119e-4ca7-806c-7ac57856f803_KakaoTalk_20260810_170838679.jpg?alt=media&token=31619bf7-450a-4d6c-9fb9-98b8a7332d82",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788502605439_58bc7c1f-b3e5-429f-a56e-6e830db289dd_KakaoTalk_20260810_170853959_14.jpg?alt=media&token=edf12f2f-bf04-428a-b03c-d56f7d6f6162",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788502607609_a680059f-41ca-442e-a58b-83d112c8d139_KakaoTalk_20260810_170853959_18.jpg?alt=media&token=313740ad-29db-48a8-a18e-79398afa64dc",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788502609133_aaf44aff-14cf-4f30-b9e1-2cd258b3869a_KakaoTalk_20260810_170911684_07.jpg?alt=media&token=0e700497-f6cb-4b71-9a00-0ed10ba1f7c4",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788502610500_0b5db0d2-0d5f-42fb-b0d7-6748eb824bbd_KakaoTalk_20260810_170853959_29.jpg?alt=media&token=17af37d2-7d5e-4321-acc1-b84c66a6f843"
+        ],
+        "date": "2026-04-18",
+        "title": "2026년 재단/센터 워크숍(4월 월례회의 연계)"
+      },
+      {
+        "date": "2026-04-07",
+        "isProtected": true,
+        "description": "(사)너브내뱅복나눔재단 홍천교육지원청에 꿈나무 장학금 전달",
+        "id": "gal-1786737612747",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788502283536_bbd3dcc8-31e9-434d-b594-355f4dfcefb6_KakaoTalk_20260408_181158539_07.jpg?alt=media&token=6b6be6a2-eb03-4ed8-b102-3f89790c0bb1",
+        "author": "재단 관리자",
+        "location": "홍천교육지원청 강당",
+        "category": "장학금 전달 및 장학 사업",
+        "storagePath": "activities/1788502283536_bbd3dcc8-31e9-434d-b594-355f4dfcefb6_KakaoTalk_20260408_181158539_07.jpg",
+        "title": "홍천교육지원청 꿈나무장학금 전달",
+        "images": [
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788502283536_bbd3dcc8-31e9-434d-b594-355f4dfcefb6_KakaoTalk_20260408_181158539_07.jpg?alt=media&token=6b6be6a2-eb03-4ed8-b102-3f89790c0bb1",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788502285095_ec29a334-e41d-4736-a173-09dbdb1dba06_KakaoTalk_20260408_181209174_19.jpg?alt=media&token=77f56433-8cac-400b-b08a-e353bbd7c82f",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788502286718_527976a3-5ed4-4f3e-ac56-8e6ba3c7afd4_KakaoTalk_20260408_181158539_08.jpg?alt=media&token=0aa705d6-c268-4bef-badd-d4db63a3b26d",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788502289079_bc0c2fac-f19b-4cd8-bb0e-fbf7d153c460_KakaoTalk_20260408_181209174_20.jpg?alt=media&token=857942ee-8e30-45c9-8d1c-3a5da1227feb"
+        ],
+        "storagePaths": [
+          "activities/1788502283536_bbd3dcc8-31e9-434d-b594-355f4dfcefb6_KakaoTalk_20260408_181158539_07.jpg",
+          "activities/1788502285095_ec29a334-e41d-4736-a173-09dbdb1dba06_KakaoTalk_20260408_181209174_19.jpg",
+          "activities/1788502286718_527976a3-5ed4-4f3e-ac56-8e6ba3c7afd4_KakaoTalk_20260408_181158539_08.jpg",
+          "activities/1788502289079_bc0c2fac-f19b-4cd8-bb0e-fbf7d153c460_KakaoTalk_20260408_181209174_20.jpg"
+        ]
+      },
+      {
+        "author": "재단 관리자",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788489644849_b0c3440f-c658-4c8b-b3e5-3f776a3e45d8_KakaoTalk_20260330_121823620_03.jpg?alt=media&token=8b5ee5c0-f2ed-4802-8925-c13fa62a99df",
+        "title": "2026년 3월 월례회의",
+        "storagePaths": [
+          "activities/1788489644849_b0c3440f-c658-4c8b-b3e5-3f776a3e45d8_KakaoTalk_20260330_121823620_03.jpg",
+          "activities/1788489647155_46468ac2-ba3f-45bd-9548-9056ca71ed75_KakaoTalk_20260330_121823620_04.jpg",
+          "activities/1788489649668_43942ba9-d266-4d18-afdf-0ecd26ee5c64_KakaoTalk_20260330_121823620.jpg",
+          "activities/1788489651918_23abdba9-c41e-43c9-b9fb-28053cc3af37_KakaoTalk_20260330_121823620_06.jpg"
+        ],
+        "location": "홍천군가족센터 3층 강당",
+        "isProtected": true,
+        "description": "(사)너브내행복나눔재단 2026년 3월 월례회의",
+        "id": "gal-03",
+        "date": "2026-03-25",
+        "category": "월례회의 및 이사회의",
+        "storagePath": "activities/1788489644849_b0c3440f-c658-4c8b-b3e5-3f776a3e45d8_KakaoTalk_20260330_121823620_03.jpg",
+        "images": [
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788489644849_b0c3440f-c658-4c8b-b3e5-3f776a3e45d8_KakaoTalk_20260330_121823620_03.jpg?alt=media&token=8b5ee5c0-f2ed-4802-8925-c13fa62a99df",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788489647155_46468ac2-ba3f-45bd-9548-9056ca71ed75_KakaoTalk_20260330_121823620_04.jpg?alt=media&token=e4e589f1-bf1f-4726-8040-e33000741c34",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788489649668_43942ba9-d266-4d18-afdf-0ecd26ee5c64_KakaoTalk_20260330_121823620.jpg?alt=media&token=fa0b25c8-0040-419a-8153-984d1714c5dd",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788489651918_23abdba9-c41e-43c9-b9fb-28053cc3af37_KakaoTalk_20260330_121823620_06.jpg?alt=media&token=b015320a-7a01-45a4-8719-b4c719e63477"
+        ]
+      },
+      {
+        "storagePaths": [
+          "activities/1788489390913_bb6459dc-0002-44e2-9c05-b3015d8c3685_KakaoTalk_20260330_155153198.jpg",
+          "activities/1788489393212_1b32ce56-99ef-4e99-b1bf-b7c67df6ad20_KakaoTalk_20260330_155153198_01.jpg",
+          "activities/1788489395163_4047f77d-620d-4924-8e6d-9a441fc5cdf6_KakaoTalk_20260330_155153198_02.jpg"
+        ],
+        "images": [
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788489390913_bb6459dc-0002-44e2-9c05-b3015d8c3685_KakaoTalk_20260330_155153198.jpg?alt=media&token=b0e38a02-2ee9-4ff5-945e-6b61b0572a3d",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788489393212_1b32ce56-99ef-4e99-b1bf-b7c67df6ad20_KakaoTalk_20260330_155153198_01.jpg?alt=media&token=522d6a34-a56c-4fb8-b0cf-8bbfe1338a83",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788489395163_4047f77d-620d-4924-8e6d-9a441fc5cdf6_KakaoTalk_20260330_155153198_02.jpg?alt=media&token=b04b615d-51ee-4410-be80-9c6082e23266"
+        ],
+        "description": "(사)너브내행복나눔재단 2026년 1분기 정기 이사회 진행",
+        "isProtected": true,
+        "id": "gal-04",
+        "category": "이사회",
+        "storagePath": "activities/1788489390913_bb6459dc-0002-44e2-9c05-b3015d8c3685_KakaoTalk_20260330_155153198.jpg",
+        "location": "홍천군가족센터 3층 강당",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788489390913_bb6459dc-0002-44e2-9c05-b3015d8c3685_KakaoTalk_20260330_155153198.jpg?alt=media&token=b0e38a02-2ee9-4ff5-945e-6b61b0572a3d",
+        "date": "2026-02-11",
+        "author": "재단 관리자",
+        "title": "2026년 1분기 정기 이사회"
+      },
+      {
+        "author": "재단 관리자",
+        "isProtected": true,
+        "description": "2025년 재단과 함께해 주신 동행에 감사를 드리고, 한 해의 성과를 함께 돌아보고 서로의 노고를 격려하는 송년의 자리",
+        "category": "재단 행사",
+        "title": "2025년 송년의 밤",
+        "id": "gal-05",
+        "location": "크리스탈웨딩홀",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788489187649_4fba0192-4032-40e3-ab21-6a277d7712c6_KakaoTalk_20260204_161918977_04.jpg?alt=media&token=36536517-26b7-432e-bbf9-e3d5dc07deec",
+        "storagePath": "activities/1788489187649_4fba0192-4032-40e3-ab21-6a277d7712c6_KakaoTalk_20260204_161918977_04.jpg",
+        "images": [
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788489187649_4fba0192-4032-40e3-ab21-6a277d7712c6_KakaoTalk_20260204_161918977_04.jpg?alt=media&token=36536517-26b7-432e-bbf9-e3d5dc07deec",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788489189614_249d6603-cdb7-4025-aa4a-1578de79123c_KakaoTalk_20260204_161918977_26.jpg?alt=media&token=0de31a9f-d476-47ce-b38c-8105f0adde1a",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788489191429_a97c903d-b294-45c0-ae34-f568fdf6f309_KakaoTalk_20260204_161904617_02.jpg?alt=media&token=593a1faf-f283-444d-a5ad-bdccea5765c3",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1788489193402_bfb547be-e5d8-4136-a98d-b67c5a14e9f2_KakaoTalk_20260204_161707692_04.jpg?alt=media&token=8022db77-a5ed-41e8-b893-1985a354f6e1"
+        ],
+        "storagePaths": [
+          "activities/1788489187649_4fba0192-4032-40e3-ab21-6a277d7712c6_KakaoTalk_20260204_161918977_04.jpg",
+          "activities/1788489189614_249d6603-cdb7-4025-aa4a-1578de79123c_KakaoTalk_20260204_161918977_26.jpg",
+          "activities/1788489191429_a97c903d-b294-45c0-ae34-f568fdf6f309_KakaoTalk_20260204_161904617_02.jpg",
+          "activities/1788489193402_bfb547be-e5d8-4136-a98d-b67c5a14e9f2_KakaoTalk_20260204_161707692_04.jpg"
+        ],
+        "date": "2025-12-10"
+      },
+      {
+        "location": "홍천종합체육관",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1787056979019_62880488-baf0-4eb8-b724-9050d8c7fdf4_KakaoTalk_20260818_214124243.jpg?alt=media&token=ccfc3471-fc5b-4904-847c-fe7accac5b17",
+        "storagePaths": [
+          "activities/1787056979019_62880488-baf0-4eb8-b724-9050d8c7fdf4_KakaoTalk_20260818_214124243.jpg",
+          "activities/1787056980958_88bdc040-5060-48f4-a952-8c38f44000b7_KakaoTalk_20260818_214124243_04.jpg",
+          "activities/1787056983165_ab2d68d0-5bc9-483c-8059-f2757768e5f4_KakaoTalk_20260818_214124243_06.jpg",
+          "activities/1787227425707_4600a224-da10-4970-894a-a56d96ddd27f_KakaoTalk_20260818_214124243_02.jpg"
+        ],
+        "storagePath": "activities/1787056979019_62880488-baf0-4eb8-b724-9050d8c7fdf4_KakaoTalk_20260818_214124243.jpg",
+        "author": "재단 관리자",
+        "isProtected": true,
+        "description": "다문화가족과 지역 주민들이 함께 세계 전통 요리를 맛보고 전통 의상을 체험하며 화합하는 한마음 축제 현장입니다.",
+        "images": [
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1787056979019_62880488-baf0-4eb8-b724-9050d8c7fdf4_KakaoTalk_20260818_214124243.jpg?alt=media&token=ccfc3471-fc5b-4904-847c-fe7accac5b17",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1787056980958_88bdc040-5060-48f4-a952-8c38f44000b7_KakaoTalk_20260818_214124243_04.jpg?alt=media&token=1e418e16-5c1a-4e6e-8870-2f4ee8a2eeb2",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1787056983165_ab2d68d0-5bc9-483c-8059-f2757768e5f4_KakaoTalk_20260818_214124243_06.jpg?alt=media&token=e6374c76-b7ac-4611-b9c9-7b3e61921e9a",
+          "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/activities%2F1787227425707_4600a224-da10-4970-894a-a56d96ddd27f_KakaoTalk_20260818_214124243_02.jpg?alt=media&token=78e93840-dfd3-4356-a70e-a908c60e6433"
+        ],
+        "date": "2025-10-25",
+        "id": "gal-06",
+        "title": "제14회 홍천 다문화가족 한마음 축제 현장",
+        "category": "다문화지원 지역사회 지원"
+      }
+    ]
+  },
+  "popups": null
+}
