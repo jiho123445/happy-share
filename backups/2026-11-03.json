@@ -1,22 +1,18 @@
 {
-  "exportedAt": "2026-11-03T00:23:35.671Z",
+  "exportedAt": "2026-11-03T22:48:14.225Z",
   "kind": "public-content-only",
   "settings": {
-    "familyCenterQuote": "다문화가족 지원을 넘어 홍천군 전체 가족을 보듬는 통합 가족복지 전문기관",
-    "address": "강원특별자치도 홍천군 홍천읍 송학로3길 26, 2층 (너브내행복나눔재단)",
-    "chairmanName": "윤성일",
-    "fax": "033-436-1910",
-    "sloganSub": "2009년부터 이어온 나눔, 이제 홍천군민 모두의 행복으로 이어갑니다.",
-    "familyCenterImageUrl": "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/settings%2F1787263735411_14a2481d-c401-4248-9981-d77ed01b364f_familycenter.jpg?alt=media&token=70dbd414-ceb3-41c9-b809-5cb4f7d49636",
-    "heroImageUrl": "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/settings%2F1792721763760_1183ea66-aa82-40f5-ac1d-b591fcf2f1de_hero.jpg?alt=media&token=ce37131b-f1c3-4c06-9697-106d392482f0",
-    "bankAccounts": [
-      {
-        "accountNumber": "351-1040-2310-53",
-        "holder": "(사)너브내행복나눔재단",
-        "bank": "농협"
-      }
-    ],
+    "name": "사단법인 너브내행복나눔재단",
     "englishName": "Nerve-Nae Happiness Sharing Foundation",
+    "operatingHours": "월~금 09:00 - 18:00 (토, 일, 공휴일 휴무)",
+    "familyCenterQuote": "다문화가족 지원을 넘어 홍천군 전체 가족을 보듬는 통합 가족복지 전문기관",
+    "email": "hcdmh1026@naver.com",
+    "chairmanName": "윤성일",
+    "familyCenterPhone": "033-433-1925",
+    "chairmanGreeting": "안녕하십니까. 사단법인 너브내행복나눔재단 이사장 윤성일입니다.\n\n먼저 바쁘신 가운데 저희 재단 홈페이지를 찾아주신 너브내행복나눔회원님, 자원봉사자님, 그리고 지역주민 여러분께 진심으로 감사의 인사를 드립니다.\n\n'너브내'라는 이름은 넓고 깊게 흐르는 물줄기를 뜻하는 우리말입니다. 그 이름처럼 이웃을 향한 정과 사랑이 넓고 깊게 흘러, 우리 지역사회 곳곳에 따뜻하게 스며들기를 바라는 마음으로 너브내행복나눔재단은 첫걸음을 내디뎠습니다.\n\n오늘도 복지의 손길이 미처 닿지 못한 곳에서 외로움과 어려움을 겪고 계신 이웃들이 적지 않습니다. 저희 재단은 작은 나눔이 모여 커다란 희망의 물결을 이룬다는 믿음으로, 그러한 이웃들의 곁을 지키는 든든한 버팀목이 되고자 합니다.\n\n저희 재단은 다음과 같은 마음으로 걸어가고 있습니다.\n\n• 소외된 이웃과의 동행: 어르신, 다문화 가정, 취약계층 아동·청소년 등 복지 사각지대에 놓인 이웃들을 꾸준히 찾아 나서고, 실질적인 도움을 드리기 위해 노력하고 있습니다.\n• 투명하고 성실한 법인 운영: 여러분께서 보내주신 따뜻한 정성이 가장 필요한 곳에 정직하게 전달될 수 있도록, 투명성과 공정성을 최우선 가치로 삼고 있습니다.\n• 지역사회와 함께하는 나눔 문화 확산: 모두가 서로를 돌보고 온기를 나누는 행복한 공동체를 만드는 일에 앞장서고자 합니다.\n\n혼자 가면 빠른 길이 될 수 있지만, 함께 가면 더 멀리, 그리고 더 따뜻하게 갈 수 있습니다. 여러분의 관심과 참여 하나하나가 우리 이웃들에게는 삶을 살아갈 큰 용기와 희망이 됩니다.\n\n너브내행복나눔재단이 지역사회의 빛과 소금이 되는 그 여정에 앞으로도 늘 함께해 주시기를 부탁드리며, 이 자리를 찾아주신 모든 분들의 가정에 건강과 행복이 가득하시기를 진심으로 기원합니다.\n\n감사합니다.\n\n사단법인 너브내행복나눔재단 이사장 윤성일 올림",
+    "address": "강원특별자치도 홍천군 홍천읍 송학로3길 26, 2층 (너브내행복나눔재단)",
+    "phone": "033-436-1925",
+    "updatedAt": "2026-10-23T02:16:23.646Z",
     "familyCenterFeatures": [
       {
         "title": "다문화가족 정착지원",
@@ -35,8 +31,22 @@
         "description": "1인가구 식생활 및 사회적 관계망 형성, 취약가구 긴급 자원 연계"
       }
     ],
-    "phone": "033-436-1925",
-    "familyCenterAddress": "강원특별자치도 홍천군 홍천읍 산림조합길 12",
+    "bankAccounts": [
+      {
+        "accountNumber": "351-1040-2310-53",
+        "holder": "(사)너브내행복나눔재단",
+        "bank": "농협"
+      }
+    ],
+    "familyCenterDescription": "홍천군가족센터는 다양한 가족 형태(다문화가족, 1인가구, 한부모가족, 조손가족, 맞벌이가족 등)에 맞춰 가족 교육, 상담, 돌봄, 다문화 이중언어 학습, 공동육아나눔터 등 생애주기별 맞춤 통합복지 서비스를 제공하고 있습니다.",
+    "heroImageUrl": "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/settings%2F1792721763760_1183ea66-aa82-40f5-ac1d-b591fcf2f1de_hero.jpg?alt=media&token=ce37131b-f1c3-4c06-9697-106d392482f0",
+    "fax": "033-436-1910",
+    "sloganMain": "넓고 깊은 강물처럼, 홍천에 따뜻한 나눔이 흐릅니다.",
+    "sloganSub": "2009년부터 이어온 나눔, 이제 홍천군민 모두의 행복으로 이어갑니다.",
+    "businessRegistrationNumber": "223-82-05088",
+    "establishedYear": "2009",
+    "reorganizedYear": "2024",
+    "familyCenterFax": "033-433-1910",
     "galleryCategories": [
       "장학금 전달",
       "교육지원",
@@ -46,28 +56,19 @@
       "복지시설 지원",
       "다문화지원"
     ],
-    "updatedAt": "2026-10-23T02:16:23.646Z",
-    "businessRegistrationNumber": "223-82-05088",
-    "snsLinks": {
-      "youtube": "https://youtube.com",
-      "instagram": "https://instagram.com",
-      "naver": "https://blog.naver.com",
-      "facebook": "https://facebook.com"
-    },
-    "familyCenterDescription": "홍천군가족센터는 다양한 가족 형태(다문화가족, 1인가구, 한부모가족, 조손가족, 맞벌이가족 등)에 맞춰 가족 교육, 상담, 돌봄, 다문화 이중언어 학습, 공동육아나눔터 등 생애주기별 맞춤 통합복지 서비스를 제공하고 있습니다.",
-    "name": "사단법인 너브내행복나눔재단",
-    "familyCenterFax": "033-433-1910",
-    "sloganMain": "넓고 깊은 강물처럼, 홍천에 따뜻한 나눔이 흐릅니다.",
+    "familyCenterAddress": "강원특별자치도 홍천군 홍천읍 산림조합길 12",
+    "familyCenterImageUrl": "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/settings%2F1787263735411_14a2481d-c401-4248-9981-d77ed01b364f_familycenter.jpg?alt=media&token=70dbd414-ceb3-41c9-b809-5cb4f7d49636",
     "chairmanImageUrl": "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0288068906.firebasestorage.app/o/settings%2F1789535775723_65ba24f1-dc98-4529-9055-f98ac63656c3_chairmanImageUrl.jpg?alt=media&token=ee0ae3a0-1c3f-4b47-be69-1d1a31afacab",
-    "reorganizedYear": "2024",
-    "email": "hcdmh1026@naver.com",
-    "chairmanGreeting": "안녕하십니까. 사단법인 너브내행복나눔재단 이사장 윤성일입니다.\n\n먼저 바쁘신 가운데 저희 재단 홈페이지를 찾아주신 너브내행복나눔회원님, 자원봉사자님, 그리고 지역주민 여러분께 진심으로 감사의 인사를 드립니다.\n\n'너브내'라는 이름은 넓고 깊게 흐르는 물줄기를 뜻하는 우리말입니다. 그 이름처럼 이웃을 향한 정과 사랑이 넓고 깊게 흘러, 우리 지역사회 곳곳에 따뜻하게 스며들기를 바라는 마음으로 너브내행복나눔재단은 첫걸음을 내디뎠습니다.\n\n오늘도 복지의 손길이 미처 닿지 못한 곳에서 외로움과 어려움을 겪고 계신 이웃들이 적지 않습니다. 저희 재단은 작은 나눔이 모여 커다란 희망의 물결을 이룬다는 믿음으로, 그러한 이웃들의 곁을 지키는 든든한 버팀목이 되고자 합니다.\n\n저희 재단은 다음과 같은 마음으로 걸어가고 있습니다.\n\n• 소외된 이웃과의 동행: 어르신, 다문화 가정, 취약계층 아동·청소년 등 복지 사각지대에 놓인 이웃들을 꾸준히 찾아 나서고, 실질적인 도움을 드리기 위해 노력하고 있습니다.\n• 투명하고 성실한 법인 운영: 여러분께서 보내주신 따뜻한 정성이 가장 필요한 곳에 정직하게 전달될 수 있도록, 투명성과 공정성을 최우선 가치로 삼고 있습니다.\n• 지역사회와 함께하는 나눔 문화 확산: 모두가 서로를 돌보고 온기를 나누는 행복한 공동체를 만드는 일에 앞장서고자 합니다.\n\n혼자 가면 빠른 길이 될 수 있지만, 함께 가면 더 멀리, 그리고 더 따뜻하게 갈 수 있습니다. 여러분의 관심과 참여 하나하나가 우리 이웃들에게는 삶을 살아갈 큰 용기와 희망이 됩니다.\n\n너브내행복나눔재단이 지역사회의 빛과 소금이 되는 그 여정에 앞으로도 늘 함께해 주시기를 부탁드리며, 이 자리를 찾아주신 모든 분들의 가정에 건강과 행복이 가득하시기를 진심으로 기원합니다.\n\n감사합니다.\n\n사단법인 너브내행복나눔재단 이사장 윤성일 올림",
-    "familyCenterPhone": "033-433-1925",
-    "operatingHours": "월~금 09:00 - 18:00 (토, 일, 공휴일 휴무)",
-    "establishedYear": "2009"
+    "snsLinks": {
+      "naver": "https://blog.naver.com",
+      "instagram": "https://instagram.com",
+      "youtube": "https://youtube.com",
+      "facebook": "https://facebook.com"
+    }
   },
   "programs": null,
   "notices": {
+    "updatedAt": "2026-10-02T08:24:33.943Z",
     "items": [
       {
         "title": "2026년 제15회 홍천 다문화가족 한마음축제 개최",
@@ -212,8 +213,7 @@
         "id": "not-05",
         "author": "재정관리팀"
       }
-    ],
-    "updatedAt": "2026-10-02T08:24:33.943Z"
+    ]
   },
   "press": {
     "updatedAt": "2026-10-23T02:17:23.311Z",
@@ -397,16 +397,6 @@
     ]
   },
   "gallery": {
-    "categories": [
-      "장학금 전달 및 장학 사업",
-      "재단 사업, 행사 및 지역축제 연게",
-      "나눔행사 물품지원  배분사업 등",
-      "워크숍 및 야유회",
-      "다문화지원 지역사회 지원",
-      "월례회의 및 이사회의",
-      "지역현안 사업 등 간담회",
-      "재단 행사"
-    ],
     "updatedAt": "2026-10-23T02:18:51.385Z",
     "items": [
       {
@@ -1002,6 +992,16 @@
         "location": "홍천종합체육관",
         "author": "재단 관리자"
       }
+    ],
+    "categories": [
+      "장학금 전달 및 장학 사업",
+      "재단 사업, 행사 및 지역축제 연게",
+      "나눔행사 물품지원  배분사업 등",
+      "워크숍 및 야유회",
+      "다문화지원 지역사회 지원",
+      "월례회의 및 이사회의",
+      "지역현안 사업 등 간담회",
+      "재단 행사"
     ]
   },
   "popups": null
